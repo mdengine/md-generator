@@ -1,7 +1,9 @@
 # Database Metadata Testing
 
-Tests for this feature area are expected under the matching top-level `*-to-md/tests` folder where present. Run targeted tests before changing the module and run broader `python -m pytest` before cross-module changes.
-
 ```bash
-python -m pytest
+python -m pytest db-to-md/tests -q
 ```
+
+Tests live under `db-to-md/tests`.
+
+CI currently runs a subset (see root `.github/workflows/ci.yml`); run full module tests locally before merging converter changes.

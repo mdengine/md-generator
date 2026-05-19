@@ -1,5 +1,11 @@
 # AI Assistant Tools API
 
-FastAPI title: `No FastAPI app detected`.
+No FastAPI application was detected under `src/md_generator/tools/assistant/api/`.
 
-Detected endpoints: `No HTTP API route set was detected for this module.`.
+## CLI-only module
+
+Use `mdengine ai assist` or `mdengine ai export` for all operations.
+
+## MCP
+
+No MCP server detected for this module.

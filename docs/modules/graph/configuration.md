@@ -1,11 +1,16 @@
 # Graph Metadata Configuration
 
-Configuration is supplied through CLI flags, API request fields, packaged YAML where the module provides it, and environment variables for service runtime concerns.
+Configuration surfaces:
 
-For this module, begin with:
+1. **CLI flags** — `md-graph --help`
+2. **Environment variables** — see `parameters.md`
+3. **Python options classes** — under `src/md_generator/graph`
+4. **YAML presets** — `src\md_generator\graph\config\default.yaml`
+
+## Example
 
 ```bash
 md-graph --help
 ```
 
-Source code lives in `src/md_generator/graph`.
+For HTTP services, configure upload limits and CORS via module `settings.py` environment variables.

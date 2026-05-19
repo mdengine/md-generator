@@ -1,3 +1,3 @@
 # AI Assistant Tools Database Notes
 
-Optional Chroma integration is dependency-gated; no repository-owned tables are defined.
+This module does **not** use an application database. All state is ephemeral (temp directories, in-memory job tables) except where job SQLite stores are used by API services.

@@ -1,11 +1,16 @@
 # AI Assistant Tools Configuration
 
-Configuration is supplied through CLI flags, API request fields, packaged YAML where the module provides it, and environment variables for service runtime concerns.
+Configuration surfaces:
 
-For this module, begin with:
+1. **CLI flags** — `mdengine ai assist --help`
+2. **Environment variables** — see `parameters.md`
+3. **Python options classes** — under `src/md_generator/tools/assistant`
+4. **YAML presets** — none packaged
+
+## Example
 
 ```bash
-mdengine --help
+mdengine ai assist --help
 ```
 
-Source code lives in `src/md_generator/tools/assistant`.
+For HTTP services, configure upload limits and CORS via module `settings.py` environment variables.

@@ -1,12 +1,42 @@
 # Database Metadata Low-Level Design
 
+## Class and module responsibilities
+
+| Symbol | Responsibility |
+|--------|----------------|
+| `extract_to_markdown` | Public entry / orchestration |
+| `create_adapter` | Public entry / orchestration |
+| `RunConfig` | Public entry / orchestration |
+| `JobManager` | Public entry / orchestration |
+
+## Call sequence (CLI)
+
 ```mermaid
-flowchart TD
-    Request[CLI_or_API_request] --> Options[Parse_options]
-    Options --> Validate[Validate_input]
-    Validate --> Convert[db_conversion]
-    Convert --> Render[Render_Markdown]
-    Render --> Return[Return_or_download_result]
+sequenceDiagram
+    participant Main as main
+    participant Parser as argparse
+    participant Core as converter
+    Main->>Parser: parse argv
+    Parser->>Core: options + paths
+    Core-->>Main: result
 ```
 
-The module should keep parsing, conversion, rendering, and interface concerns separated enough that CLI and API paths can reuse the same core behavior.
+## File map
+
+| Path | Role |
+|------|------|
+| `src\md_generator\db\__init__.py` | Implementation |
+| `src\md_generator\db\adapters\__init__.py` | Implementation |
+| `src\md_generator\db\adapters\access_adapter.py` | Implementation |
+| `src\md_generator\db\adapters\access_introspect.py` | Implementation |
+| `src\md_generator\db\adapters\access_odbc.py` | Implementation |
+| `src\md_generator\db\adapters\factory.py` | Implementation |
+| `src\md_generator\db\adapters\mongo_adapter.py` | Implementation |
+| `src\md_generator\db\adapters\mysql_adapter.py` | Implementation |
+| `src\md_generator\db\adapters\oracle_adapter.py` | Implementation |
+| `src\md_generator\db\adapters\postgres_adapter.py` | Implementation |
+| `src\md_generator\db\adapters\sql_common.py` | Implementation |
+| `src\md_generator\db\adapters\sqlite_adapter.py` | Implementation |
+| ... | (48 Python files total) |
+
+Database adapters in `db/adapters/` (factory pattern).

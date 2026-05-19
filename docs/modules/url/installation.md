@@ -1,17 +1,31 @@
 # URL and Web Installation
 
+## PyPI extra
+
 ```bash
 pip install "mdengine[url]"
 ```
 
-For local development from a clone:
+## Editable development
 
 ```bash
-pip install -e ".[url,dev]"
+pip install -e ".[url or url-full,dev]"
 ```
 
-If the module also runs as HTTP API, include `api`:
+## HTTP API support
 
 ```bash
 pip install -e ".[url,api]"
 ```
+
+## System dependencies
+
+| Dependency | When needed |
+|------------|-------------|
+| Python 3.10+ | Always |
+| Graphviz `dot` | db/graph ERD or diagram rendering |
+| Tesseract / OCR backends | image, ppt, archive nested OCR |
+| ffmpeg / imageio-ffmpeg | audio/video |
+| Playwright browsers | playwright (`playwright install chromium`) |
+
+See [module README](https://github.com/vishal7090/md-generator/blob/main/url-to-md/README.md) for module-specific notes.

@@ -1,5 +1,19 @@
 # Audio Deployment
 
-Deploy the API surface only when HTTP access is required. Install the smallest dependency extra set and add `api` for FastAPI runtime.
+## CLI-only
 
-For Dockerized services, follow the existing `Dockerfile.api` and Compose gateway pattern used by top-level converter folders.
+Install extras in container image; invoke `md-audio` as Job/Cron.
+
+## Docker API
+
+If `audio-to-md/Dockerfile.api` exists, build and run uvicorn with `--root-path /audio-to-md` behind gateway (`deploy/docker-compose.yml`).
+
+## Resources
+
+| Tier | Guidance |
+|------|----------|
+| CPU | Scale with OCR/Whisper/browser workloads |
+| Memory | Large PDFs/archives need higher limits |
+| Disk | Temp job workspaces — mount ephemeral volume |
+
+Configure proxy body size and timeouts (see `deploy/nginx/default.conf`).
