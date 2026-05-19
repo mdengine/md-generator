@@ -1,11 +1,16 @@
 # Audio Configuration
 
-Configuration is supplied through CLI flags, API request fields, packaged YAML where the module provides it, and environment variables for service runtime concerns.
+Configuration surfaces:
 
-For this module, begin with:
+1. **CLI flags** — `md-audio --help`
+2. **Environment variables** — see `parameters.md`
+3. **Python options classes** — under `src/md_generator/media/audio`
+4. **YAML presets** — none packaged
+
+## Example
 
 ```bash
 md-audio --help
 ```
 
-Source code lives in `src/md_generator/media/audio`.
+For HTTP services, configure upload limits and CORS via module `settings.py` environment variables.

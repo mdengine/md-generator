@@ -1,21 +1,41 @@
-# Log telemetry architecture
+# Log Analysis Architecture
 
-The log module normalizes operational logs into AI-oriented Markdown artifacts through staged processing in `md_generator.log.core.pipeline`.
+## Internal layout
 
-## Stages
+Source root: `src/md_generator/log` (154 Python modules detected).
 
-1. Ingest and parse log lines into `LogRecord` values.
-2. Normalize and enrich records (fingerprints, pattern tags).
-3. Aggregate summaries and optional clustering.
-4. Intelligence hooks: incidents, semantic chunks, correlation, graphs, timelines, root-cause heuristics.
-5. Render Markdown trees and optional embedding-ready exports.
+Subpackages and areas: `aggregation`, `api`, `chunking`, `cli`, `clustering`, `config`, `core`, `correlation`, `documentation`, `embeddings`, `enrichment`, `incidents`, `incremental`, `ingestion`, `intelligence`.
+
+## Component diagram
 
 ```mermaid
-sequenceDiagram
-  participant CLI
-  participant Pipeline
-  participant Writers
-  CLI->>Pipeline: LogRunConfig
-  Pipeline->>Writers: records_and_incidents
-  Writers-->>CLI: output_directory
+flowchart TB
+    CLI[CLI_md-log] --> Core[Core_engine]
+    API[FastAPI_optional] --> Core
+    Core --> Writers[Markdown_writers]
+    Core --> Assets[Asset_handlers]
+    Core --> Integrations[External_libraries]
+```
+
+## Dependency graph (logical)
+
+- **Inputs:** Log files and uploads
+- **Outputs:** Parsed events, summaries, incidents, optional clustering
+- **Optional extras:** `log` from `pyproject.toml`
+- **Cross-module:** See `integration.md` for delegated converters and shared job patterns.
+
+## Threading and async
+
+- CLI runs synchronously in the invoking process.
+- FastAPI routes may use background tasks or threads for long jobs.
+- Domain modules (`db`, `graph`, `log`, `codeflow`) expose SSE/event streams for progress.
+
+## Data flow
+
+```mermaid
+flowchart LR
+    Raw[Raw_input] --> Parse[Parse_or_load]
+    Parse --> Model[Internal_representation]
+    Model --> Emit[Markdown_emitter]
+    Emit --> Out[Files_or_ZIP]
 ```

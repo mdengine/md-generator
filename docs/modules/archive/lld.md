@@ -1,12 +1,41 @@
 # ZIP Archive Low-Level Design
 
+## Class and module responsibilities
+
+| Symbol | Responsibility |
+|--------|----------------|
+| `convert_archive` | Public entry / orchestration |
+| `convert_zip` | Public entry / orchestration |
+| `extract_archive` | Public entry / orchestration |
+
+## Call sequence (CLI)
+
 ```mermaid
-flowchart TD
-    Request[CLI_or_API_request] --> Options[Parse_options]
-    Options --> Validate[Validate_input]
-    Validate --> Convert[archive_conversion]
-    Convert --> Render[Render_Markdown]
-    Render --> Return[Return_or_download_result]
+sequenceDiagram
+    participant Main as main
+    participant Parser as argparse
+    participant Core as converter
+    Main->>Parser: parse argv
+    Parser->>Core: options + paths
+    Core-->>Main: result
 ```
 
-The module should keep parsing, conversion, rendering, and interface concerns separated enough that CLI and API paths can reuse the same core behavior.
+## File map
+
+| Path | Role |
+|------|------|
+| `src\md_generator\archive\__init__.py` | Implementation |
+| `src\md_generator\archive\api\__init__.py` | Implementation |
+| `src\md_generator\archive\api\convert_runner.py` | Implementation |
+| `src\md_generator\archive\api\jobs.py` | Implementation |
+| `src\md_generator\archive\api\main.py` | Implementation |
+| `src\md_generator\archive\api\mcp_server.py` | Implementation |
+| `src\md_generator\archive\api\mcp_setup.py` | Implementation |
+| `src\md_generator\archive\api\query_options.py` | Implementation |
+| `src\md_generator\archive\api\settings.py` | Implementation |
+| `src\md_generator\archive\convert_impl.py` | Implementation |
+| `src\md_generator\archive\converter.py` | Implementation |
+| `src\md_generator\archive\extractors.py` | Implementation |
+| ... | (13 Python files total) |
+
+

@@ -1,11 +1,16 @@
 # OpenAPI Configuration
 
-Configuration is supplied through CLI flags, API request fields, packaged YAML where the module provides it, and environment variables for service runtime concerns.
+Configuration surfaces:
 
-For this module, begin with:
+1. **CLI flags** — `md-openapi --help`
+2. **Environment variables** — see `parameters.md`
+3. **Python options classes** — under `src/md_generator/openapi`
+4. **YAML presets** — `src\md_generator\openapi\config\default.yaml`
+
+## Example
 
 ```bash
 md-openapi --help
 ```
 
-Source code lives in `src/md_generator/openapi`.
+For HTTP services, configure upload limits and CORS via module `settings.py` environment variables.

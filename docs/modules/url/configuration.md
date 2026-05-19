@@ -1,11 +1,16 @@
 # URL and Web Configuration
 
-Configuration is supplied through CLI flags, API request fields, packaged YAML where the module provides it, and environment variables for service runtime concerns.
+Configuration surfaces:
 
-For this module, begin with:
+1. **CLI flags** — `md-url --help`
+2. **Environment variables** — see `parameters.md`
+3. **Python options classes** — under `src/md_generator/url`
+4. **YAML presets** — none packaged
+
+## Example
 
 ```bash
 md-url --help
 ```
 
-Source code lives in `src/md_generator/url`.
+For HTTP services, configure upload limits and CORS via module `settings.py` environment variables.

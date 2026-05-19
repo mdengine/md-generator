@@ -1,12 +1,35 @@
 # Skill Builder Low-Level Design
 
+## Class and module responsibilities
+
+| Symbol | Responsibility |
+|--------|----------------|
+| `run_generate` | Public entry / orchestration |
+| `build_dependency_graph` | Public entry / orchestration |
+| `build_routing_block` | Public entry / orchestration |
+
+## Call sequence (CLI)
+
 ```mermaid
-flowchart TD
-    Request[CLI_or_API_request] --> Options[Parse_options]
-    Options --> Validate[Validate_input]
-    Validate --> Convert[tools_skill_builder_conversion]
-    Convert --> Render[Render_Markdown]
-    Render --> Return[Return_or_download_result]
+sequenceDiagram
+    participant Main as main
+    participant Parser as argparse
+    participant Core as converter
+    Main->>Parser: parse argv
+    Parser->>Core: options + paths
+    Core-->>Main: result
 ```
 
-The module should keep parsing, conversion, rendering, and interface concerns separated enough that CLI and API paths can reuse the same core behavior.
+## File map
+
+| Path | Role |
+|------|------|
+| `src\md_generator\tools\skill_builder\__init__.py` | Implementation |
+| `src\md_generator\tools\skill_builder\__main__.py` | Implementation |
+| `src\md_generator\tools\skill_builder\dependency_graph.py` | Implementation |
+| `src\md_generator\tools\skill_builder\generate.py` | Implementation |
+| `src\md_generator\tools\skill_builder\pyproject_util.py` | Implementation |
+| `src\md_generator\tools\skill_builder\routing.py` | Implementation |
+| ... | (6 Python files total) |
+
+

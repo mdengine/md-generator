@@ -1,11 +1,16 @@
 # Skill Builder Configuration
 
-Configuration is supplied through CLI flags, API request fields, packaged YAML where the module provides it, and environment variables for service runtime concerns.
+Configuration surfaces:
 
-For this module, begin with:
+1. **CLI flags** — `mdengine skill build --help`
+2. **Environment variables** — see `parameters.md`
+3. **Python options classes** — under `src/md_generator/tools/skill_builder`
+4. **YAML presets** — none packaged
+
+## Example
 
 ```bash
-mdengine --help
+mdengine skill build --help
 ```
 
-Source code lives in `src/md_generator/tools/skill_builder`.
+For HTTP services, configure upload limits and CORS via module `settings.py` environment variables.

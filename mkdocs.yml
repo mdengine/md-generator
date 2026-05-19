@@ -27,252 +27,670 @@ nav:
       - Data Flow: architecture/data-flow.md
   - Modules:
       - PDF:
-          - Overview: modules/pdf/overview.md
-          - Responsibilities: modules/pdf/responsibilities.md
-          - Installation: modules/pdf/installation.md
-          - Configuration: modules/pdf/configuration.md
-          - Workflows: modules/pdf/workflows.md
-          - Api: modules/pdf/api.md
-          - Database: modules/pdf/database.md
-          - Exceptions: modules/pdf/exceptions.md
-          - Logging: modules/pdf/logging.md
-          - Testing: modules/pdf/testing.md
-          - Deployment: modules/pdf/deployment.md
-          - Lld: modules/pdf/lld.md
+          - Overview:
+              - Overview: modules/pdf/overview.md
+              - Responsibilities: modules/pdf/responsibilities.md
+          - Setup:
+              - Installation: modules/pdf/installation.md
+              - Configuration: modules/pdf/configuration.md
+              - Compatibility: modules/pdf/compatibility.md
+          - Usage:
+              - Workflows: modules/pdf/workflows.md
+              - Usecases: modules/pdf/usecases.md
+              - Examples: modules/pdf/examples.md
+              - Cli Reference: modules/pdf/cli-reference.md
+          - Technical:
+              - Architecture: modules/pdf/architecture.md
+              - Lifecycle: modules/pdf/lifecycle.md
+              - Sequence Diagrams: modules/pdf/sequence-diagrams.md
+              - Lld: modules/pdf/lld.md
+              - Extension Points: modules/pdf/extension-points.md
+          - Reference:
+              - Parameters: modules/pdf/parameters.md
+              - Api: modules/pdf/api.md
+              - Integration: modules/pdf/integration.md
+          - Operations:
+              - Performance: modules/pdf/performance.md
+              - Security: modules/pdf/security.md
+              - Troubleshooting: modules/pdf/troubleshooting.md
+              - Deployment: modules/pdf/deployment.md
+              - Logging: modules/pdf/logging.md
+              - Exceptions: modules/pdf/exceptions.md
+              - Testing: modules/pdf/testing.md
+          - Development:
+              - Developer Guide: modules/pdf/developer-guide.md
+              - Best Practices: modules/pdf/best-practices.md
+              - Database: modules/pdf/database.md
       - Word:
-          - Overview: modules/word/overview.md
-          - Responsibilities: modules/word/responsibilities.md
-          - Installation: modules/word/installation.md
-          - Configuration: modules/word/configuration.md
-          - Workflows: modules/word/workflows.md
-          - Api: modules/word/api.md
-          - Database: modules/word/database.md
-          - Exceptions: modules/word/exceptions.md
-          - Logging: modules/word/logging.md
-          - Testing: modules/word/testing.md
-          - Deployment: modules/word/deployment.md
-          - Lld: modules/word/lld.md
+          - Overview:
+              - Overview: modules/word/overview.md
+              - Responsibilities: modules/word/responsibilities.md
+          - Setup:
+              - Installation: modules/word/installation.md
+              - Configuration: modules/word/configuration.md
+              - Compatibility: modules/word/compatibility.md
+          - Usage:
+              - Workflows: modules/word/workflows.md
+              - Usecases: modules/word/usecases.md
+              - Examples: modules/word/examples.md
+              - Cli Reference: modules/word/cli-reference.md
+          - Technical:
+              - Architecture: modules/word/architecture.md
+              - Lifecycle: modules/word/lifecycle.md
+              - Sequence Diagrams: modules/word/sequence-diagrams.md
+              - Lld: modules/word/lld.md
+              - Extension Points: modules/word/extension-points.md
+          - Reference:
+              - Parameters: modules/word/parameters.md
+              - Api: modules/word/api.md
+              - Integration: modules/word/integration.md
+          - Operations:
+              - Performance: modules/word/performance.md
+              - Security: modules/word/security.md
+              - Troubleshooting: modules/word/troubleshooting.md
+              - Deployment: modules/word/deployment.md
+              - Logging: modules/word/logging.md
+              - Exceptions: modules/word/exceptions.md
+              - Testing: modules/word/testing.md
+          - Development:
+              - Developer Guide: modules/word/developer-guide.md
+              - Best Practices: modules/word/best-practices.md
+              - Database: modules/word/database.md
       - PowerPoint:
-          - Overview: modules/ppt/overview.md
-          - Responsibilities: modules/ppt/responsibilities.md
-          - Installation: modules/ppt/installation.md
-          - Configuration: modules/ppt/configuration.md
-          - Workflows: modules/ppt/workflows.md
-          - Api: modules/ppt/api.md
-          - Database: modules/ppt/database.md
-          - Exceptions: modules/ppt/exceptions.md
-          - Logging: modules/ppt/logging.md
-          - Testing: modules/ppt/testing.md
-          - Deployment: modules/ppt/deployment.md
-          - Lld: modules/ppt/lld.md
+          - Overview:
+              - Overview: modules/ppt/overview.md
+              - Responsibilities: modules/ppt/responsibilities.md
+          - Setup:
+              - Installation: modules/ppt/installation.md
+              - Configuration: modules/ppt/configuration.md
+              - Compatibility: modules/ppt/compatibility.md
+          - Usage:
+              - Workflows: modules/ppt/workflows.md
+              - Usecases: modules/ppt/usecases.md
+              - Examples: modules/ppt/examples.md
+              - Cli Reference: modules/ppt/cli-reference.md
+          - Technical:
+              - Architecture: modules/ppt/architecture.md
+              - Lifecycle: modules/ppt/lifecycle.md
+              - Sequence Diagrams: modules/ppt/sequence-diagrams.md
+              - Lld: modules/ppt/lld.md
+              - Extension Points: modules/ppt/extension-points.md
+          - Reference:
+              - Parameters: modules/ppt/parameters.md
+              - Api: modules/ppt/api.md
+              - Integration: modules/ppt/integration.md
+          - Operations:
+              - Performance: modules/ppt/performance.md
+              - Security: modules/ppt/security.md
+              - Troubleshooting: modules/ppt/troubleshooting.md
+              - Deployment: modules/ppt/deployment.md
+              - Logging: modules/ppt/logging.md
+              - Exceptions: modules/ppt/exceptions.md
+              - Testing: modules/ppt/testing.md
+          - Development:
+              - Developer Guide: modules/ppt/developer-guide.md
+              - Best Practices: modules/ppt/best-practices.md
+              - Database: modules/ppt/database.md
       - Excel and CSV:
-          - Overview: modules/xlsx/overview.md
-          - Responsibilities: modules/xlsx/responsibilities.md
-          - Installation: modules/xlsx/installation.md
-          - Configuration: modules/xlsx/configuration.md
-          - Workflows: modules/xlsx/workflows.md
-          - Api: modules/xlsx/api.md
-          - Database: modules/xlsx/database.md
-          - Exceptions: modules/xlsx/exceptions.md
-          - Logging: modules/xlsx/logging.md
-          - Testing: modules/xlsx/testing.md
-          - Deployment: modules/xlsx/deployment.md
-          - Lld: modules/xlsx/lld.md
+          - Overview:
+              - Overview: modules/xlsx/overview.md
+              - Responsibilities: modules/xlsx/responsibilities.md
+          - Setup:
+              - Installation: modules/xlsx/installation.md
+              - Configuration: modules/xlsx/configuration.md
+              - Compatibility: modules/xlsx/compatibility.md
+          - Usage:
+              - Workflows: modules/xlsx/workflows.md
+              - Usecases: modules/xlsx/usecases.md
+              - Examples: modules/xlsx/examples.md
+              - Cli Reference: modules/xlsx/cli-reference.md
+          - Technical:
+              - Architecture: modules/xlsx/architecture.md
+              - Lifecycle: modules/xlsx/lifecycle.md
+              - Sequence Diagrams: modules/xlsx/sequence-diagrams.md
+              - Lld: modules/xlsx/lld.md
+              - Extension Points: modules/xlsx/extension-points.md
+          - Reference:
+              - Parameters: modules/xlsx/parameters.md
+              - Api: modules/xlsx/api.md
+              - Integration: modules/xlsx/integration.md
+          - Operations:
+              - Performance: modules/xlsx/performance.md
+              - Security: modules/xlsx/security.md
+              - Troubleshooting: modules/xlsx/troubleshooting.md
+              - Deployment: modules/xlsx/deployment.md
+              - Logging: modules/xlsx/logging.md
+              - Exceptions: modules/xlsx/exceptions.md
+              - Testing: modules/xlsx/testing.md
+          - Development:
+              - Developer Guide: modules/xlsx/developer-guide.md
+              - Best Practices: modules/xlsx/best-practices.md
+              - Database: modules/xlsx/database.md
       - Image OCR:
-          - Overview: modules/image/overview.md
-          - Responsibilities: modules/image/responsibilities.md
-          - Installation: modules/image/installation.md
-          - Configuration: modules/image/configuration.md
-          - Workflows: modules/image/workflows.md
-          - Api: modules/image/api.md
-          - Database: modules/image/database.md
-          - Exceptions: modules/image/exceptions.md
-          - Logging: modules/image/logging.md
-          - Testing: modules/image/testing.md
-          - Deployment: modules/image/deployment.md
-          - Lld: modules/image/lld.md
+          - Overview:
+              - Overview: modules/image/overview.md
+              - Responsibilities: modules/image/responsibilities.md
+          - Setup:
+              - Installation: modules/image/installation.md
+              - Configuration: modules/image/configuration.md
+              - Compatibility: modules/image/compatibility.md
+          - Usage:
+              - Workflows: modules/image/workflows.md
+              - Usecases: modules/image/usecases.md
+              - Examples: modules/image/examples.md
+              - Cli Reference: modules/image/cli-reference.md
+          - Technical:
+              - Architecture: modules/image/architecture.md
+              - Lifecycle: modules/image/lifecycle.md
+              - Sequence Diagrams: modules/image/sequence-diagrams.md
+              - Lld: modules/image/lld.md
+              - Extension Points: modules/image/extension-points.md
+          - Reference:
+              - Parameters: modules/image/parameters.md
+              - Api: modules/image/api.md
+              - Integration: modules/image/integration.md
+          - Operations:
+              - Performance: modules/image/performance.md
+              - Security: modules/image/security.md
+              - Troubleshooting: modules/image/troubleshooting.md
+              - Deployment: modules/image/deployment.md
+              - Logging: modules/image/logging.md
+              - Exceptions: modules/image/exceptions.md
+              - Testing: modules/image/testing.md
+          - Development:
+              - Developer Guide: modules/image/developer-guide.md
+              - Best Practices: modules/image/best-practices.md
+              - Database: modules/image/database.md
       - Text JSON XML:
-          - Overview: modules/text/overview.md
-          - Responsibilities: modules/text/responsibilities.md
-          - Installation: modules/text/installation.md
-          - Configuration: modules/text/configuration.md
-          - Workflows: modules/text/workflows.md
-          - Api: modules/text/api.md
-          - Database: modules/text/database.md
-          - Exceptions: modules/text/exceptions.md
-          - Logging: modules/text/logging.md
-          - Testing: modules/text/testing.md
-          - Deployment: modules/text/deployment.md
-          - Lld: modules/text/lld.md
+          - Overview:
+              - Overview: modules/text/overview.md
+              - Responsibilities: modules/text/responsibilities.md
+          - Setup:
+              - Installation: modules/text/installation.md
+              - Configuration: modules/text/configuration.md
+              - Compatibility: modules/text/compatibility.md
+          - Usage:
+              - Workflows: modules/text/workflows.md
+              - Usecases: modules/text/usecases.md
+              - Examples: modules/text/examples.md
+              - Cli Reference: modules/text/cli-reference.md
+          - Technical:
+              - Architecture: modules/text/architecture.md
+              - Lifecycle: modules/text/lifecycle.md
+              - Sequence Diagrams: modules/text/sequence-diagrams.md
+              - Lld: modules/text/lld.md
+              - Extension Points: modules/text/extension-points.md
+          - Reference:
+              - Parameters: modules/text/parameters.md
+              - Api: modules/text/api.md
+              - Integration: modules/text/integration.md
+          - Operations:
+              - Performance: modules/text/performance.md
+              - Security: modules/text/security.md
+              - Troubleshooting: modules/text/troubleshooting.md
+              - Deployment: modules/text/deployment.md
+              - Logging: modules/text/logging.md
+              - Exceptions: modules/text/exceptions.md
+              - Testing: modules/text/testing.md
+          - Development:
+              - Developer Guide: modules/text/developer-guide.md
+              - Best Practices: modules/text/best-practices.md
+              - Database: modules/text/database.md
       - ZIP Archive:
-          - Overview: modules/archive/overview.md
-          - Responsibilities: modules/archive/responsibilities.md
-          - Installation: modules/archive/installation.md
-          - Configuration: modules/archive/configuration.md
-          - Workflows: modules/archive/workflows.md
-          - Api: modules/archive/api.md
-          - Database: modules/archive/database.md
-          - Exceptions: modules/archive/exceptions.md
-          - Logging: modules/archive/logging.md
-          - Testing: modules/archive/testing.md
-          - Deployment: modules/archive/deployment.md
-          - Lld: modules/archive/lld.md
+          - Overview:
+              - Overview: modules/archive/overview.md
+              - Responsibilities: modules/archive/responsibilities.md
+          - Setup:
+              - Installation: modules/archive/installation.md
+              - Configuration: modules/archive/configuration.md
+              - Compatibility: modules/archive/compatibility.md
+          - Usage:
+              - Workflows: modules/archive/workflows.md
+              - Usecases: modules/archive/usecases.md
+              - Examples: modules/archive/examples.md
+              - Cli Reference: modules/archive/cli-reference.md
+          - Technical:
+              - Architecture: modules/archive/architecture.md
+              - Lifecycle: modules/archive/lifecycle.md
+              - Sequence Diagrams: modules/archive/sequence-diagrams.md
+              - Lld: modules/archive/lld.md
+              - Extension Points: modules/archive/extension-points.md
+          - Reference:
+              - Parameters: modules/archive/parameters.md
+              - Api: modules/archive/api.md
+              - Integration: modules/archive/integration.md
+          - Operations:
+              - Performance: modules/archive/performance.md
+              - Security: modules/archive/security.md
+              - Troubleshooting: modules/archive/troubleshooting.md
+              - Deployment: modules/archive/deployment.md
+              - Logging: modules/archive/logging.md
+              - Exceptions: modules/archive/exceptions.md
+              - Testing: modules/archive/testing.md
+          - Development:
+              - Developer Guide: modules/archive/developer-guide.md
+              - Best Practices: modules/archive/best-practices.md
+              - Database: modules/archive/database.md
       - URL and Web:
-          - Overview: modules/url/overview.md
-          - Responsibilities: modules/url/responsibilities.md
-          - Installation: modules/url/installation.md
-          - Configuration: modules/url/configuration.md
-          - Workflows: modules/url/workflows.md
-          - Api: modules/url/api.md
-          - Database: modules/url/database.md
-          - Exceptions: modules/url/exceptions.md
-          - Logging: modules/url/logging.md
-          - Testing: modules/url/testing.md
-          - Deployment: modules/url/deployment.md
-          - Lld: modules/url/lld.md
+          - Overview:
+              - Overview: modules/url/overview.md
+              - Responsibilities: modules/url/responsibilities.md
+          - Setup:
+              - Installation: modules/url/installation.md
+              - Configuration: modules/url/configuration.md
+              - Compatibility: modules/url/compatibility.md
+          - Usage:
+              - Workflows: modules/url/workflows.md
+              - Usecases: modules/url/usecases.md
+              - Examples: modules/url/examples.md
+              - Cli Reference: modules/url/cli-reference.md
+          - Technical:
+              - Architecture: modules/url/architecture.md
+              - Lifecycle: modules/url/lifecycle.md
+              - Sequence Diagrams: modules/url/sequence-diagrams.md
+              - Lld: modules/url/lld.md
+              - Extension Points: modules/url/extension-points.md
+          - Reference:
+              - Parameters: modules/url/parameters.md
+              - Api: modules/url/api.md
+              - Integration: modules/url/integration.md
+          - Operations:
+              - Performance: modules/url/performance.md
+              - Security: modules/url/security.md
+              - Troubleshooting: modules/url/troubleshooting.md
+              - Deployment: modules/url/deployment.md
+              - Logging: modules/url/logging.md
+              - Exceptions: modules/url/exceptions.md
+              - Testing: modules/url/testing.md
+          - Development:
+              - Developer Guide: modules/url/developer-guide.md
+              - Best Practices: modules/url/best-practices.md
+              - Database: modules/url/database.md
       - Audio:
-          - Overview: modules/media-audio/overview.md
-          - Responsibilities: modules/media-audio/responsibilities.md
-          - Installation: modules/media-audio/installation.md
-          - Configuration: modules/media-audio/configuration.md
-          - Workflows: modules/media-audio/workflows.md
-          - Api: modules/media-audio/api.md
-          - Database: modules/media-audio/database.md
-          - Exceptions: modules/media-audio/exceptions.md
-          - Logging: modules/media-audio/logging.md
-          - Testing: modules/media-audio/testing.md
-          - Deployment: modules/media-audio/deployment.md
-          - Lld: modules/media-audio/lld.md
+          - Overview:
+              - Overview: modules/media-audio/overview.md
+              - Responsibilities: modules/media-audio/responsibilities.md
+          - Setup:
+              - Installation: modules/media-audio/installation.md
+              - Configuration: modules/media-audio/configuration.md
+              - Compatibility: modules/media-audio/compatibility.md
+          - Usage:
+              - Workflows: modules/media-audio/workflows.md
+              - Usecases: modules/media-audio/usecases.md
+              - Examples: modules/media-audio/examples.md
+              - Cli Reference: modules/media-audio/cli-reference.md
+          - Technical:
+              - Architecture: modules/media-audio/architecture.md
+              - Lifecycle: modules/media-audio/lifecycle.md
+              - Sequence Diagrams: modules/media-audio/sequence-diagrams.md
+              - Lld: modules/media-audio/lld.md
+              - Extension Points: modules/media-audio/extension-points.md
+          - Reference:
+              - Parameters: modules/media-audio/parameters.md
+              - Api: modules/media-audio/api.md
+              - Integration: modules/media-audio/integration.md
+          - Operations:
+              - Performance: modules/media-audio/performance.md
+              - Security: modules/media-audio/security.md
+              - Troubleshooting: modules/media-audio/troubleshooting.md
+              - Deployment: modules/media-audio/deployment.md
+              - Logging: modules/media-audio/logging.md
+              - Exceptions: modules/media-audio/exceptions.md
+              - Testing: modules/media-audio/testing.md
+          - Development:
+              - Developer Guide: modules/media-audio/developer-guide.md
+              - Best Practices: modules/media-audio/best-practices.md
+              - Database: modules/media-audio/database.md
       - Video:
-          - Overview: modules/media-video/overview.md
-          - Responsibilities: modules/media-video/responsibilities.md
-          - Installation: modules/media-video/installation.md
-          - Configuration: modules/media-video/configuration.md
-          - Workflows: modules/media-video/workflows.md
-          - Api: modules/media-video/api.md
-          - Database: modules/media-video/database.md
-          - Exceptions: modules/media-video/exceptions.md
-          - Logging: modules/media-video/logging.md
-          - Testing: modules/media-video/testing.md
-          - Deployment: modules/media-video/deployment.md
-          - Lld: modules/media-video/lld.md
+          - Overview:
+              - Overview: modules/media-video/overview.md
+              - Responsibilities: modules/media-video/responsibilities.md
+          - Setup:
+              - Installation: modules/media-video/installation.md
+              - Configuration: modules/media-video/configuration.md
+              - Compatibility: modules/media-video/compatibility.md
+          - Usage:
+              - Workflows: modules/media-video/workflows.md
+              - Usecases: modules/media-video/usecases.md
+              - Examples: modules/media-video/examples.md
+              - Cli Reference: modules/media-video/cli-reference.md
+          - Technical:
+              - Architecture: modules/media-video/architecture.md
+              - Lifecycle: modules/media-video/lifecycle.md
+              - Sequence Diagrams: modules/media-video/sequence-diagrams.md
+              - Lld: modules/media-video/lld.md
+              - Extension Points: modules/media-video/extension-points.md
+          - Reference:
+              - Parameters: modules/media-video/parameters.md
+              - Api: modules/media-video/api.md
+              - Integration: modules/media-video/integration.md
+          - Operations:
+              - Performance: modules/media-video/performance.md
+              - Security: modules/media-video/security.md
+              - Troubleshooting: modules/media-video/troubleshooting.md
+              - Deployment: modules/media-video/deployment.md
+              - Logging: modules/media-video/logging.md
+              - Exceptions: modules/media-video/exceptions.md
+              - Testing: modules/media-video/testing.md
+          - Development:
+              - Developer Guide: modules/media-video/developer-guide.md
+              - Best Practices: modules/media-video/best-practices.md
+              - Database: modules/media-video/database.md
       - YouTube:
-          - Overview: modules/media-youtube/overview.md
-          - Responsibilities: modules/media-youtube/responsibilities.md
-          - Installation: modules/media-youtube/installation.md
-          - Configuration: modules/media-youtube/configuration.md
-          - Workflows: modules/media-youtube/workflows.md
-          - Api: modules/media-youtube/api.md
-          - Database: modules/media-youtube/database.md
-          - Exceptions: modules/media-youtube/exceptions.md
-          - Logging: modules/media-youtube/logging.md
-          - Testing: modules/media-youtube/testing.md
-          - Deployment: modules/media-youtube/deployment.md
-          - Lld: modules/media-youtube/lld.md
+          - Overview:
+              - Overview: modules/media-youtube/overview.md
+              - Responsibilities: modules/media-youtube/responsibilities.md
+          - Setup:
+              - Installation: modules/media-youtube/installation.md
+              - Configuration: modules/media-youtube/configuration.md
+              - Compatibility: modules/media-youtube/compatibility.md
+          - Usage:
+              - Workflows: modules/media-youtube/workflows.md
+              - Usecases: modules/media-youtube/usecases.md
+              - Examples: modules/media-youtube/examples.md
+              - Cli Reference: modules/media-youtube/cli-reference.md
+          - Technical:
+              - Architecture: modules/media-youtube/architecture.md
+              - Lifecycle: modules/media-youtube/lifecycle.md
+              - Sequence Diagrams: modules/media-youtube/sequence-diagrams.md
+              - Lld: modules/media-youtube/lld.md
+              - Extension Points: modules/media-youtube/extension-points.md
+          - Reference:
+              - Parameters: modules/media-youtube/parameters.md
+              - Api: modules/media-youtube/api.md
+              - Integration: modules/media-youtube/integration.md
+          - Operations:
+              - Performance: modules/media-youtube/performance.md
+              - Security: modules/media-youtube/security.md
+              - Troubleshooting: modules/media-youtube/troubleshooting.md
+              - Deployment: modules/media-youtube/deployment.md
+              - Logging: modules/media-youtube/logging.md
+              - Exceptions: modules/media-youtube/exceptions.md
+              - Testing: modules/media-youtube/testing.md
+          - Development:
+              - Developer Guide: modules/media-youtube/developer-guide.md
+              - Best Practices: modules/media-youtube/best-practices.md
+              - Database: modules/media-youtube/database.md
       - Playwright Web Capture:
-          - Overview: modules/playwright/overview.md
-          - Responsibilities: modules/playwright/responsibilities.md
-          - Installation: modules/playwright/installation.md
-          - Configuration: modules/playwright/configuration.md
-          - Workflows: modules/playwright/workflows.md
-          - Api: modules/playwright/api.md
-          - Database: modules/playwright/database.md
-          - Exceptions: modules/playwright/exceptions.md
-          - Logging: modules/playwright/logging.md
-          - Testing: modules/playwright/testing.md
-          - Deployment: modules/playwright/deployment.md
-          - Lld: modules/playwright/lld.md
+          - Overview:
+              - Overview: modules/playwright/overview.md
+              - Responsibilities: modules/playwright/responsibilities.md
+          - Setup:
+              - Installation: modules/playwright/installation.md
+              - Configuration: modules/playwright/configuration.md
+              - Compatibility: modules/playwright/compatibility.md
+          - Usage:
+              - Workflows: modules/playwright/workflows.md
+              - Usecases: modules/playwright/usecases.md
+              - Examples: modules/playwright/examples.md
+              - Cli Reference: modules/playwright/cli-reference.md
+          - Technical:
+              - Architecture: modules/playwright/architecture.md
+              - Lifecycle: modules/playwright/lifecycle.md
+              - Sequence Diagrams: modules/playwright/sequence-diagrams.md
+              - Lld: modules/playwright/lld.md
+              - Extension Points: modules/playwright/extension-points.md
+          - Reference:
+              - Parameters: modules/playwright/parameters.md
+              - Api: modules/playwright/api.md
+              - Integration: modules/playwright/integration.md
+          - Operations:
+              - Performance: modules/playwright/performance.md
+              - Security: modules/playwright/security.md
+              - Troubleshooting: modules/playwright/troubleshooting.md
+              - Deployment: modules/playwright/deployment.md
+              - Logging: modules/playwright/logging.md
+              - Exceptions: modules/playwright/exceptions.md
+              - Testing: modules/playwright/testing.md
+          - Development:
+              - Developer Guide: modules/playwright/developer-guide.md
+              - Best Practices: modules/playwright/best-practices.md
+              - Database: modules/playwright/database.md
       - Database Metadata:
-          - Overview: modules/db/overview.md
-          - Responsibilities: modules/db/responsibilities.md
-          - Installation: modules/db/installation.md
-          - Configuration: modules/db/configuration.md
-          - Workflows: modules/db/workflows.md
-          - Api: modules/db/api.md
-          - Database: modules/db/database.md
-          - Exceptions: modules/db/exceptions.md
-          - Logging: modules/db/logging.md
-          - Testing: modules/db/testing.md
-          - Deployment: modules/db/deployment.md
-          - Lld: modules/db/lld.md
+          - Overview:
+              - Overview: modules/db/overview.md
+              - Responsibilities: modules/db/responsibilities.md
+          - Setup:
+              - Installation: modules/db/installation.md
+              - Configuration: modules/db/configuration.md
+              - Compatibility: modules/db/compatibility.md
+          - Usage:
+              - Workflows: modules/db/workflows.md
+              - Usecases: modules/db/usecases.md
+              - Examples: modules/db/examples.md
+              - Cli Reference: modules/db/cli-reference.md
+          - Technical:
+              - Architecture: modules/db/architecture.md
+              - Lifecycle: modules/db/lifecycle.md
+              - Sequence Diagrams: modules/db/sequence-diagrams.md
+              - Lld: modules/db/lld.md
+              - Extension Points: modules/db/extension-points.md
+          - Reference:
+              - Parameters: modules/db/parameters.md
+              - Api: modules/db/api.md
+              - Integration: modules/db/integration.md
+          - Operations:
+              - Performance: modules/db/performance.md
+              - Security: modules/db/security.md
+              - Troubleshooting: modules/db/troubleshooting.md
+              - Deployment: modules/db/deployment.md
+              - Logging: modules/db/logging.md
+              - Exceptions: modules/db/exceptions.md
+              - Testing: modules/db/testing.md
+          - Development:
+              - Developer Guide: modules/db/developer-guide.md
+              - Best Practices: modules/db/best-practices.md
+              - Database: modules/db/database.md
       - Graph Metadata:
-          - Overview: modules/graph/overview.md
-          - Responsibilities: modules/graph/responsibilities.md
-          - Installation: modules/graph/installation.md
-          - Configuration: modules/graph/configuration.md
-          - Workflows: modules/graph/workflows.md
-          - Api: modules/graph/api.md
-          - Database: modules/graph/database.md
-          - Exceptions: modules/graph/exceptions.md
-          - Logging: modules/graph/logging.md
-          - Testing: modules/graph/testing.md
-          - Deployment: modules/graph/deployment.md
-          - Lld: modules/graph/lld.md
+          - Overview:
+              - Overview: modules/graph/overview.md
+              - Responsibilities: modules/graph/responsibilities.md
+          - Setup:
+              - Installation: modules/graph/installation.md
+              - Configuration: modules/graph/configuration.md
+              - Compatibility: modules/graph/compatibility.md
+          - Usage:
+              - Workflows: modules/graph/workflows.md
+              - Usecases: modules/graph/usecases.md
+              - Examples: modules/graph/examples.md
+              - Cli Reference: modules/graph/cli-reference.md
+          - Technical:
+              - Architecture: modules/graph/architecture.md
+              - Lifecycle: modules/graph/lifecycle.md
+              - Sequence Diagrams: modules/graph/sequence-diagrams.md
+              - Lld: modules/graph/lld.md
+              - Extension Points: modules/graph/extension-points.md
+          - Reference:
+              - Parameters: modules/graph/parameters.md
+              - Api: modules/graph/api.md
+              - Integration: modules/graph/integration.md
+          - Operations:
+              - Performance: modules/graph/performance.md
+              - Security: modules/graph/security.md
+              - Troubleshooting: modules/graph/troubleshooting.md
+              - Deployment: modules/graph/deployment.md
+              - Logging: modules/graph/logging.md
+              - Exceptions: modules/graph/exceptions.md
+              - Testing: modules/graph/testing.md
+          - Development:
+              - Developer Guide: modules/graph/developer-guide.md
+              - Best Practices: modules/graph/best-practices.md
+              - Database: modules/graph/database.md
       - OpenAPI:
-          - Overview: modules/openapi/overview.md
-          - Responsibilities: modules/openapi/responsibilities.md
-          - Installation: modules/openapi/installation.md
-          - Configuration: modules/openapi/configuration.md
-          - Workflows: modules/openapi/workflows.md
-          - Api: modules/openapi/api.md
-          - Database: modules/openapi/database.md
-          - Exceptions: modules/openapi/exceptions.md
-          - Logging: modules/openapi/logging.md
-          - Testing: modules/openapi/testing.md
-          - Deployment: modules/openapi/deployment.md
-          - Lld: modules/openapi/lld.md
+          - Overview:
+              - Overview: modules/openapi/overview.md
+              - Responsibilities: modules/openapi/responsibilities.md
+          - Setup:
+              - Installation: modules/openapi/installation.md
+              - Configuration: modules/openapi/configuration.md
+              - Compatibility: modules/openapi/compatibility.md
+          - Usage:
+              - Workflows: modules/openapi/workflows.md
+              - Usecases: modules/openapi/usecases.md
+              - Examples: modules/openapi/examples.md
+              - Cli Reference: modules/openapi/cli-reference.md
+          - Technical:
+              - Architecture: modules/openapi/architecture.md
+              - Lifecycle: modules/openapi/lifecycle.md
+              - Sequence Diagrams: modules/openapi/sequence-diagrams.md
+              - Lld: modules/openapi/lld.md
+              - Extension Points: modules/openapi/extension-points.md
+          - Reference:
+              - Parameters: modules/openapi/parameters.md
+              - Api: modules/openapi/api.md
+              - Integration: modules/openapi/integration.md
+          - Operations:
+              - Performance: modules/openapi/performance.md
+              - Security: modules/openapi/security.md
+              - Troubleshooting: modules/openapi/troubleshooting.md
+              - Deployment: modules/openapi/deployment.md
+              - Logging: modules/openapi/logging.md
+              - Exceptions: modules/openapi/exceptions.md
+              - Testing: modules/openapi/testing.md
+          - Development:
+              - Developer Guide: modules/openapi/developer-guide.md
+              - Best Practices: modules/openapi/best-practices.md
+              - Database: modules/openapi/database.md
       - Codeflow:
-          - Overview: modules/codeflow/overview.md
-          - Responsibilities: modules/codeflow/responsibilities.md
-          - Installation: modules/codeflow/installation.md
-          - Configuration: modules/codeflow/configuration.md
-          - Workflows: modules/codeflow/workflows.md
-          - Api: modules/codeflow/api.md
-          - Database: modules/codeflow/database.md
-          - Exceptions: modules/codeflow/exceptions.md
-          - Logging: modules/codeflow/logging.md
-          - Testing: modules/codeflow/testing.md
-          - Deployment: modules/codeflow/deployment.md
-          - Lld: modules/codeflow/lld.md
+          - Overview:
+              - Overview: modules/codeflow/overview.md
+              - Responsibilities: modules/codeflow/responsibilities.md
+          - Setup:
+              - Installation: modules/codeflow/installation.md
+              - Configuration: modules/codeflow/configuration.md
+              - Compatibility: modules/codeflow/compatibility.md
+          - Usage:
+              - Workflows: modules/codeflow/workflows.md
+              - Usecases: modules/codeflow/usecases.md
+              - Examples: modules/codeflow/examples.md
+              - Cli Reference: modules/codeflow/cli-reference.md
+          - Technical:
+              - Architecture: modules/codeflow/architecture.md
+              - Lifecycle: modules/codeflow/lifecycle.md
+              - Sequence Diagrams: modules/codeflow/sequence-diagrams.md
+              - Lld: modules/codeflow/lld.md
+              - Extension Points: modules/codeflow/extension-points.md
+          - Reference:
+              - Parameters: modules/codeflow/parameters.md
+              - Api: modules/codeflow/api.md
+              - Integration: modules/codeflow/integration.md
+          - Operations:
+              - Performance: modules/codeflow/performance.md
+              - Security: modules/codeflow/security.md
+              - Troubleshooting: modules/codeflow/troubleshooting.md
+              - Deployment: modules/codeflow/deployment.md
+              - Logging: modules/codeflow/logging.md
+              - Exceptions: modules/codeflow/exceptions.md
+              - Testing: modules/codeflow/testing.md
+          - Development:
+              - Developer Guide: modules/codeflow/developer-guide.md
+              - Best Practices: modules/codeflow/best-practices.md
+              - Database: modules/codeflow/database.md
       - Log Analysis:
-          - Overview: modules/log/overview.md
-          - Responsibilities: modules/log/responsibilities.md
-          - Installation: modules/log/installation.md
-          - Configuration: modules/log/configuration.md
-          - Workflows: modules/log/workflows.md
-          - Api: modules/log/api.md
-          - Database: modules/log/database.md
-          - Exceptions: modules/log/exceptions.md
-          - Logging: modules/log/logging.md
-          - Testing: modules/log/testing.md
-          - Deployment: modules/log/deployment.md
-          - Lld: modules/log/lld.md
+          - Overview:
+              - Overview: modules/log/overview.md
+              - Responsibilities: modules/log/responsibilities.md
+          - Setup:
+              - Installation: modules/log/installation.md
+              - Configuration: modules/log/configuration.md
+              - Compatibility: modules/log/compatibility.md
+          - Usage:
+              - Workflows: modules/log/workflows.md
+              - Usecases: modules/log/usecases.md
+              - Examples: modules/log/examples.md
+              - Cli Reference: modules/log/cli-reference.md
+          - Technical:
+              - Architecture: modules/log/architecture.md
+              - Lifecycle: modules/log/lifecycle.md
+              - Sequence Diagrams: modules/log/sequence-diagrams.md
+              - Lld: modules/log/lld.md
+              - Extension Points: modules/log/extension-points.md
+          - Reference:
+              - Parameters: modules/log/parameters.md
+              - Api: modules/log/api.md
+              - Integration: modules/log/integration.md
+          - Operations:
+              - Performance: modules/log/performance.md
+              - Security: modules/log/security.md
+              - Troubleshooting: modules/log/troubleshooting.md
+              - Deployment: modules/log/deployment.md
+              - Logging: modules/log/logging.md
+              - Exceptions: modules/log/exceptions.md
+              - Testing: modules/log/testing.md
+          - Development:
+              - Developer Guide: modules/log/developer-guide.md
+              - Best Practices: modules/log/best-practices.md
+              - Database: modules/log/database.md
       - AI Assistant Tools:
-          - Overview: modules/tools-assistant/overview.md
-          - Responsibilities: modules/tools-assistant/responsibilities.md
-          - Installation: modules/tools-assistant/installation.md
-          - Configuration: modules/tools-assistant/configuration.md
-          - Workflows: modules/tools-assistant/workflows.md
-          - Api: modules/tools-assistant/api.md
-          - Database: modules/tools-assistant/database.md
-          - Exceptions: modules/tools-assistant/exceptions.md
-          - Logging: modules/tools-assistant/logging.md
-          - Testing: modules/tools-assistant/testing.md
-          - Deployment: modules/tools-assistant/deployment.md
-          - Lld: modules/tools-assistant/lld.md
+          - Overview:
+              - Overview: modules/tools-assistant/overview.md
+              - Responsibilities: modules/tools-assistant/responsibilities.md
+          - Setup:
+              - Installation: modules/tools-assistant/installation.md
+              - Configuration: modules/tools-assistant/configuration.md
+              - Compatibility: modules/tools-assistant/compatibility.md
+          - Usage:
+              - Workflows: modules/tools-assistant/workflows.md
+              - Usecases: modules/tools-assistant/usecases.md
+              - Examples: modules/tools-assistant/examples.md
+              - Cli Reference: modules/tools-assistant/cli-reference.md
+          - Technical:
+              - Architecture: modules/tools-assistant/architecture.md
+              - Lifecycle: modules/tools-assistant/lifecycle.md
+              - Sequence Diagrams: modules/tools-assistant/sequence-diagrams.md
+              - Lld: modules/tools-assistant/lld.md
+              - Extension Points: modules/tools-assistant/extension-points.md
+          - Reference:
+              - Parameters: modules/tools-assistant/parameters.md
+              - Api: modules/tools-assistant/api.md
+              - Integration: modules/tools-assistant/integration.md
+          - Operations:
+              - Performance: modules/tools-assistant/performance.md
+              - Security: modules/tools-assistant/security.md
+              - Troubleshooting: modules/tools-assistant/troubleshooting.md
+              - Deployment: modules/tools-assistant/deployment.md
+              - Logging: modules/tools-assistant/logging.md
+              - Exceptions: modules/tools-assistant/exceptions.md
+              - Testing: modules/tools-assistant/testing.md
+          - Development:
+              - Developer Guide: modules/tools-assistant/developer-guide.md
+              - Best Practices: modules/tools-assistant/best-practices.md
+              - Database: modules/tools-assistant/database.md
       - Skill Builder:
-          - Overview: modules/tools-skill-builder/overview.md
-          - Responsibilities: modules/tools-skill-builder/responsibilities.md
-          - Installation: modules/tools-skill-builder/installation.md
-          - Configuration: modules/tools-skill-builder/configuration.md
-          - Workflows: modules/tools-skill-builder/workflows.md
-          - Api: modules/tools-skill-builder/api.md
-          - Database: modules/tools-skill-builder/database.md
-          - Exceptions: modules/tools-skill-builder/exceptions.md
-          - Logging: modules/tools-skill-builder/logging.md
-          - Testing: modules/tools-skill-builder/testing.md
-          - Deployment: modules/tools-skill-builder/deployment.md
-          - Lld: modules/tools-skill-builder/lld.md
+          - Overview:
+              - Overview: modules/tools-skill-builder/overview.md
+              - Responsibilities: modules/tools-skill-builder/responsibilities.md
+          - Setup:
+              - Installation: modules/tools-skill-builder/installation.md
+              - Configuration: modules/tools-skill-builder/configuration.md
+              - Compatibility: modules/tools-skill-builder/compatibility.md
+          - Usage:
+              - Workflows: modules/tools-skill-builder/workflows.md
+              - Usecases: modules/tools-skill-builder/usecases.md
+              - Examples: modules/tools-skill-builder/examples.md
+              - Cli Reference: modules/tools-skill-builder/cli-reference.md
+          - Technical:
+              - Architecture: modules/tools-skill-builder/architecture.md
+              - Lifecycle: modules/tools-skill-builder/lifecycle.md
+              - Sequence Diagrams: modules/tools-skill-builder/sequence-diagrams.md
+              - Lld: modules/tools-skill-builder/lld.md
+              - Extension Points: modules/tools-skill-builder/extension-points.md
+          - Reference:
+              - Parameters: modules/tools-skill-builder/parameters.md
+              - Api: modules/tools-skill-builder/api.md
+              - Integration: modules/tools-skill-builder/integration.md
+          - Operations:
+              - Performance: modules/tools-skill-builder/performance.md
+              - Security: modules/tools-skill-builder/security.md
+              - Troubleshooting: modules/tools-skill-builder/troubleshooting.md
+              - Deployment: modules/tools-skill-builder/deployment.md
+              - Logging: modules/tools-skill-builder/logging.md
+              - Exceptions: modules/tools-skill-builder/exceptions.md
+              - Testing: modules/tools-skill-builder/testing.md
+          - Development:
+              - Developer Guide: modules/tools-skill-builder/developer-guide.md
+              - Best Practices: modules/tools-skill-builder/best-practices.md
+              - Database: modules/tools-skill-builder/database.md
   - API:
       - Overview: api/overview.md
       - Authentication: api/authentication.md

@@ -1,12 +1,41 @@
 # Graph Metadata Low-Level Design
 
+## Class and module responsibilities
+
+| Symbol | Responsibility |
+|--------|----------------|
+| `extract_to_markdown` | Public entry / orchestration |
+| `Neo4jAdapter` | Public entry / orchestration |
+| `GraphRunConfig` | Public entry / orchestration |
+
+## Call sequence (CLI)
+
 ```mermaid
-flowchart TD
-    Request[CLI_or_API_request] --> Options[Parse_options]
-    Options --> Validate[Validate_input]
-    Validate --> Convert[graph_conversion]
-    Convert --> Render[Render_Markdown]
-    Render --> Return[Return_or_download_result]
+sequenceDiagram
+    participant Main as main
+    participant Parser as argparse
+    participant Core as converter
+    Main->>Parser: parse argv
+    Parser->>Core: options + paths
+    Core-->>Main: result
 ```
 
-The module should keep parsing, conversion, rendering, and interface concerns separated enough that CLI and API paths can reuse the same core behavior.
+## File map
+
+| Path | Role |
+|------|------|
+| `src\md_generator\graph\__init__.py` | Implementation |
+| `src\md_generator\graph\adapters\__init__.py` | Implementation |
+| `src\md_generator\graph\adapters\factory.py` | Implementation |
+| `src\md_generator\graph\adapters\neo4j_adapter.py` | Implementation |
+| `src\md_generator\graph\adapters\networkx_adapter.py` | Implementation |
+| `src\md_generator\graph\api\__init__.py` | Implementation |
+| `src\md_generator\graph\api\main.py` | Implementation |
+| `src\md_generator\graph\api\mcp_server.py` | Implementation |
+| `src\md_generator\graph\api\run.py` | Implementation |
+| `src\md_generator\graph\api\schemas.py` | Implementation |
+| `src\md_generator\graph\api\settings.py` | Implementation |
+| `src\md_generator\graph\cli\__init__.py` | Implementation |
+| ... | (28 Python files total) |
+
+Graph adapters: `graph/adapters/neo4j_adapter.py`, `networkx_adapter.py`.
