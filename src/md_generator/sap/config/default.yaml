@@ -1,0 +1,62 @@
+input:
+  paths: []
+
+output:
+  path: output/sap-md
+  split_files: true
+  write_manifest: true
+  markdown_cross_links: true
+
+features:
+  include:
+    - entities
+    - technical
+    - functional
+    - relationships
+    - lineage
+    - governance
+    - authorization
+    - validations
+    - graphs
+    - chunks
+    - json_output
+  exclude: []
+
+parser:
+  plugins: []
+  include_abap: true
+  include_cds: true
+  include_ddic: true
+  include_odata: true
+  include_bapi: true
+  include_idoc: true
+  include_transport: true
+
+analyzer:
+  lineage: true
+  governance: true
+  relationships: true
+  validations: true
+  authorization: true
+  semantics: true
+
+chunking:
+  enabled: false
+  types:
+    - entity
+    - relationship
+    - validation
+    - authorization
+    - lineage
+
+graph:
+  enabled: false
+  mermaid: true
+  json_export: true
+
+performance:
+  workers: 4
+  cache_dir: null
+  incremental: true
+  stream_threshold_mb: 5
+  intelligence_list_cap: 80

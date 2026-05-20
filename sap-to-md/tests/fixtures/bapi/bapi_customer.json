@@ -1,0 +1,7 @@
+{
+  "name": "BAPI_CUSTOMER_GETDETAIL",
+  "parameters": [
+    {"name": "CUSTOMERNO", "type": "CHAR10"},
+    {"name": "CUSTOMERDATA", "type": "STRUCTURE"}
+  ]
+}
