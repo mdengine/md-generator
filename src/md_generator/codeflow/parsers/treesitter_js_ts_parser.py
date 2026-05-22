@@ -275,7 +275,12 @@ class TreesitterJsTsParser:
         self._language = language
 
     def parse_file(self, path: Path, project_root: Path) -> FileParseResult:
-        fr = FileParseResult(path=path.resolve(), language=self.language)
+        fr = FileParseResult(
+            path=path.resolve(),
+            language=self.language,
+            parse_backend="treesitter",
+            grammar_package="tree-sitter-javascript",
+        )
         source = path.read_bytes()
         parser = Parser(self._language)
         tree = parser.parse(source)

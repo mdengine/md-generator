@@ -377,7 +377,8 @@ def build_parser() -> argparse.ArgumentParser:
         "--parser-mode",
         choices=("auto", "treesitter", "external"),
         default="auto",
-        help="C++: treesitter=Tree-sitter only; external=clang only; auto=current fallback",
+        help="auto=native parsers; treesitter=Tree-sitter for java/python/go/php/cpp (+ JS/TS when installed); "
+        "external=clang only for C++",
     )
     scan.add_argument(
         "--ui-cfg-max-methods",

@@ -108,10 +108,15 @@ class StructuralEdge:
     line: int | None = None
 
 
+ParseBackend = Literal["native", "treesitter"]
+
+
 @dataclass
 class FileParseResult:
     path: Path
     language: str
+    parse_backend: ParseBackend = "native"
+    grammar_package: str | None = None
     symbol_ids: list[str] = field(default_factory=list)
     calls: list[CallSite] = field(default_factory=list)
     branches: list[BranchPoint] = field(default_factory=list)

@@ -25,7 +25,12 @@ class PhpParser:
     language = "php"
 
     def parse_file(self, path: Path, project_root: Path) -> FileParseResult:
-        fr = FileParseResult(path=path.resolve(), language=self.language)
+        fr = FileParseResult(
+            path=path.resolve(),
+            language=self.language,
+            parse_backend="native",
+            grammar_package="codeflow_php_dump",
+        )
         tool = find_tools_dir("codeflow_php_dump")
         if not tool or not (tool / "dump.php").is_file():
             logger.debug("codeflow_php_dump missing; skip %s", path)

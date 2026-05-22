@@ -82,7 +82,7 @@ pip install "mdengine[all]"
 | `openapi` | **OpenAPI / Swagger → Markdown** (`prance`, `openapi-spec-validator`, PyYAML) |
 | `codeflow` | **Static codeflow / call graphs → Markdown** (`networkx`, `javalang`; core scanners) |
 | `codeflow-worker` | Optional **Celery + Redis** workers for the codeflow API async path |
-| `codeflow-treesitter` | **Tree-sitter** parsers (JS/TS/TSX, C++) for richer codeflow slices |
+| `codeflow-treesitter` | **Tree-sitter** parsers (JS/TS/TSX, C++, Java, Python, Go, PHP); use `--parser-mode treesitter` — see [codeflow-to-md/docs/parser-backends.md](codeflow-to-md/docs/parser-backends.md) |
 | `codeflow-clang` | **libclang** bindings for C/C++ parsing when used by the codeflow pipeline |
 | `codeflow-semantic` | **Semantic clustering** (SentenceTransformers, scikit-learn, numpy; large install) |
 | `log` | **Log files → Markdown** (`pandas`, PyYAML, date parsing) |

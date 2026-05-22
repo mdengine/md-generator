@@ -349,7 +349,12 @@ class JavaParser:
         root = project_root.resolve()
         key = _rel_key(path, root)
         text = path.read_text(encoding="utf-8", errors="replace")
-        fr = FileParseResult(path=path.resolve(), language=self.language)
+        fr = FileParseResult(
+            path=path.resolve(),
+            language=self.language,
+            parse_backend="native",
+            grammar_package="javalang",
+        )
 
         try:
             tree = javalang.parse.parse(text)
