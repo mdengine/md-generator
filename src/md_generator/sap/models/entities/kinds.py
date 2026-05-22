@@ -1,0 +1,19 @@
+from __future__ import annotations
+
+from enum import Enum
+
+
+class SapObjectKind(str, Enum):
+    PROGRAM = "PROGRAM"
+    FUNCTION_MODULE = "FUNCTION_MODULE"
+    CDS_VIEW = "CDS_VIEW"
+    TABLE = "TABLE"
+    DATA_ELEMENT = "DATA_ELEMENT"
+    DOMAIN = "DOMAIN"
+    BAPI = "BAPI"
+    IDOC = "IDOC"
+    ODATA_ENTITY = "ODATA_ENTITY"
+    ODATA_SERVICE = "ODATA_SERVICE"
+    TRANSPORT_OBJECT = "TRANSPORT_OBJECT"
+    RFC_METADATA = "RFC_METADATA"
+    UNKNOWN = "UNKNOWN"

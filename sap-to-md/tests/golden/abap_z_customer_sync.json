@@ -1,0 +1,15 @@
+{
+  "program": "Z_CUSTOMER_SYNC",
+  "tables": ["KNA1", "VBAK"],
+  "joins": [
+    {"table": "VBAK", "join_type": "JOIN", "condition": ""}
+  ],
+  "functions": ["BAPI_CUSTOMER_GETDETAIL"],
+  "validations": [],
+  "auth_checks": [
+    {"object": "Z_CUST", "fields": ["ACTVT=02"], "line": 0}
+  ],
+  "includes": ["Z_CUSTOMER_FORMS"],
+  "methods": [],
+  "performs": []
+}

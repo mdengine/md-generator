@@ -8,7 +8,8 @@ def main(argv: list[str] | None = None) -> int:
     if len(argv) < 1:
         print(
             "Usage: mdengine ai assist … | mdengine ai export … | mdengine skill build … | mdengine db-to-md … | "
-            "mdengine log-to-md … | mdengine graph-to-md … | mdengine openapi-to-md generate … | mdengine codeflow-to-md scan …",
+            "mdengine log-to-md … | mdengine sap-to-md … | mdengine graph-to-md … | mdengine openapi-to-md generate … | "
+            "mdengine codeflow-to-md scan …",
             file=sys.stderr,
         )
         return 2
@@ -73,9 +74,14 @@ def main(argv: list[str] | None = None) -> int:
         from md_generator.codeflow.cli.main import main as cf_main
 
         return cf_main(argv[1:])
+    if argv[0] == "sap-to-md":
+        from md_generator.sap.cli.main import main as sap_main
+
+        return sap_main(argv[1:])
     print(
         "Usage: mdengine ai assist … | mdengine ai export … | mdengine skill build … | mdengine db-to-md … | "
-        "mdengine log-to-md … | mdengine graph-to-md … | mdengine openapi-to-md generate … | mdengine codeflow-to-md scan …",
+        "mdengine log-to-md … | mdengine sap-to-md … | mdengine graph-to-md … | mdengine openapi-to-md generate … | "
+        "mdengine codeflow-to-md scan …",
         file=sys.stderr,
     )
     return 2

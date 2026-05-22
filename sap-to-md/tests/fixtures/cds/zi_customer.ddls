@@ -1,0 +1,9 @@
+@AbapCatalog.sqlViewName: 'ZICUSTOMER'
+@Semantics.businessObject.name: 'Customer'
+define view ZI_Customer as select from kna1 as Customer
+  association [0..*] to vbak as _Order on $projection.kunnr = _Order.kunnr
+{
+  key Customer.kunnr,
+      Customer.name1,
+      Customer.land1
+}
