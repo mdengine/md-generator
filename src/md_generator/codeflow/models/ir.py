@@ -130,3 +130,5 @@ class FileParseResult:
     structural_edges: list[StructuralEdge] = field(default_factory=list)
     # Java compilation unit package (``a.b.c``), for FQN resolution; other languages ignore.
     java_package: str | None = None
+    # Tree-sitter reported syntax errors in the parse tree; partial extraction may still apply.
+    parse_had_errors: bool = False

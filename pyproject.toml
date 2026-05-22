@@ -137,6 +137,9 @@ codeflow-treesitter = [
   "tree-sitter-python>=0.23.0",
   "tree-sitter-go>=0.23.0",
   "tree-sitter-php>=0.23.0",
+  "tree-sitter-rust>=0.23.0",
+  "tree-sitter-kotlin>=0.23.0",
+  "tree-sitter-c-sharp>=0.23.0",
 ]
 codeflow-clang = [
   "clang>=16.0.0",

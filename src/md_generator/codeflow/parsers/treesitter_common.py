@@ -124,3 +124,26 @@ def annotation_simple_name(node: Any, source: bytes) -> str:
         if name:
             return decode_text(source, name).strip().lstrip("@")
     return trim(decode_text(source, node)).lstrip("@").split("(")[0].split()[0]
+
+
+def function_body_node(node: Any) -> Any | None:
+    """Kotlin/Rust-style function body (``function_body`` child or ``body`` field)."""
+    body = node.child_by_field_name("body")
+    if body is not None:
+        return body
+    for ch in getattr(node, "children", []) or []:
+        if ch.type in ("function_body", "block"):
+            return ch
+    return None
+
+
+def mark_parse_errors(fr: FileParseResult, root_node: Any, path: Path, *, language: str) -> None:
+    """Record Tree-sitter syntax errors and log a warning; caller continues partial extraction."""
+    if not getattr(root_node, "has_error", False):
+        return
+    fr.parse_had_errors = True
+    logger.warning(
+        "tree-sitter %s parse has errors (partial graph): %s",
+        language,
+        path,
+    )

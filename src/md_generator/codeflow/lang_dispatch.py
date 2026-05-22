@@ -14,6 +14,9 @@ LANG_EXTENSIONS: dict[str, frozenset[str]] = {
     "cpp": frozenset({".c", ".h", ".cc", ".cpp", ".cxx", ".hpp", ".hh", ".hxx"}),
     "go": frozenset({".go"}),
     "php": frozenset({".php"}),
+    "rust": frozenset({".rs"}),
+    "kotlin": frozenset({".kt", ".kts"}),
+    "csharp": frozenset({".cs"}),
 }
 
 # All keys used when ``languages`` is ``mixed``
@@ -38,6 +41,12 @@ def normalize_language_filter(languages: str) -> frozenset[str]:
             parts.append("tsx")
         elif p in ("c", "c++", "cxx", "cpp", "cplusplus"):
             parts.append("cpp")
+        elif p == "rs":
+            parts.append("rust")
+        elif p == "kt":
+            parts.append("kotlin")
+        elif p in ("cs", "c#", "csharp"):
+            parts.append("csharp")
         else:
             parts.append(p)
     return frozenset(parts) if parts else MIXED_LANG_KEYS

@@ -65,5 +65,23 @@ def enrich_parse_results_with_ir(results: list[FileParseResult], cfg: ScanConfig
                 populate_ir_methods_php(fr)
         elif fr.language == "cpp" and cfg.cfg_ir_cpp:
             populate_ir_methods_cpp(fr, root)
+        elif fr.language == "rust" and fr.parse_backend == "treesitter":
+            from md_generator.codeflow.parsers.adapters.treesitter_rust_adapter import (
+                populate_ir_methods_rust_treesitter,
+            )
+
+            populate_ir_methods_rust_treesitter(fr, root)
+        elif fr.language == "kotlin" and fr.parse_backend == "treesitter":
+            from md_generator.codeflow.parsers.adapters.treesitter_kotlin_adapter import (
+                populate_ir_methods_kotlin_treesitter,
+            )
+
+            populate_ir_methods_kotlin_treesitter(fr, root)
+        elif fr.language == "csharp" and fr.parse_backend == "treesitter":
+            from md_generator.codeflow.parsers.adapters.treesitter_csharp_adapter import (
+                populate_ir_methods_csharp_treesitter,
+            )
+
+            populate_ir_methods_csharp_treesitter(fr, root)
         else:
             fr.ir_methods = []

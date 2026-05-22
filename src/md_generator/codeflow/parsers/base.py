@@ -55,3 +55,13 @@ def register_defaults(reg: ParserRegistry) -> None:
         reg.register(TreesitterJsTsParser("tsx", Language(tsts.language_tsx())))
     except ImportError:
         pass
+    try:
+        from md_generator.codeflow.parsers.treesitter_csharp_parser import TreesitterCsharpParser
+        from md_generator.codeflow.parsers.treesitter_kotlin_parser import TreesitterKotlinParser
+        from md_generator.codeflow.parsers.treesitter_rust_parser import TreesitterRustParser
+
+        reg.register(TreesitterRustParser())
+        reg.register(TreesitterKotlinParser())
+        reg.register(TreesitterCsharpParser())
+    except ImportError:
+        pass
