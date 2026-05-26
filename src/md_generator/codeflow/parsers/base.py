@@ -55,3 +55,31 @@ def register_defaults(reg: ParserRegistry) -> None:
         reg.register(TreesitterJsTsParser("tsx", Language(tsts.language_tsx())))
     except ImportError:
         pass
+    try:
+        from md_generator.codeflow.parsers.treesitter_csharp_parser import TreesitterCsharpParser
+        from md_generator.codeflow.parsers.treesitter_kotlin_parser import TreesitterKotlinParser
+        from md_generator.codeflow.parsers.treesitter_rust_parser import TreesitterRustParser
+
+        reg.register(TreesitterRustParser())
+        reg.register(TreesitterKotlinParser())
+        reg.register(TreesitterCsharpParser())
+    except ImportError:
+        pass
+    try:
+        from md_generator.codeflow.parsers.treesitter_lua_parser import TreesitterLuaParser
+        from md_generator.codeflow.parsers.treesitter_ruby_parser import TreesitterRubyParser
+        from md_generator.codeflow.parsers.treesitter_swift_parser import TreesitterSwiftParser
+
+        reg.register(TreesitterSwiftParser())
+        reg.register(TreesitterRubyParser())
+        reg.register(TreesitterLuaParser())
+    except ImportError:
+        pass
+    try:
+        from md_generator.codeflow.parsers.treesitter_scala_parser import TreesitterScalaParser
+        from md_generator.codeflow.parsers.treesitter_zig_parser import TreesitterZigParser
+
+        reg.register(TreesitterScalaParser())
+        reg.register(TreesitterZigParser())
+    except ImportError:
+        pass

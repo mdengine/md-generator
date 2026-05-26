@@ -51,7 +51,12 @@ class PythonParser:
         key = _rel_key(path, root)
         text = path.read_text(encoding="utf-8", errors="replace")
         tree = ast.parse(text, filename=str(path))
-        fr = FileParseResult(path=path.resolve(), language=self.language)
+        fr = FileParseResult(
+            path=path.resolve(),
+            language=self.language,
+            parse_backend="native",
+            grammar_package="ast",
+        )
 
         self._emit_module_import_edges(tree, key, fr)
 

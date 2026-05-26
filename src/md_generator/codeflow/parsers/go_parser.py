@@ -25,7 +25,12 @@ class GoParser:
     language = "go"
 
     def parse_file(self, path: Path, project_root: Path) -> FileParseResult:
-        fr = FileParseResult(path=path.resolve(), language=self.language)
+        fr = FileParseResult(
+            path=path.resolve(),
+            language=self.language,
+            parse_backend="native",
+            grammar_package="codeflow_go_dump",
+        )
         tool = find_tools_dir("codeflow_go_dump")
         if not tool or not (tool / "main.go").is_file():
             logger.debug("codeflow_go_dump tool missing; skip %s", path)

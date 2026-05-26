@@ -108,10 +108,15 @@ class StructuralEdge:
     line: int | None = None
 
 
+ParseBackend = Literal["native", "treesitter"]
+
+
 @dataclass
 class FileParseResult:
     path: Path
     language: str
+    parse_backend: ParseBackend = "native"
+    grammar_package: str | None = None
     symbol_ids: list[str] = field(default_factory=list)
     calls: list[CallSite] = field(default_factory=list)
     branches: list[BranchPoint] = field(default_factory=list)
@@ -125,3 +130,5 @@ class FileParseResult:
     structural_edges: list[StructuralEdge] = field(default_factory=list)
     # Java compilation unit package (``a.b.c``), for FQN resolution; other languages ignore.
     java_package: str | None = None
+    # Tree-sitter reported syntax errors in the parse tree; partial extraction may still apply.
+    parse_had_errors: bool = False

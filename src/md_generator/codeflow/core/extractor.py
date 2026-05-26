@@ -172,6 +172,22 @@ def _resolve_scan_entry_ids(cfg: ScanConfig, g: CodeflowGraph, all_entries: list
     return entry_ids, warnings
 
 
+def _parse_backend_summary_lines(parse_results: list[FileParseResult]) -> list[str]:
+    from collections import Counter
+
+    counts: Counter[tuple[str, str, str | None]] = Counter()
+    for fr in parse_results:
+        counts[(fr.language, fr.parse_backend, fr.grammar_package)] += 1
+    if not counts:
+        return []
+    lines = ["## Parse backends", ""]
+    for (lang, backend, gram), n in sorted(counts.items()):
+        gpart = f" (`{gram}`)" if gram else ""
+        lines.append(f"- **{lang}** / {backend}{gpart}: {n} file(s)")
+    lines.append("")
+    return lines
+
+
 def _write_scan_summary(
     path: Path,
     *,
@@ -183,6 +199,7 @@ def _write_scan_summary(
     warnings: list[str],
     cfg: ScanConfig,
     pr_impact: dict[str, Any] | None = None,
+    parse_results: list[FileParseResult] | None = None,
 ) -> None:
     lines = [
         "# Scan summary",
@@ -218,6 +235,10 @@ def _write_scan_summary(
         f"- **enable_dependency_graph:** {cfg.enable_dependency_graph}",
         f"- **structural_graph_enabled:** {cfg.structural_graph_enabled()}",
         f"- **parser_mode:** `{cfg.parser_mode}`",
+    ]
+    if parse_results:
+        lines.extend(_parse_backend_summary_lines(parse_results))
+    lines += [
         f"- **ui_cfg_max_methods:** {cfg.ui_cfg_max_methods}",
         f"- **intelligence_transitive_callers:** {cfg.intelligence_transitive_callers}",
         f"- **emit_system_graph_stats:** {cfg.emit_system_graph_stats}",
@@ -448,6 +469,12 @@ def run_scan(cfg: ScanConfig, *, workspace: LoadedWorkspace | None = None) -> Pa
     all_entries = [e for pr in parse_results for e in pr.entries]
     entry_ids, scan_warnings = _resolve_scan_entry_ids(cfg, g, all_entries)
     scan_warnings = scan_warnings_pre + scan_warnings
+    from md_generator.codeflow.parsers.capability_registry import capability_warnings
+
+    for lang in sorted({fr.language for fr in parse_results}):
+        scan_warnings.extend(
+            capability_warnings(lang, parser_mode=cfg.parser_mode, emit_cfg=cfg.emit_cfg),
+        )
     scan_warnings.extend(scan_semantic_warnings)
 
     fmts = {x.strip().lower() for x in cfg.formats}
@@ -920,6 +947,7 @@ def run_scan(cfg: ScanConfig, *, workspace: LoadedWorkspace | None = None) -> Pa
             warnings=scan_warnings,
             cfg=cfg,
             pr_impact=pr_impact_payload,
+            parse_results=parse_results,
         )
 
     return out
