@@ -23,6 +23,9 @@ def test_lang_for_path() -> None:
     assert lang_for_path(Path("Main.kt")) == "kotlin"
     assert lang_for_path(Path("App.kts")) == "kotlin"
     assert lang_for_path(Path("Program.cs")) == "csharp"
+    assert lang_for_path(Path("App.swift")) == "swift"
+    assert lang_for_path(Path("demo.rb")) == "ruby"
+    assert lang_for_path(Path("init.lua")) == "lua"
 
 
 def test_normalize_rust_kotlin_csharp_aliases() -> None:
@@ -30,6 +33,13 @@ def test_normalize_rust_kotlin_csharp_aliases() -> None:
     assert normalize_language_filter("kt") == frozenset({"kotlin"})
     assert normalize_language_filter("cs") == frozenset({"csharp"})
     assert normalize_language_filter("c#") == frozenset({"csharp"})
+
+
+def test_normalize_swift_ruby_lua_aliases() -> None:
+    assert normalize_language_filter("swift") == frozenset({"swift"})
+    assert normalize_language_filter("rb") == frozenset({"ruby"})
+    assert normalize_language_filter("ruby") == frozenset({"ruby"})
+    assert normalize_language_filter("lua") == frozenset({"lua"})
 
 
 def test_should_parse_filter() -> None:

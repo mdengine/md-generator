@@ -83,5 +83,23 @@ def enrich_parse_results_with_ir(results: list[FileParseResult], cfg: ScanConfig
             )
 
             populate_ir_methods_csharp_treesitter(fr, root)
+        elif fr.language == "swift" and fr.parse_backend == "treesitter":
+            from md_generator.codeflow.parsers.adapters.treesitter_swift_adapter import (
+                populate_ir_methods_swift_treesitter,
+            )
+
+            populate_ir_methods_swift_treesitter(fr, root)
+        elif fr.language == "ruby" and fr.parse_backend == "treesitter":
+            from md_generator.codeflow.parsers.adapters.treesitter_ruby_adapter import (
+                populate_ir_methods_ruby_treesitter,
+            )
+
+            populate_ir_methods_ruby_treesitter(fr, root)
+        elif fr.language == "lua" and fr.parse_backend == "treesitter":
+            from md_generator.codeflow.parsers.adapters.treesitter_lua_adapter import (
+                populate_ir_methods_lua_treesitter,
+            )
+
+            populate_ir_methods_lua_treesitter(fr, root)
         else:
             fr.ir_methods = []

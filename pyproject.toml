@@ -140,6 +140,9 @@ codeflow-treesitter = [
   "tree-sitter-rust>=0.23.0",
   "tree-sitter-kotlin>=0.23.0",
   "tree-sitter-c-sharp>=0.23.0",
+  "tree-sitter-swift>=0.7.2",
+  "tree-sitter-ruby>=0.23.0",
+  "tree-sitter-lua>=0.2.0",
 ]
 codeflow-clang = [
   "clang>=16.0.0",

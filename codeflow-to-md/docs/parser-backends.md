@@ -4,8 +4,8 @@
 
 | Mode | Behavior |
 |------|----------|
-| `auto` (default) | Native parsers: Java (`javalang`), Python (`ast`), Go (`codeflow_go_dump` + `go` on PATH), PHP (`codeflow_php_dump` + `php`), JS/TS (Tree-sitter when `codeflow-treesitter` installed), C++ (libclang with Tree-sitter fallback), **Rust / Kotlin / C#** (Tree-sitter when extra installed). |
-| `treesitter` | Tree-sitter for **java**, **python**, **go**, **php**, **cpp**, **rust**, **kotlin**, **csharp**; JS/TS via registry when grammars installed. |
+| `auto` (default) | Native parsers: Java (`javalang`), Python (`ast`), Go (`codeflow_go_dump` + `go` on PATH), PHP (`codeflow_php_dump` + `php`), JS/TS (Tree-sitter when `codeflow-treesitter` installed), C++ (libclang with Tree-sitter fallback), **Rust / Kotlin / C# / Swift / Ruby / Lua** (Tree-sitter when extra installed). |
+| `treesitter` | Tree-sitter for **java**, **python**, **go**, **php**, **cpp**, **rust**, **kotlin**, **csharp**, **swift**, **ruby**, **lua**; JS/TS via registry when grammars installed. |
 | `external` | C++ **clang only**; other languages fall back to `auto`. |
 
 ## Parser resolution matrix
@@ -21,12 +21,17 @@
 | Rust | tree-sitter-rust (registry) | same | falls back to `auto` |
 | Kotlin | tree-sitter-kotlin (registry) | same | falls back to `auto` |
 | C# | tree-sitter-c-sharp (registry) | same | falls back to `auto` |
+| Swift | tree-sitter-swift (registry) | same | falls back to `auto` |
+| Ruby | tree-sitter-ruby (registry) | same | falls back to `auto` |
+| Lua | tree-sitter-lua (registry) | same | falls back to `auto` |
 
 Install optional grammars:
 
 ```bash
 pip install "mdengine[codeflow,codeflow-treesitter]"
 ```
+
+Note: `tree-sitter-swift` uses the 0.7.x release line (pinned separately from 0.23.x grammars).
 
 ## Java / Spring
 
@@ -48,7 +53,15 @@ codeflow scan path/to/kotlin-app --lang kotlin --include api
 codeflow scan path/to/aspnet-app --lang csharp --include api
 ```
 
-Tree-sitter is the only backend for these languages today (`parse_backend=treesitter` in scan output).
+## Swift / Ruby / Lua
+
+```bash
+codeflow scan path/to/ios-app --lang swift --emit-cfg
+codeflow scan path/to/rails-app --lang ruby --emit-cfg
+codeflow scan path/to/lua-app --lang lua --emit-cfg
+```
+
+Tree-sitter is the only backend for Rust, Kotlin, C#, Swift, Ruby, and Lua today (`parse_backend=treesitter` in scan output).
 
 ## Metadata
 
@@ -56,7 +69,7 @@ Each parsed file records **`parse_backend`** (`native` | `treesitter`), optional
 
 ## Symbol IDs
 
-All Tree-sitter parsers use `{repo_relative_path}::{Class}.{method}` via `treesitter_common.sid()` (e.g. `src/App.kt::App.run`).
+All Tree-sitter parsers use `{repo_relative_path}::{Class}.{method}` via `treesitter_common.sid()` (e.g. `src/App.kt::App.run`, `Demo.swift::ClassA.a`, `demo.rb::ClassA::a`).
 
 ## Grammar upgrades
 
@@ -71,4 +84,5 @@ See `capability_registry.py` — used for warnings only, not routing. Fields inc
 - Central symbol resolver refactor
 - File-hash incremental reparse
 - `--debug-ir` export
-- Native Rust/Kotlin/C# compiler backends
+- Native Rust/Kotlin/C#/Swift/Ruby/Lua compiler backends
+- Unknown-extension Tree-sitter fallback

@@ -17,6 +17,9 @@ LANG_EXTENSIONS: dict[str, frozenset[str]] = {
     "rust": frozenset({".rs"}),
     "kotlin": frozenset({".kt", ".kts"}),
     "csharp": frozenset({".cs"}),
+    "swift": frozenset({".swift"}),
+    "ruby": frozenset({".rb"}),
+    "lua": frozenset({".lua"}),
 }
 
 # All keys used when ``languages`` is ``mixed``
@@ -47,6 +50,8 @@ def normalize_language_filter(languages: str) -> frozenset[str]:
             parts.append("kotlin")
         elif p in ("cs", "c#", "csharp"):
             parts.append("csharp")
+        elif p == "rb":
+            parts.append("ruby")
         else:
             parts.append(p)
     return frozenset(parts) if parts else MIXED_LANG_KEYS
