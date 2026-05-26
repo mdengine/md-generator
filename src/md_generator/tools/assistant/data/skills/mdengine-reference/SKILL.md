@@ -35,6 +35,8 @@ Supplements [mdengine-ai-global/SKILL.md](../mdengine-ai-global/SKILL.md). Conso
 | `md-openapi` / `*-api` / `*-mcp` | `mdengine[openapi]` |
 | `md-codeflow` / `codeflow` / `*-api` / `*-mcp` | `mdengine[codeflow]` (+ optional treesitter/clang extras) |
 | `md-log` / `md-log-api` / `md-log-mcp` | `mdengine[log]` (+ `log-cluster`, `log-semantic`, `log-pretty`, `api`, `mcp` as needed) |
+| `md-sap` / `md-sap-api` / `md-sap-mcp` | `mdengine[sap]` (+ `api`, `mcp` as needed) |
+| `md-otel` | `mdengine` (JSON OTLP); add `log-otel-proto` for `--protobuf` |
 | `mdengine` | meta-router CLI |
 
 ## Python import root

@@ -6,15 +6,22 @@
     "__root__",
     "archive",
     "codeflow",
+    "core",
     "db",
+    "distributed",
+    "governance",
     "graph",
     "image",
     "log",
     "media",
     "openapi",
+    "otel",
     "pdf",
     "playwright",
     "ppt",
+    "runtime",
+    "sap",
+    "sdk",
     "text",
     "tools",
     "url",
@@ -40,11 +47,21 @@
     {
       "source": "__root__",
       "target": "log",
-      "weight": 1
+      "weight": 2
     },
     {
       "source": "__root__",
       "target": "openapi",
+      "weight": 1
+    },
+    {
+      "source": "__root__",
+      "target": "otel",
+      "weight": 1
+    },
+    {
+      "source": "__root__",
+      "target": "sap",
       "weight": 1
     },
     {
@@ -78,9 +95,99 @@
       "weight": 2
     },
     {
-      "source": "url",
+      "source": "core",
+      "target": "log",
+      "weight": 1
+    },
+    {
+      "source": "core",
+      "target": "otel",
+      "weight": 1
+    },
+    {
+      "source": "governance",
+      "target": "core",
+      "weight": 1
+    },
+    {
+      "source": "governance",
+      "target": "log",
+      "weight": 2
+    },
+    {
+      "source": "log",
       "target": "archive",
       "weight": 2
+    },
+    {
+      "source": "log",
+      "target": "core",
+      "weight": 2
+    },
+    {
+      "source": "log",
+      "target": "distributed",
+      "weight": 1
+    },
+    {
+      "source": "log",
+      "target": "governance",
+      "weight": 3
+    },
+    {
+      "source": "log",
+      "target": "runtime",
+      "weight": 2
+    },
+    {
+      "source": "log",
+      "target": "sdk",
+      "weight": 1
+    },
+    {
+      "source": "otel",
+      "target": "log",
+      "weight": 1
+    },
+    {
+      "source": "runtime",
+      "target": "core",
+      "weight": 1
+    },
+    {
+      "source": "runtime",
+      "target": "sdk",
+      "weight": 1
+    },
+    {
+      "source": "sap",
+      "target": "core",
+      "weight": 1
+    },
+    {
+      "source": "sap",
+      "target": "governance",
+      "weight": 1
+    },
+    {
+      "source": "sap",
+      "target": "log",
+      "weight": 3
+    },
+    {
+      "source": "sdk",
+      "target": "core",
+      "weight": 1
+    },
+    {
+      "source": "sdk",
+      "target": "log",
+      "weight": 2
+    },
+    {
+      "source": "url",
+      "target": "archive",
+      "weight": 3
     },
     {
       "source": "url",

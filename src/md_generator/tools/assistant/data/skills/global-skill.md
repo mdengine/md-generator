@@ -1,7 +1,7 @@
 ---
 name: mdengine-global-architecture
 description: "Code-derived system view of mdengine: package boundaries, import relationships between md_generator top-level modules, and how CLIs/APIs/MCP routes relate. Use for cross-area questions; defer per-area details to mdengine-ai-<area> skills."
-version: 0.9.0
+version: 0.11.1
 ---
 # mdengine — global architecture (generated)
 
@@ -16,7 +16,7 @@ version: 0.9.0
 
 ## Module set
 
-Top-level installable feature packages discovered on disk: `archive`, `codeflow`, `db`, `graph`, `image`, `log`, `media`, `openapi`, `pdf`, `playwright`, `ppt`, `text`, `tools`, `url`, `word`, `xlsx`.
+Top-level installable feature packages discovered on disk: `archive`, `codeflow`, `core`, `db`, `distributed`, `governance`, `graph`, `image`, `log`, `media`, `openapi`, `otel`, `pdf`, `playwright`, `ppt`, `runtime`, `sap`, `sdk`, `text`, `tools`, `url`, `word`, `xlsx`.
 
 ## Data flow
 
@@ -31,25 +31,49 @@ The full graph lives in `ai/dependency-graph.json` (edges include weights). Simp
 flowchart LR
   archive["archive"]
   codeflow["codeflow"]
+  core["core"]
   db["db"]
+  distributed["distributed"]
+  governance["governance"]
   graph["graph"]
   image["image"]
   log["log"]
   media["media"]
   openapi["openapi"]
+  otel["otel"]
   pdf["pdf"]
   playwright["playwright"]
   ppt["ppt"]
+  runtime["runtime"]
+  sap["sap"]
+  sdk["sdk"]
   text["text"]
   tools["tools"]
   url["url"]
   word["word"]
-  xlsx["xlsx"]
   archive --> image
   archive --> pdf
   archive --> ppt
   archive --> word
   archive --> xlsx
+  core --> log
+  core --> otel
+  governance --> core
+  governance --> log
+  log --> archive
+  log --> core
+  log --> distributed
+  log --> governance
+  log --> runtime
+  log --> sdk
+  otel --> log
+  runtime --> core
+  runtime --> sdk
+  sap --> core
+  sap --> governance
+  sap --> log
+  sdk --> core
+  sdk --> log
   url --> archive
   url --> image
   url --> pdf

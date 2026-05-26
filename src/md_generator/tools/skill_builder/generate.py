@@ -20,6 +20,8 @@ _AREA_TITLES: dict[str, str] = {
     "graph": "Graph (Neo4j / NetworkX) → Markdown",
     "image": "Image OCR → Markdown",
     "log": "Logs / stack traces → Markdown",
+    "otel": "OpenTelemetry (OTLP) → Markdown",
+    "sap": "SAP artifacts → Markdown",
     "media": "Audio, video, YouTube → Markdown",
     "openapi": "OpenAPI → Markdown / docs bundle",
     "pdf": "PDF → Markdown",
@@ -38,6 +40,8 @@ _EXTRA_BY_AREA: dict[str, str] = {
     "graph": "graph",
     "image": "image",
     "log": "log",
+    "otel": "log-otel-proto",
+    "sap": "sap",
     "media": "audio,video,youtube",
     "openapi": "openapi",
     "pdf": "pdf",
@@ -51,7 +55,7 @@ _EXTRA_BY_AREA: dict[str, str] = {
 
 _SKILL_NAME = "mdengine-ai-{area}"
 # Areas whose `SKILL.md` is maintained manually (rich install/API/MCP docs); skip auto overwrite.
-_HAND_CURATED_AREA_SKILLS: frozenset[str] = frozenset({"log"})
+_HAND_CURATED_AREA_SKILLS: frozenset[str] = frozenset({"log", "sap", "otel"})
 _DESCRIPTION_SEEDS: dict[str, str] = {
     "pdf": "Documents pip-installed mdengine features for PDF → Markdown: extras, CLIs, and public imports under md_generator.pdf.",
     "word": "Documents pip-installed mdengine features for Word (DOCX) → Markdown: extras, CLIs, and public imports under md_generator.word.",
@@ -59,6 +63,8 @@ _DESCRIPTION_SEEDS: dict[str, str] = {
     "xlsx": "Documents pip-installed mdengine features for Excel/CSV → Markdown: extras, CLIs, and public imports under md_generator.xlsx.",
     "image": "Documents pip-installed mdengine features for Image OCR → Markdown: extras, CLIs, and public imports under md_generator.image.",
     "log": "Documents pip-installed mdengine features for logs and stack traces → Markdown: extras, CLIs, and public imports under md_generator.log.",
+    "otel": "Documents pip-installed mdengine features for OpenTelemetry OTLP export → Markdown: extras, CLIs, and public imports under md_generator.otel.",
+    "sap": "Documents pip-installed mdengine features for SAP (ABAP/CDS/DDIC) → Markdown: extras, CLIs, and public imports under md_generator.sap.",
     "text": "Documents pip-installed mdengine features for Text/JSON/XML → Markdown: extras, CLIs, and public imports under md_generator.text.",
     "archive": "Documents pip-installed mdengine features for ZIP archive → Markdown: extras, CLIs, and public imports under md_generator.archive.",
     "url": "Documents pip-installed mdengine features for URL (HTML) → Markdown: extras, CLIs, and public imports under md_generator.url.",
@@ -369,6 +375,8 @@ def build_global_consumer_skill_md(version: str) -> str:
         | `xlsx` | Excel/CSV → Markdown (`md-xlsx`) |
         | `image` / `image-ocr` | Raster OCR (`md-image`) |
         | `log` | Logs / stack traces → Markdown (`md-log`, `md-log-api`, `md-log-mcp`); optional `log-cluster`, `log-semantic`, `log-pretty` |
+        | `sap` | SAP artifacts → Markdown (`md-sap`, `md-sap-api`, `md-sap-mcp`) |
+        | `log-otel-proto` | OTLP protobuf ingest for `md-otel` (used with `mdengine[log-otel-proto]`) |
         | `text` | TXT / JSON / XML (`md-text`) |
         | `archive` | ZIP extraction pipeline (`md-zip`) |
         | `url` / `url-full` | URL → Markdown (`md-url`; `url-full` adds post-convert for downloads) |

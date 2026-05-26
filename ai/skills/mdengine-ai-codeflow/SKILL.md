@@ -1,7 +1,7 @@
 ---
 name: mdengine-ai-codeflow
 description: "Documents pip-installed mdengine features for Codeflow (code → Markdown): extras, CLIs, and public imports under md_generator.codeflow. Use when the user mentions `codeflow`, `md-codeflow`, `md-codeflow-api`, `md-codeflow-mcp` or needs this capability after installing mdengine from PyPI. Package summary: Multi-language execution flow extraction → Markdown, Mermaid, graph JSON, HTML."
-version: 0.9.0
+version: 0.11.1
 ---
 # mdengine — Code → architecture Markdown (codeflow)
 

@@ -37,6 +37,13 @@ Source: **`mdengine`** `pyproject.toml` — every script installed on `PATH` aft
 | `codeflow` | `md_generator.codeflow.cli.main:main` |
 | `md-codeflow-api` | `md_generator.codeflow.api.run:main` |
 | `md-codeflow-mcp` | `md_generator.codeflow.api.mcp_server:main` |
+| `md-log` | `md_generator.log.cli.main:main` |
+| `md-log-api` | `md_generator.log.api.run:main` |
+| `md-log-mcp` | `md_generator.log.api.mcp_server:main` |
+| `md-sap` | `md_generator.sap.cli.main:main` |
+| `md-sap-api` | `md_generator.sap.api.run:main` |
+| `md-sap-mcp` | `md_generator.sap.api.mcp_server:main` |
+| `md-otel` | `md_generator.otel.cli.main:main` |
 | `mdengine` | `md_generator.engine_cli:main` |
 
 **Note:** Format converters also expose **Uvicorn `app`** targets and **`python -m …mcp_server`** runners that are not separate `project.scripts` rows — see [http-api-mcp.md](http-api-mcp.md).

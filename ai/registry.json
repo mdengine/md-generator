@@ -1,6 +1,6 @@
 {
   "schemaVersion": "1.1.0",
-  "bundleVersion": "0.9.0",
+  "bundleVersion": "0.11.1",
   "description": "Maps mdengine distributable skill folders and agent files. Paths are relative to the directory containing this file (ai/).",
   "distribution": {
     "pypi": "mdengine",
@@ -130,6 +130,20 @@
       "directory": "skills/mdengine-ai-log",
       "skillFile": "skills/mdengine-ai-log/SKILL.md",
       "exampleFile": "skills/mdengine-ai-log/references/example.md"
+    },
+    "mdengine-ai-otel": {
+      "type": "area",
+      "area": "otel",
+      "directory": "skills/mdengine-ai-otel",
+      "skillFile": "skills/mdengine-ai-otel/SKILL.md",
+      "exampleFile": "skills/mdengine-ai-otel/references/example.md"
+    },
+    "mdengine-ai-sap": {
+      "type": "area",
+      "area": "sap",
+      "directory": "skills/mdengine-ai-sap",
+      "skillFile": "skills/mdengine-ai-sap/SKILL.md",
+      "exampleFile": "skills/mdengine-ai-sap/references/example.md"
     }
   },
   "agents": {
@@ -197,6 +211,14 @@
       "file": "agents/mdengine-log-agent.md",
       "pairedSkill": "mdengine-ai-log"
     },
+    "mdengine-otel-agent": {
+      "file": "agents/mdengine-otel-agent.md",
+      "pairedSkill": "mdengine-ai-otel"
+    },
+    "mdengine-sap-agent": {
+      "file": "agents/mdengine-sap-agent.md",
+      "pairedSkill": "mdengine-ai-sap"
+    },
     "mdengine-master-agent": {
       "file": "agent/master-agent.md",
       "pairedSkill": "mdengine-ai-global"
@@ -213,9 +235,11 @@
     "mdengine-ai-log",
     "mdengine-ai-media",
     "mdengine-ai-openapi",
+    "mdengine-ai-otel",
     "mdengine-ai-pdf",
     "mdengine-ai-playwright",
     "mdengine-ai-ppt",
+    "mdengine-ai-sap",
     "mdengine-ai-text",
     "mdengine-ai-url",
     "mdengine-ai-word",
@@ -233,6 +257,8 @@
       "graph": "mdengine-ai-graph",
       "image": "mdengine-ai-image",
       "log": "mdengine-ai-log",
+      "otel": "mdengine-ai-otel",
+      "sap": "mdengine-ai-sap",
       "media": "mdengine-ai-media",
       "openapi": "mdengine-ai-openapi",
       "pdf": "mdengine-ai-pdf",
@@ -404,6 +430,84 @@
           "log"
         ],
         "priority": 75
+      },
+      {
+        "keyword": "sap",
+        "areas": [
+          "sap"
+        ],
+        "priority": 100
+      },
+      {
+        "keyword": "abap",
+        "areas": [
+          "sap"
+        ],
+        "priority": 95
+      },
+      {
+        "keyword": "cds",
+        "areas": [
+          "sap"
+        ],
+        "priority": 85
+      },
+      {
+        "keyword": "ddic",
+        "areas": [
+          "sap"
+        ],
+        "priority": 85
+      },
+      {
+        "keyword": "md-sap",
+        "areas": [
+          "sap"
+        ],
+        "priority": 95
+      },
+      {
+        "keyword": "sap-to-md",
+        "areas": [
+          "sap"
+        ],
+        "priority": 95
+      },
+      {
+        "keyword": "otel",
+        "areas": [
+          "otel"
+        ],
+        "priority": 100
+      },
+      {
+        "keyword": "opentelemetry",
+        "areas": [
+          "otel"
+        ],
+        "priority": 95
+      },
+      {
+        "keyword": "otlp",
+        "areas": [
+          "otel",
+          "log"
+        ],
+        "priority": 90
+      },
+      {
+        "keyword": "md-otel",
+        "areas": [
+          "otel"
+        ],
+        "priority": 95
+      },
+      {
+        "keyword": "otel-to-md",
+        "areas": [
+          "otel"
+        ],
+        "priority": 95
       },
       {
         "keyword": "media",
@@ -672,7 +776,8 @@
           "openapi",
           "media",
           "playwright",
-          "log"
+          "log",
+          "sap"
         ],
         "priority": 30
       },
@@ -685,7 +790,8 @@
           "media",
           "playwright",
           "codeflow",
-          "log"
+          "log",
+          "sap"
         ],
         "priority": 25
       },

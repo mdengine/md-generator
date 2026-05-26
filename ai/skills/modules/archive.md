@@ -32,11 +32,12 @@ pip install "mdengine[archive]"
 ## Core layout (from repository scan)
 
 - **Package:** `md_generator.archive`
-- **Notable modules / subpackages:** `api`, `convert_impl`, `converter`, `options`
+- **Notable modules / subpackages:** `api`, `convert_impl`, `converter`, `extractors`, `options`
 
 ## Edge cases (heuristic)
 
 - `archive/convert_impl.py`: optional imports / ImportError handling
+- `archive/extractors.py`: optional imports / ImportError handling
 - Prefer **`--help`** on each CLI before guessing flags.
 
 ## Prompt templates

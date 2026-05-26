@@ -38,7 +38,7 @@ Install **`mdengine[api]`** plus the format extra(s), then run the **`app`** (or
 | YouTube | `md_generator.media.youtube.api.main:create_app` (**`--factory`**) or `…main:app` | `youtube`, `api`, `mcp` |
 | Log → Markdown | `md_generator.log.api.main:app` | `log`, `api`, `mcp` |
 
-**Port note:** **`md-graph-api`** and **`md-video-api`** both default to **8012**; set **`GRAPH_TO_MD_PORT`** or **`MD_VIDEO_API_PORT`** when both run on one machine. **`md-log-api`** also defaults to **8012** (`LOG_TO_MD_PORT` in `md_generator.log.api.run`); set **`LOG_TO_MD_PORT`** when colocating with graph or video. **`md-openapi-api`** defaults to **8015** (`OPENAPI_TO_MD_PORT`) to avoid **`md-youtube-api`** (**8013**) and **`md-playwright-api`** (**8014**).
+**Port note:** **`md-graph-api`** and **`md-video-api`** both default to **8012**; set **`GRAPH_TO_MD_PORT`** or **`MD_VIDEO_API_PORT`** when both run on one machine. **`md-log-api`** also defaults to **8012** (`LOG_TO_MD_PORT` in `md_generator.log.api.run`); set **`LOG_TO_MD_PORT`** when colocating with graph or video. **`md-sap-api`** defaults to **8020** (`SAP_TO_MD_PORT`). **`md-openapi-api`** defaults to **8015** (`OPENAPI_TO_MD_PORT`) to avoid **`md-youtube-api`** (**8013**) and **`md-playwright-api`** (**8014**).
 
 ---
 
@@ -92,6 +92,33 @@ Routes:
 - `GET /log-to-md/job/{job_id}/events` — SSE progress
 
 MCP is mounted at **`/mcp`** on the same app. Standalone: **`md-log-mcp`** (`md_generator.log.api.mcp_server:main`).
+
+---
+
+## `md-sap-api` (sap-to-md)
+
+Runner: **`md-sap-api`** → `md_generator.sap.api.run:main` (Uvicorn **`md_generator.sap.api.main:app`**). Env prefix **`SAP_TO_MD_`**: `SAP_TO_MD_HOST`, `SAP_TO_MD_PORT` (default **8020**), `SAP_TO_MD_MAX_SYNC_ZIP_MB`, `SAP_TO_MD_JOB_SQLITE_PATH`, `SAP_TO_MD_JOB_WORKSPACE_ROOT`, `SAP_TO_MD_CORS_ORIGINS`.
+
+Routes:
+
+- `GET /health`
+- `POST /sap-to-md/run` — JSON body → synchronous ZIP (`application/zip`)
+- `POST /sap-to-md/job` — async job from JSON body → `{ "job_id" }`
+- `GET /sap-to-md/job/{job_id}` — status
+- `GET /sap-to-md/job/{job_id}/download` — ZIP when `COMPLETED`
+
+MCP is mounted at **`/mcp`** on the same app. Standalone: **`md-sap-mcp`** (`md_generator.sap.api.mcp_server:main`).
+
+---
+
+## `md-otel` (otel-to-md, CLI only)
+
+No bundled HTTP/MCP entry point. CLI: **`md-otel`** → `md_generator.otel.cli.main:main`.
+
+- `md-otel --input FILE --output DIR` — JSON OTLP → `trace.md`
+- `md-otel --input FILE --output DIR --protobuf` — requires **`mdengine[log-otel-proto]`**
+
+Meta-router: **`mdengine otel-to-md …`**.
 
 ---
 
@@ -150,6 +177,7 @@ Swagger: **`/docs`** when running.
 | Graph | `md-graph-mcp` or `python -m md_generator.graph.api.mcp_server` |
 | OpenAPI | `md-openapi-mcp` or `python -m md_generator.openapi.api.mcp_server` |
 | Log | `md-log-mcp` or `python -m md_generator.log.api.mcp_server` |
+| SAP | `md-sap-mcp` or `python -m md_generator.sap.api.mcp_server` |
 
 Install **`mdengine[mcp]`** (and usually **`[api]`** for HTTP) so MCP imports resolve.
 
@@ -174,5 +202,6 @@ Install **`mdengine[mcp]`** (and usually **`[api]`** for HTTP) so MCP imports re
 | Video | `MD_VIDEO_` | … port **8012** |
 | YouTube | `MD_YOUTUBE_` | … port **8013** |
 | Log → Markdown | `LOG_TO_MD_` | `LOG_TO_MD_PORT` (default **8012**), `LOG_TO_MD_MAX_SYNC_ZIP_MB`, `LOG_TO_MD_MAX_LOG_UPLOAD_MB`, `LOG_TO_MD_JOB_SQLITE_PATH`, `LOG_TO_MD_JOB_WORKSPACE_ROOT`, `LOG_TO_MD_CORS_ORIGINS`, `LOG_TO_MD_HOST` |
+| SAP → Markdown | `SAP_TO_MD_` | `SAP_TO_MD_PORT` (default **8020**), `SAP_TO_MD_MAX_SYNC_ZIP_MB`, `SAP_TO_MD_JOB_SQLITE_PATH`, `SAP_TO_MD_JOB_WORKSPACE_ROOT`, `SAP_TO_MD_CORS_ORIGINS`, `SAP_TO_MD_HOST` |
 
 Exact names live in each package’s `api/settings` or `api/app` module.

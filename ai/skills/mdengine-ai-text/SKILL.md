@@ -1,7 +1,7 @@
 ---
 name: mdengine-ai-text
 description: "Documents pip-installed mdengine features for Text/JSON/XML → Markdown: extras, CLIs, and public imports under md_generator.text. Use when the user mentions `md-text` or needs this capability after installing mdengine from PyPI. Package summary: txt-json-xml-to-md: convert .txt, .json, and .xml to Markdown."
-version: 0.9.0
+version: 0.11.1
 ---
 # mdengine — Text / JSON / XML → Markdown
 
