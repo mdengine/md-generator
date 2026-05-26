@@ -19,13 +19,34 @@ from md_generator.codeflow.parsers.treesitter_common import (
     sid,
     walk_tree,
 )
+from md_generator.codeflow.parsers.treesitter_entry_helpers import append_entry
 
 logger = logging.getLogger(__name__)
 _GRAMMAR_LABEL = "tree-sitter-swift"
+_VAPOR_HTTP_ATTRS = frozenset({"Get", "Post", "Put", "Delete", "Patch", "Routes"})
 
 
 def swift_language():
     return load_language("tree_sitter_swift", "language", package_label=_GRAMMAR_LABEL)
+
+
+def _attr_name(node, source: bytes) -> str:  # noqa: ANN001
+    for ch in node.children:
+        if ch.type in ("identifier", "type_identifier", "simple_identifier"):
+            return decode_text(source, ch).strip().lstrip("@")
+    return decode_text(source, node).strip().lstrip("@").split("(")[0].split()[0]
+
+
+def _attributes_on(node, source: bytes) -> set[str]:  # noqa: ANN001
+    anns: set[str] = set()
+    for ch in node.children:
+        if ch.type == "attribute":
+            anns.add(_attr_name(ch, source))
+        elif ch.type == "modifiers":
+            for sub in ch.children:
+                if sub.type == "attribute":
+                    anns.add(_attr_name(sub, source))
+    return anns
 
 
 class TreesitterSwiftParser:
@@ -61,6 +82,8 @@ class _SwiftWalkState:
         self.path = path
         self.type_stack: list[str] = []
         self.current_method: str | None = None
+        self._entry_seen: set[str] = set()
+        self._fp = str(path.resolve())
 
     @property
     def fq_type(self) -> str:
@@ -114,6 +137,16 @@ class _SwiftWalkState:
         mname = decode_text(self.source, name).strip()
         caller = sid(self.key, fq, mname)
         self.fr.symbol_ids.append(caller)
+        attrs = _attributes_on(node, self.source)
+        if attrs & _VAPOR_HTTP_ATTRS:
+            append_entry(
+                self.fr,
+                seen=self._entry_seen,
+                symbol_id=caller,
+                label="Vapor HTTP route",
+                file_path=self._fp,
+                line=node.start_point[0] + 1,
+            )
         prev = self.current_method
         self.current_method = caller
         body = function_body_node(node)

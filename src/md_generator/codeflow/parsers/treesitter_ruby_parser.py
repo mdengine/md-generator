@@ -7,7 +7,7 @@ from pathlib import Path
 
 from tree_sitter import Parser
 
-from md_generator.codeflow.models.ir import FileParseResult
+from md_generator.codeflow.models.ir import EntryKind, FileParseResult
 from md_generator.codeflow.parsers.treesitter_common import (
     append_import_edge,
     decode_text,
@@ -16,11 +16,16 @@ from md_generator.codeflow.parsers.treesitter_common import (
     record_call,
     rel_key,
     sid,
-    walk_tree,
 )
+from md_generator.codeflow.parsers.treesitter_entry_helpers import append_entry
 
 logger = logging.getLogger(__name__)
 _GRAMMAR_LABEL = "tree-sitter-ruby"
+
+_HTTP_VERBS = frozenset(
+    {"get", "post", "put", "patch", "delete", "head", "options", "match", "root"},
+)
+_RAILS_CONTROLLER_SUPERS = ("ApplicationController", "ActionController::Base", "ActionController")
 
 
 def ruby_language():
@@ -59,7 +64,10 @@ class _RubyWalkState:
         self.key = key
         self.path = path
         self.class_stack: list[str] = []
+        self.class_super: list[str] = []
         self.current_method: str | None = None
+        self._entry_seen: set[str] = set()
+        self._fp = str(path.resolve())
 
     @property
     def fq_class(self) -> str:
@@ -86,7 +94,10 @@ class _RubyWalkState:
         cname = decode_text(self.source, name).strip()
         if not cname:
             return
+        super_n = node.child_by_field_name("superclass")
+        super_txt = decode_text(self.source, super_n).strip() if super_n else ""
         self.class_stack.append(cname)
+        self.class_super.append(super_txt)
         for ch in node.children:
             if ch.type == "class":
                 self._visit_class(ch)
@@ -95,6 +106,25 @@ class _RubyWalkState:
             else:
                 self.visit(ch)
         self.class_stack.pop()
+        self.class_super.pop()
+
+    def _is_rails_controller(self) -> bool:
+        if not self.class_stack:
+            return False
+        cname = self.class_stack[-1]
+        if cname.endswith("Controller"):
+            return True
+        sup = self.class_super[-1] if self.class_super else ""
+        return any(s in sup for s in _RAILS_CONTROLLER_SUPERS)
+
+    def _is_action_cable_channel(self) -> bool:
+        if not self.class_stack:
+            return False
+        cname = self.class_stack[-1]
+        if not cname.endswith("Channel"):
+            return False
+        sup = self.class_super[-1] if self.class_super else ""
+        return "Cable" in sup or "ApplicationCable" in sup
 
     def _on_method(self, node) -> None:  # noqa: ANN001
         name = node.child_by_field_name("name")
@@ -104,11 +134,45 @@ class _RubyWalkState:
         fq = self.fq_class or None
         caller = sid(self.key, fq, mname)
         self.fr.symbol_ids.append(caller)
+        line = node.start_point[0] + 1
+        if self._is_rails_controller():
+            append_entry(
+                self.fr,
+                seen=self._entry_seen,
+                symbol_id=caller,
+                label="Rails controller action",
+                file_path=self._fp,
+                line=line,
+            )
+        elif self._is_action_cable_channel() and mname in ("subscribed", "receive", "unsubscribed"):
+            append_entry(
+                self.fr,
+                seen=self._entry_seen,
+                symbol_id=caller,
+                label=f"ActionCable {mname}",
+                file_path=self._fp,
+                line=line,
+                kind=EntryKind.QUEUE,
+            )
         prev = self.current_method
         self.current_method = caller
         for ch in node.children:
             self.visit(ch)
         self.current_method = prev
+
+    def _call_has_block(self, node) -> bool:  # noqa: ANN001
+        for ch in node.children:
+            if ch.type == "block" or ch.type == "do_block":
+                return True
+        return False
+
+    def _route_path_from_call(self, node) -> str | None:  # noqa: ANN001
+        for ch in node.children:
+            if ch.type == "argument_list":
+                for arg in ch.children:
+                    if arg.type == "string":
+                        return decode_text(self.source, arg).strip().strip("\"'")
+        return None
 
     def _on_call(self, node) -> None:  # noqa: ANN001
         callee = "call"
@@ -120,6 +184,7 @@ class _RubyWalkState:
                 if ch.type == "identifier":
                     callee = decode_text(self.source, ch).strip()
                     break
+        line = node.start_point[0] + 1
         if callee in ("require", "require_relative"):
             for ch in node.children:
                 if ch.type == "argument_list":
@@ -131,14 +196,34 @@ class _RubyWalkState:
                                     self.fr,
                                     self.key,
                                     raw,
-                                    line=node.start_point[0] + 1,
+                                    line=line,
                                 )
                             return
+        if not self.class_stack and callee in _HTTP_VERBS and self._call_has_block(node):
+            route_path = self._route_path_from_call(node) or callee
+            append_entry(
+                self.fr,
+                seen=self._entry_seen,
+                symbol_id=sid(self.key, None, f"sinatra.{callee}.{route_path}"),
+                label="Sinatra route",
+                file_path=self._fp,
+                line=line,
+            )
+        elif not self.class_stack and callee in _HTTP_VERBS and not self._call_has_block(node):
+            route_path = self._route_path_from_call(node) or "route"
+            append_entry(
+                self.fr,
+                seen=self._entry_seen,
+                symbol_id=sid(self.key, None, f"routes.{callee}.{route_path}"),
+                label=f"Rails route ({callee})",
+                file_path=self._fp,
+                line=line,
+            )
         if not self.current_method:
             return
         record_call(
             self.fr,
             self.current_method,
             callee,
-            line=node.start_point[0] + 1,
+            line=line,
         )

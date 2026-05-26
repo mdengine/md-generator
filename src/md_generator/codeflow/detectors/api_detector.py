@@ -211,6 +211,117 @@ def detect_api_entries_js_ts(path: Path, project_root: Path) -> list[EntryRecord
     return out
 
 
+_RUBY_CONTROLLER = re.compile(
+    r"class\s+(\w+Controller)\s*<\s*(?:ApplicationController|ActionController)",
+    re.I,
+)
+_RUBY_ROUTE = re.compile(
+    r"\b(get|post|put|patch|delete)\s+['\"]([^'\"]+)['\"]",
+    re.I,
+)
+_SINATRA_ROUTE = re.compile(
+    r"\b(get|post|put|patch|delete)\s+['\"]([^'\"]+)['\"]\s+do\b",
+    re.I,
+)
+_SWIFT_VAPOR = re.compile(r"@\s*(Get|Post|Put|Delete|Patch|Routes)\b")
+
+
+def detect_api_entries_ruby(path: Path, project_root: Path) -> list[EntryRecord]:
+    if path.suffix.lower() != ".rb":
+        return []
+    try:
+        text = path.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return []
+    key = path.resolve().relative_to(project_root.resolve()).as_posix()
+    fp = str(path.resolve())
+    out: list[EntryRecord] = []
+    seen: set[str] = set()
+    for m in _RUBY_CONTROLLER.finditer(text):
+        cls = m.group(1)
+        for dm in re.finditer(rf"\bdef\s+(\w+)", text[m.end() :]):
+            mname = dm.group(1)
+            if mname.startswith("_"):
+                continue
+            sid = _sid(key, cls, mname)
+            if sid in seen:
+                continue
+            seen.add(sid)
+            out.append(
+                EntryRecord(
+                    symbol_id=sid,
+                    kind=EntryKind.API_REST,
+                    label="Rails controller action (regex)",
+                    file_path=fp,
+                    line=text[: m.start() + dm.start()].count("\n") + 1,
+                ),
+            )
+            break
+    for m in _SINATRA_ROUTE.finditer(text):
+        verb, route_path = m.group(1).lower(), m.group(2)
+        sid = f"{key}::sinatra.{verb}.{route_path}"
+        if sid not in seen:
+            seen.add(sid)
+            out.append(
+                EntryRecord(
+                    symbol_id=sid,
+                    kind=EntryKind.API_REST,
+                    label="Sinatra route (regex)",
+                    file_path=fp,
+                    line=text[: m.start()].count("\n") + 1,
+                ),
+            )
+    for m in _RUBY_ROUTE.finditer(text):
+        verb, route_path = m.group(1).lower(), m.group(2)
+        sid = f"{key}::routes.{verb}.{route_path}"
+        if sid not in seen:
+            seen.add(sid)
+            out.append(
+                EntryRecord(
+                    symbol_id=sid,
+                    kind=EntryKind.API_REST,
+                    label=f"Rails route ({verb}) (regex)",
+                    file_path=fp,
+                    line=text[: m.start()].count("\n") + 1,
+                ),
+            )
+    return out
+
+
+def detect_api_entries_swift(path: Path, project_root: Path) -> list[EntryRecord]:
+    if path.suffix.lower() != ".swift":
+        return []
+    try:
+        text = path.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return []
+    if not _SWIFT_VAPOR.search(text):
+        return []
+    key = path.resolve().relative_to(project_root.resolve()).as_posix()
+    fp = str(path.resolve())
+    out: list[EntryRecord] = []
+    seen: set[str] = set()
+    for m in re.finditer(r"func\s+(\w+)\s*\(", text):
+        mname = m.group(1)
+        before = text[max(0, m.start() - 120) : m.start()]
+        if not _SWIFT_VAPOR.search(before):
+            continue
+        sid = _sid(key, None, mname)
+        if sid in seen:
+            continue
+        seen.add(sid)
+        out.append(
+            EntryRecord(
+                symbol_id=sid,
+                kind=EntryKind.API_REST,
+                label="Vapor HTTP route (regex)",
+                file_path=fp,
+                line=text[: m.start()].count("\n") + 1,
+            ),
+        )
+    return out
+
+
 def detect_api_entries(path: Path, project_root: Path) -> list[EntryRecord]:
     suf = path.suffix.lower()
     if suf == ".py":
@@ -219,4 +330,8 @@ def detect_api_entries(path: Path, project_root: Path) -> list[EntryRecord]:
         return detect_api_entries_java(path, project_root)
     if suf in (".js", ".jsx", ".mjs", ".cjs", ".ts", ".tsx", ".mts", ".cts"):
         return detect_api_entries_js_ts(path, project_root)
+    if suf == ".rb":
+        return detect_api_entries_ruby(path, project_root)
+    if suf == ".swift":
+        return detect_api_entries_swift(path, project_root)
     return []

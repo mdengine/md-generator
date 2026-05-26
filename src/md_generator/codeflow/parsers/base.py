@@ -75,3 +75,11 @@ def register_defaults(reg: ParserRegistry) -> None:
         reg.register(TreesitterLuaParser())
     except ImportError:
         pass
+    try:
+        from md_generator.codeflow.parsers.treesitter_scala_parser import TreesitterScalaParser
+        from md_generator.codeflow.parsers.treesitter_zig_parser import TreesitterZigParser
+
+        reg.register(TreesitterScalaParser())
+        reg.register(TreesitterZigParser())
+    except ImportError:
+        pass

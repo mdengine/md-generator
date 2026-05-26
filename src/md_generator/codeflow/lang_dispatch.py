@@ -20,6 +20,8 @@ LANG_EXTENSIONS: dict[str, frozenset[str]] = {
     "swift": frozenset({".swift"}),
     "ruby": frozenset({".rb"}),
     "lua": frozenset({".lua"}),
+    "scala": frozenset({".scala", ".sc"}),
+    "zig": frozenset({".zig"}),
 }
 
 # All keys used when ``languages`` is ``mixed``

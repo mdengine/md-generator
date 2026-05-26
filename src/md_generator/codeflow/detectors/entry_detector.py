@@ -12,6 +12,7 @@ from md_generator.codeflow.config.codeflow_yaml import (
 from md_generator.codeflow.detectors.api_detector import detect_api_entries
 from md_generator.codeflow.detectors.kafka_detector import detect_kafka_entries
 from md_generator.codeflow.detectors.liferay_portlet_detector import detect_liferay_portlet_entries
+from md_generator.codeflow.detectors.rails_detector import detect_rails_entries
 from md_generator.codeflow.models.ir import EntryKind, EntryRecord, FileParseResult
 
 # TYPE_CHECKING would avoid circular import; ScanConfig is lightweight dataclass
@@ -43,6 +44,7 @@ def apply_entry_detectors(
         if not pr:
             continue
         pr.entries.extend(detect_api_entries(p, project_root))
+        pr.entries.extend(detect_rails_entries(p, project_root))
         pr.entries.extend(detect_liferay_portlet_entries(p, project_root, extra_portlet_bases=portlet_extras))
         pr.entries.extend(detect_kafka_entries(p, project_root))
 

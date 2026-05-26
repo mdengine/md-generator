@@ -101,5 +101,17 @@ def enrich_parse_results_with_ir(results: list[FileParseResult], cfg: ScanConfig
             )
 
             populate_ir_methods_lua_treesitter(fr, root)
+        elif fr.language == "scala" and fr.parse_backend == "treesitter":
+            from md_generator.codeflow.parsers.adapters.treesitter_scala_adapter import (
+                populate_ir_methods_scala_treesitter,
+            )
+
+            populate_ir_methods_scala_treesitter(fr, root)
+        elif fr.language == "zig" and fr.parse_backend == "treesitter":
+            from md_generator.codeflow.parsers.adapters.treesitter_zig_adapter import (
+                populate_ir_methods_zig_treesitter,
+            )
+
+            populate_ir_methods_zig_treesitter(fr, root)
         else:
             fr.ir_methods = []

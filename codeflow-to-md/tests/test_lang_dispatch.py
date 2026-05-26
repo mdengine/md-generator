@@ -26,6 +26,9 @@ def test_lang_for_path() -> None:
     assert lang_for_path(Path("App.swift")) == "swift"
     assert lang_for_path(Path("demo.rb")) == "ruby"
     assert lang_for_path(Path("init.lua")) == "lua"
+    assert lang_for_path(Path("Demo.scala")) == "scala"
+    assert lang_for_path(Path("lib.sc")) == "scala"
+    assert lang_for_path(Path("main.zig")) == "zig"
 
 
 def test_normalize_rust_kotlin_csharp_aliases() -> None:

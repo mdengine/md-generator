@@ -76,7 +76,7 @@ def build_parser() -> argparse.ArgumentParser:
         default="mixed",
         help=(
             "mixed | python | java | javascript | typescript | tsx | cpp | go | php | "
-            "rust | kotlin | csharp | swift | ruby | lua | "
+            "rust | kotlin | csharp | swift | ruby | lua | scala | zig | "
             "comma-separated (e.g. python,javascript). Aliases: js→javascript, ts→typescript."
         ),
     )

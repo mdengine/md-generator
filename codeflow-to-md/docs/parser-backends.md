@@ -4,8 +4,8 @@
 
 | Mode | Behavior |
 |------|----------|
-| `auto` (default) | Native parsers: Java (`javalang`), Python (`ast`), Go (`codeflow_go_dump` + `go` on PATH), PHP (`codeflow_php_dump` + `php`), JS/TS (Tree-sitter when `codeflow-treesitter` installed), C++ (libclang with Tree-sitter fallback), **Rust / Kotlin / C# / Swift / Ruby / Lua** (Tree-sitter when extra installed). |
-| `treesitter` | Tree-sitter for **java**, **python**, **go**, **php**, **cpp**, **rust**, **kotlin**, **csharp**, **swift**, **ruby**, **lua**; JS/TS via registry when grammars installed. |
+| `auto` (default) | Native parsers: Java (`javalang`), Python (`ast`), Go (`codeflow_go_dump` + `go` on PATH), PHP (`codeflow_php_dump` + `php`), JS/TS (Tree-sitter when `codeflow-treesitter` installed), C++ (libclang with Tree-sitter fallback), **Rust / Kotlin / C# / Swift / Ruby / Lua / Scala / Zig** (Tree-sitter when extra installed). |
+| `treesitter` | Tree-sitter for **java**, **python**, **go**, **php**, **cpp**, **rust**, **kotlin**, **csharp**, **swift**, **ruby**, **lua**, **scala**, **zig**; JS/TS via registry when grammars installed. |
 | `external` | C++ **clang only**; other languages fall back to `auto`. |
 
 ## Parser resolution matrix
@@ -24,6 +24,8 @@
 | Swift | tree-sitter-swift (registry) | same | falls back to `auto` |
 | Ruby | tree-sitter-ruby (registry) | same | falls back to `auto` |
 | Lua | tree-sitter-lua (registry) | same | falls back to `auto` |
+| Scala | tree-sitter-scala (registry) | same | falls back to `auto` |
+| Zig | tree-sitter-zig (registry) | same | falls back to `auto` |
 
 Install optional grammars:
 
@@ -61,7 +63,26 @@ codeflow scan path/to/rails-app --lang ruby --emit-cfg
 codeflow scan path/to/lua-app --lang lua --emit-cfg
 ```
 
-Tree-sitter is the only backend for Rust, Kotlin, C#, Swift, Ruby, and Lua today (`parse_backend=treesitter` in scan output).
+## Framework API entries (Tree-sitter + detectors)
+
+```bash
+codeflow scan codeflow-to-md/examples/mini_rails --lang ruby --parser-mode treesitter --include api
+codeflow scan codeflow-to-md/examples/mini_sinatra --lang ruby --include api
+codeflow scan codeflow-to-md/examples/mini_vapor --lang swift --include api
+codeflow scan codeflow-to-md/examples/mini_actix --lang rust --include api
+codeflow scan codeflow-to-md/examples/mini_axum --lang rust --include api
+```
+
+Rails router DSL (`resources`, `namespace`, `mount`) and ActionCable channels are detected via `rails_detector` on `.rb` files. Vapor `@Get` / `@Post` attributes, Actix `#[get(...)]` attributes, and Axum `Router::route` chains are detected in the Tree-sitter parsers.
+
+## Scala / Zig
+
+```bash
+codeflow scan codeflow-to-md/examples/mini_scala --lang scala --emit-cfg
+codeflow scan codeflow-to-md/examples/mini_zig --lang zig --emit-cfg
+```
+
+Tree-sitter is the only backend for Rust, Kotlin, C#, Swift, Ruby, Lua, Scala, and Zig today (`parse_backend=treesitter` in scan output).
 
 ## Metadata
 
@@ -84,5 +105,5 @@ See `capability_registry.py` — used for warnings only, not routing. Fields inc
 - Central symbol resolver refactor
 - File-hash incremental reparse
 - `--debug-ir` export
-- Native Rust/Kotlin/C#/Swift/Ruby/Lua compiler backends
+- Native Rust/Kotlin/C#/Swift/Ruby/Lua/Scala/Zig compiler backends
 - Unknown-extension Tree-sitter fallback

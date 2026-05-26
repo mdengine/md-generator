@@ -1,0 +1,71 @@
+"""Tree-sitter Scala → IRMethod (minimal)."""
+
+from __future__ import annotations
+
+from pathlib import Path
+
+from tree_sitter import Parser
+
+from md_generator.codeflow.models.ir import FileParseResult
+from md_generator.codeflow.models.ir_cfg import IRMethod, IRStmt
+from md_generator.codeflow.parsers.treesitter_common import decode_text, function_body_node, rel_key, sid
+from md_generator.codeflow.parsers.treesitter_scala_parser import scala_language
+
+
+def populate_ir_methods_scala_treesitter(fr: FileParseResult, project_root: Path) -> None:
+    if fr.parse_backend != "treesitter":
+        fr.ir_methods = []
+        return
+    loaded = scala_language()
+    if loaded is None:
+        fr.ir_methods = []
+        return
+    lang, _ = loaded
+    source = fr.path.read_bytes()
+    tree = Parser(lang).parse(source)
+    key = rel_key(fr.path, project_root.resolve())
+    fp = str(fr.path.resolve())
+    out: list[IRMethod] = []
+    type_stack: list[str] = []
+    stack = [tree.root_node]
+    while stack:
+        n = stack.pop()
+        if n.type in ("class_definition", "object_definition", "trait_definition"):
+            name = n.child_by_field_name("name")
+            if not name:
+                for ch in n.children:
+                    if ch.type == "identifier":
+                        name = ch
+                        break
+            if name:
+                type_stack.append(decode_text(source, name).strip())
+                for ch in n.children:
+                    stack.append(ch)
+                if type_stack:
+                    type_stack.pop()
+                continue
+        if n.type in ("function_definition", "function_declaration"):
+            name = n.child_by_field_name("name")
+            if name:
+                mname = decode_text(source, name).strip()
+                fq = ".".join(type_stack) if type_stack else None
+                body = function_body_node(n)
+                stmts: tuple[IRStmt, ...] = ()
+                if body:
+                    stmts = tuple(
+                        IRStmt(kind="STATEMENT", label=c.type, line=c.start_point[0] + 1)
+                        for c in body.children
+                        if c.is_named
+                    )
+                out.append(
+                    IRMethod(
+                        symbol_id=sid(key, fq, mname),
+                        name=mname,
+                        file_path=fp,
+                        language="scala",
+                        body=stmts,
+                    ),
+                )
+        else:
+            stack.extend(reversed(n.children))
+    fr.ir_methods = out

@@ -15,7 +15,20 @@ ParserMode = Literal["auto", "treesitter", "external"]
 logger = logging.getLogger(__name__)
 
 _TREESITTER_LANGS = frozenset(
-    {"java", "python", "go", "php", "rust", "kotlin", "csharp", "swift", "ruby", "lua"},
+    {
+        "java",
+        "python",
+        "go",
+        "php",
+        "rust",
+        "kotlin",
+        "csharp",
+        "swift",
+        "ruby",
+        "lua",
+        "scala",
+        "zig",
+    },
 )
 
 
@@ -61,6 +74,14 @@ def _parse_treesitter_lang(lang: str, path: Path, project_root: Path) -> FilePar
             from md_generator.codeflow.parsers.treesitter_lua_parser import TreesitterLuaParser
 
             return TreesitterLuaParser().parse_file(path, project_root)
+        if lang == "scala":
+            from md_generator.codeflow.parsers.treesitter_scala_parser import TreesitterScalaParser
+
+            return TreesitterScalaParser().parse_file(path, project_root)
+        if lang == "zig":
+            from md_generator.codeflow.parsers.treesitter_zig_parser import TreesitterZigParser
+
+            return TreesitterZigParser().parse_file(path, project_root)
     except ImportError as e:
         logger.debug("tree-sitter backend unavailable for %s: %s", lang, e)
     return None
