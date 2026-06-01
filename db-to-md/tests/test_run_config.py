@@ -89,6 +89,29 @@ output:
     assert cfg.readme_feature_merge == "inline"
 
 
+def test_elasticsearch_default_features_and_output(tmp_path: Path) -> None:
+    p = tmp_path / "es.yaml"
+    p.write_text(
+        """
+database:
+  type: elasticsearch
+  uri: https://localhost:9200
+output:
+  elasticsearch_mapping_mode: summarized
+  elasticsearch_include_raw_json: true
+limits:
+  index_pattern: "metrics-*"
+""",
+        encoding="utf-8",
+    )
+    cfg = load_run_config(p, None)
+    assert cfg.db_type == "elasticsearch"
+    assert "elasticsearch_indices" in cfg.effective_features()
+    assert cfg.elasticsearch.mapping_mode == "summarized"
+    assert cfg.elasticsearch.include_raw_json is True
+    assert cfg.limits.get("index_pattern") == "metrics-*"
+
+
 def test_erd_partial_yaml_merge(tmp_path: Path) -> None:
     p = tmp_path / "e.yaml"
     p.write_text(

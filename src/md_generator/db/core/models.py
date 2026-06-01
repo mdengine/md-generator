@@ -13,7 +13,8 @@ class JobStatus(str, Enum):
     FAILED = "FAILED"
 
 
-FEATURES = frozenset(
+# SQL / Mongo / Oracle features (unchanged names — do not rename).
+_LEGACY_FEATURES = frozenset(
     {
         "tables",
         "views",
@@ -31,6 +32,30 @@ FEATURES = frozenset(
         "erd",
     }
 )
+
+# Elasticsearch / OpenSearch export features (opt-in via database.type: elasticsearch).
+ELASTICSEARCH_FEATURES = frozenset(
+    {
+        "elasticsearch_indices",
+        "elasticsearch_data_streams",
+        "elasticsearch_component_templates",
+        "elasticsearch_index_templates",
+        "elasticsearch_ingest_pipelines",
+        "elasticsearch_ilm_policies",
+        "elasticsearch_slm_policies",
+        "elasticsearch_field_caps",
+        "elasticsearch_snapshot_repositories",
+        "elasticsearch_search_templates",
+        "elasticsearch_search_architecture",
+        "elasticsearch_search_dependency_graph",
+        # Reserved for future security export (validated but not exported yet).
+        "elasticsearch_security_roles",
+        "elasticsearch_security_users",
+        "elasticsearch_security_api_keys",
+    }
+)
+
+FEATURES = _LEGACY_FEATURES | ELASTICSEARCH_FEATURES
 
 
 @dataclass(frozen=True)
@@ -167,6 +192,90 @@ class MongoCollectionInfo:
 
 
 @dataclass(frozen=True)
+class ElasticsearchIndexInfo:
+    name: str
+    aliases: tuple[str, ...]
+    mappings: dict[str, Any]
+    settings: dict[str, Any]
+    shard_config: dict[str, Any]
+    health: str | None = None
+    doc_count: int | None = None
+    store_size: str | None = None
+    primary_shards: int | None = None
+    replica_shards: int | None = None
+    field_caps: dict[str, Any] | None = None
+
+
+@dataclass(frozen=True)
+class ElasticsearchDataStreamInfo:
+    name: str
+    indices: tuple[str, ...]
+    template: str | None
+    generation: int | None
+    definition: dict[str, Any]
+
+
+@dataclass(frozen=True)
+class ElasticsearchComponentTemplateInfo:
+    name: str
+    template: dict[str, Any]
+
+
+@dataclass(frozen=True)
+class ElasticsearchPipelineInfo:
+    name: str
+    definition: dict[str, Any]
+
+
+@dataclass(frozen=True)
+class ElasticsearchIndexTemplateInfo:
+    name: str
+    index_patterns: tuple[str, ...]
+    priority: int | None
+    template: dict[str, Any]
+    composed_of: tuple[str, ...] | None = None
+    legacy: bool = False
+
+
+@dataclass(frozen=True)
+class ElasticsearchIlmPolicyInfo:
+    name: str
+    policy: dict[str, Any]
+    source: str = "ilm"  # ilm | ism
+
+
+@dataclass(frozen=True)
+class ElasticsearchSlmPolicyInfo:
+    name: str
+    policy: dict[str, Any]
+    schedule: str | None = None
+    repository: str | None = None
+    indices_pattern: str | None = None
+
+
+@dataclass(frozen=True)
+class ElasticsearchSnapshotRepositoryInfo:
+    name: str
+    repository_type: str
+    settings: dict[str, Any]
+    operational: dict[str, Any] = field(default_factory=dict)
+    notes: str | None = None
+
+
+@dataclass(frozen=True)
+class ElasticsearchSearchTemplateInfo:
+    name: str
+    lang: str
+    definition: dict[str, Any]
+    param_keys: tuple[str, ...] = ()
+    source_length: int | None = None
+    source_preview: str | None = None
+    source_truncated: bool = False
+    diagnostics: str | None = None
+    query_types: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True)
 class RunMetadata:
     db_type: str
     uri_display: str  # redacted
@@ -182,3 +291,4 @@ class RunMetadata:
     erd_engine: str | None = None  # graphviz | mermaid_py | mermaid_text
     readme_feature_merge: str = "none"  # none | inline | toc
     combined_readme_paths: tuple[str, ...] = ()
+    cluster_name: str | None = None  # Elasticsearch / OpenSearch

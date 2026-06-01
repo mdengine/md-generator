@@ -24,7 +24,7 @@ def build_parser() -> argparse.ArgumentParser:
         "--type",
         dest="db_type",
         default=None,
-        help="postgres|mysql|mssql|oracle|mongo|sqlite|access",
+        help="postgres|mysql|mssql|oracle|mongo|sqlite|access|elasticsearch",
     )
     p.add_argument("--uri", default=None)
     p.add_argument("--output", type=Path, default=None)
@@ -32,6 +32,16 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--exclude", default=None)
     p.add_argument("--schema", default=None)
     p.add_argument("--database", default=None, help="Mongo database name")
+    p.add_argument(
+        "--index-pattern",
+        default=None,
+        help="Elasticsearch index pattern (stored in limits.index_pattern)",
+    )
+    p.add_argument(
+        "--list-indices",
+        action="store_true",
+        help="List index names for Elasticsearch and exit (alias for --list-schemas)",
+    )
     p.add_argument("--split-files", choices=("true", "false"), default=None)
     p.add_argument("--workers", type=int, default=None)
     p.add_argument(
@@ -94,6 +104,10 @@ def _apply_cli_overrides(cfg: RunConfig, ns: argparse.Namespace) -> RunConfig:
         kw["database"] = ns.database
     if ns.workers is not None:
         kw["workers"] = ns.workers
+    if getattr(ns, "index_pattern", None) is not None:
+        lim = dict(cfg.limits)
+        lim["index_pattern"] = ns.index_pattern
+        kw["limits"] = lim
     inc = _parse_csv(ns.include)
     if inc is not None:
         bad = inc - FEATURES
@@ -158,13 +172,15 @@ def main(argv: list[str] | None = None) -> int:
     exc = _parse_csv(ns.exclude)
     if exc is not None:
         overrides.setdefault("features", {})["exclude"] = list(sorted(exc))
+    if getattr(ns, "index_pattern", None) is not None:
+        overrides.setdefault("limits", {})["index_pattern"] = ns.index_pattern
 
     cfg = load_run_config(cfg_path if cfg_path is not None else None, overrides if overrides else None)
     cfg = _apply_cli_overrides(cfg, ns)
 
     if ns.test_connection:
         return run_test_connection(cfg)
-    if ns.list_schemas:
+    if ns.list_schemas or getattr(ns, "list_indices", False):
         return run_list_schemas(cfg, output_format=ns.output_format)
 
     if ns.async_job:

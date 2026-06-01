@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "mdengine"
-version = "0.11.1"
+version = "0.12.0"
 description = "Convert PDF, Office, images, audio, video, text/JSON/XML, ZIP archives, web URLs, databases, graphs, and OpenAPI specs to Markdown."
 readme = "README.md"
 requires-python = ">=3.10"
@@ -101,6 +101,7 @@ db = [
   "pyodbc>=5.0.0",
   "oracledb>=2.0.0",
   "pymongo>=4.6.0",
+  "elasticsearch>=8.0.0",
   "mermaid-py>=0.8.0",
 ]
 graph = [

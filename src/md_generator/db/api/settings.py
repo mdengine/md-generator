@@ -18,6 +18,7 @@ class DbApiSettings(BaseSettings):
     max_sync_zip_mb: int = 80
     max_sqlite_upload_mb: int = 256
     max_access_upload_mb: int = 256
+    max_elasticsearch_upload_mb: int = 64
 
 
 def cors_list(settings: DbApiSettings) -> list[str]:

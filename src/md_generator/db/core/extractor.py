@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Callable
 
 from md_generator.db.adapters.factory import create_adapter
+from md_generator.db.core.elasticsearch_export import export_elasticsearch_markdown
 from md_generator.db.core.export_manifest import ExportManifestBuilder
 from md_generator.db.core.link_graph import LinkGraph
 from md_generator.db.core.markdown_writer import (
@@ -134,6 +135,17 @@ def extract_to_markdown(
             on_file(p)
 
     try:
+        if adapter.db_type == "elasticsearch":
+            return export_elasticsearch_markdown(
+                cfg,
+                adapter,
+                feats,
+                root,
+                on_progress=on_progress,
+                on_file=on_file,
+                manifest=manifest,
+            )
+
         if adapter.db_type == "mongo":
             if "mongodb_collections" in feats:
                 cols = adapter.get_collections()

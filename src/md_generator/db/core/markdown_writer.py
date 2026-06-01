@@ -287,6 +287,16 @@ COMBINED_BUNDLE_ORDER: tuple[str, ...] = (
     "oracle/packages.md",
     "oracle/clusters.md",
     "mongodb/collections.md",
+    "elasticsearch/indices.md",
+    "elasticsearch/data_streams.md",
+    "elasticsearch/component_templates.md",
+    "elasticsearch/templates.md",
+    "elasticsearch/pipelines.md",
+    "elasticsearch/ilm.md",
+    "elasticsearch/slm.md",
+    "elasticsearch/snapshots.md",
+    "elasticsearch/search_templates.md",
+    "elasticsearch/search_dependency_graph.md",
 )
 
 
@@ -310,6 +320,15 @@ def _bundle_heading_for_path(rel_path: str) -> str:
         "oracle/packages": "Oracle packages (combined)",
         "oracle/clusters": "Oracle clusters (combined)",
         "mongodb/collections": "MongoDB collections (combined)",
+        "elasticsearch/indices": "Elasticsearch indices (combined)",
+        "elasticsearch/data_streams": "Elasticsearch data streams (combined)",
+        "elasticsearch/component_templates": "Elasticsearch component templates (combined)",
+        "elasticsearch/templates": "Elasticsearch index templates (combined)",
+        "elasticsearch/pipelines": "Elasticsearch ingest pipelines (combined)",
+        "elasticsearch/ilm": "Elasticsearch ILM policies (combined)",
+        "elasticsearch/slm": "Elasticsearch SLM policies (combined)",
+        "elasticsearch/snapshots": "Elasticsearch snapshot repositories (combined)",
+        "elasticsearch/search_templates": "Elasticsearch search templates (combined)",
     }
     if key in known:
         return known[key]
@@ -355,6 +374,8 @@ def format_run_readme(meta: RunMetadata, output_root: Path | None = None) -> str
         lines.append(f"- **Schema:** `{meta.schema}`\n")
     if meta.database is not None:
         lines.append(f"- **Mongo database:** `{meta.database}`\n")
+    if meta.cluster_name is not None:
+        lines.append(f"- **Cluster:** `{meta.cluster_name}`\n")
     lines.extend(
         [
             f"- **Generated (UTC):** {meta.generated_at_utc}\n",

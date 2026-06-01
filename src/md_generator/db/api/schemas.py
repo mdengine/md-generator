@@ -5,12 +5,17 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, Field, model_validator
 
-from md_generator.db.core.models import FEATURES
+from md_generator.db.core.elasticsearch_output import elasticsearch_output_from_dict
+from md_generator.db.core.elasticsearch_redaction import redaction_config_from_dict
+from md_generator.db.core.models import ELASTICSEARCH_FEATURES, FEATURES
 from md_generator.db.core.run_config import ErdConfig, RunConfig
 
 
 class DatabaseSection(BaseModel):
-    type: str = Field(..., description="postgres | mysql | mssql | oracle | mongo | sqlite | access")
+    type: str = Field(
+        ...,
+        description="postgres | mysql | mssql | oracle | mongo | sqlite | access | elasticsearch",
+    )
     uri: str
     schema: str | None = None
     database: str | None = None
@@ -23,6 +28,9 @@ class OutputSection(BaseModel):
     readme_feature_merge: Literal["none", "inline", "toc"] = "none"
     write_manifest: bool = True
     markdown_cross_links: bool = True
+    elasticsearch_mapping_mode: str | None = None
+    elasticsearch_include_raw_json: bool | None = None
+    elasticsearch_analyzer_format: str | None = None
 
 
 class FeaturesSection(BaseModel):
@@ -42,6 +50,11 @@ class ErdSection(BaseModel):
     )
 
 
+class SecuritySection(BaseModel):
+    redact_sensitive_values: bool = False
+    redact_patterns: list[str] | None = None
+
+
 class DbToMdRunBody(BaseModel):
     database: DatabaseSection
     output: OutputSection = Field(default_factory=OutputSection)
@@ -49,6 +62,7 @@ class DbToMdRunBody(BaseModel):
     execution: ExecutionSection = Field(default_factory=ExecutionSection)
     limits: dict[str, Any] = Field(default_factory=dict)
     erd: ErdSection = Field(default_factory=ErdSection)
+    security: SecuritySection = Field(default_factory=SecuritySection)
 
     @model_validator(mode="after")
     def check_features(self) -> DbToMdRunBody:
@@ -62,11 +76,23 @@ class DbToMdRunBody(BaseModel):
         return self
 
     def to_run_config(self) -> RunConfig:
-        inc = frozenset(self.features.include) if self.features.include else frozenset(FEATURES)
+        db_t = self.database.type.lower().strip()
+        if self.features.include:
+            inc = frozenset(self.features.include)
+        elif db_t in ("elasticsearch", "es"):
+            inc = frozenset(ELASTICSEARCH_FEATURES)
+        else:
+            inc = frozenset(FEATURES)
         merge = self.output.readme_feature_merge
         write_combined = self.output.write_combined_feature_markdown
         if merge != "none" and self.output.split_files:
             write_combined = True
+        es_out = elasticsearch_output_from_dict(
+            self.output.model_dump(exclude_none=True),
+        )
+        security_cfg = redaction_config_from_dict(
+            self.security.model_dump(exclude_none=True),
+        )
         return RunConfig(
             db_type=self.database.type,
             uri=self.database.uri,
@@ -83,4 +109,6 @@ class DbToMdRunBody(BaseModel):
             workers=self.execution.workers,
             limits=dict(self.limits),
             erd=ErdConfig(max_tables=self.erd.max_tables, scope=self.erd.scope).normalized(),
+            elasticsearch=es_out,
+            security=security_cfg,
         )

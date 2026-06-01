@@ -7,6 +7,15 @@ from md_generator.db.core.models import (
     ClusterInfo,
     ColumnInfo,
     DependencyEdge,
+    ElasticsearchComponentTemplateInfo,
+    ElasticsearchDataStreamInfo,
+    ElasticsearchIndexInfo,
+    ElasticsearchIndexTemplateInfo,
+    ElasticsearchIlmPolicyInfo,
+    ElasticsearchPipelineInfo,
+    ElasticsearchSearchTemplateInfo,
+    ElasticsearchSlmPolicyInfo,
+    ElasticsearchSnapshotRepositoryInfo,
     ForeignKeyInfo,
     IndexInfo,
     MongoCollectionInfo,
@@ -70,6 +79,39 @@ class BaseAdapter(ABC):
 
     def get_collections(self) -> list[MongoCollectionInfo]:
         return []
+
+    def get_indices(self, *, include_field_caps: bool = False) -> list[ElasticsearchIndexInfo]:
+        return []
+
+    def get_data_streams(self) -> list[ElasticsearchDataStreamInfo]:
+        return []
+
+    def get_component_templates(self) -> list[ElasticsearchComponentTemplateInfo]:
+        return []
+
+    def get_ingest_pipelines(self) -> list[ElasticsearchPipelineInfo]:
+        return []
+
+    def get_index_templates(self) -> list[ElasticsearchIndexTemplateInfo]:
+        return []
+
+    def get_ilm_policies(self) -> list[ElasticsearchIlmPolicyInfo]:
+        return []
+
+    def get_slm_policies(self) -> list[ElasticsearchSlmPolicyInfo]:
+        return []
+
+    def get_slm_export_diagnostics(self) -> str | None:
+        return None
+
+    def get_snapshot_repositories(self) -> list[ElasticsearchSnapshotRepositoryInfo]:
+        return []
+
+    def get_search_templates(self) -> list[ElasticsearchSearchTemplateInfo]:
+        return []
+
+    def get_search_template_export_diagnostics(self) -> str | None:
+        return None
 
     def list_schemas(self) -> list[str]:
         return []

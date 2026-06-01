@@ -7,7 +7,15 @@ from typing import Any
 
 import yaml
 
-from md_generator.db.core.models import FEATURES
+from md_generator.db.core.elasticsearch_output import (
+    ElasticsearchOutputConfig,
+    elasticsearch_output_from_dict,
+)
+from md_generator.db.core.elasticsearch_redaction import (
+    RedactionConfig,
+    redaction_config_from_dict,
+)
+from md_generator.db.core.models import ELASTICSEARCH_FEATURES, FEATURES
 
 ALLOWED_ERD_SCOPES = frozenset({"full", "per_schema", "per_table"})
 ALLOWED_README_FEATURE_MERGE = frozenset({"none", "inline", "toc"})
@@ -45,6 +53,10 @@ class RunConfig:
     readme_feature_merge: str = "none"  # none | inline | toc
     write_manifest: bool = True
     markdown_cross_links: bool = True
+    elasticsearch: ElasticsearchOutputConfig = field(
+        default_factory=ElasticsearchOutputConfig
+    )
+    security: RedactionConfig = field(default_factory=RedactionConfig)
 
     def with_output(self, path: Path) -> RunConfig:
         return replace(self, output_path=path)
@@ -110,6 +122,11 @@ def load_run_config(path: Path | None, overrides: dict[str, Any] | None = None) 
         if cur is None or str(cur).strip() == "" or str(cur).lower() == "public":
             db["schema"] = "main"
             raw["database"] = db
+    if db_type in ("elasticsearch", "es"):
+        cur = db.get("schema")
+        if cur is not None and str(cur).lower() == "public":
+            db["schema"] = None
+            raw["database"] = db
     out = raw.get("output") or {}
     feats = raw.get("features") or {}
     exe = raw.get("execution") or {}
@@ -124,6 +141,8 @@ def load_run_config(path: Path | None, overrides: dict[str, Any] | None = None) 
         scope=str(erd_merged.get("scope", "full")),
     ).normalized()
 
+    security_cfg = redaction_config_from_dict(raw.get("security"))
+
     split_files = bool(out.get("split_files", True))
     write_combined = bool(out.get("write_combined_feature_markdown", False))
     readme_merge = str(out.get("readme_feature_merge", "none")).lower().strip()
@@ -134,9 +153,13 @@ def load_run_config(path: Path | None, overrides: dict[str, Any] | None = None) 
 
     inc = feats.get("include")
     if not inc:
-        include_set = frozenset(FEATURES)
+        if db_type in ("elasticsearch", "es"):
+            include_set = frozenset(ELASTICSEARCH_FEATURES)
+        else:
+            include_set = frozenset(FEATURES)
     else:
         include_set = frozenset(str(x) for x in inc)
+    es_out = elasticsearch_output_from_dict(out if isinstance(out, dict) else {})
     exc = feats.get("exclude") or []
     exclude_set = frozenset(str(x) for x in exc)
 
@@ -156,4 +179,6 @@ def load_run_config(path: Path | None, overrides: dict[str, Any] | None = None) 
         workers=int(exe.get("workers", 4)),
         limits=dict(lim),
         erd=erd_cfg,
+        elasticsearch=es_out,
+        security=security_cfg,
     )
