@@ -28,18 +28,6 @@ def _sqlite_bytes() -> bytes:
         path.unlink(missing_ok=True)
 
 
-@pytest.fixture(scope="module")
-def db_api_client() -> TestClient:
-    """One app lifespan per module (MCP session manager is single-use per process)."""
-    root = Path(tempfile.mkdtemp())
-    os.environ["DB_TO_MD_JOB_SQLITE_PATH"] = str(root / "jobs.sqlite")
-    os.environ["DB_TO_MD_JOB_WORKSPACE_ROOT"] = str(root / "ws")
-    from md_generator.db.api.main import app
-
-    with TestClient(app, raise_server_exceptions=True) as client:
-        yield client
-
-
 def test_run_sqlite_upload_sync_returns_zip(db_api_client: TestClient) -> None:
     body = _sqlite_bytes()
     cfg = {"features": {"include": ["tables"], "exclude": []}}

@@ -16,7 +16,9 @@ from md_generator.db.api.schemas import DbToMdRunBody
 from md_generator.db.api.settings import DbApiSettings, cors_list, sqlite_path_resolved
 from md_generator.db.adapters.access_odbc import is_access_filename
 from md_generator.db.api.access_upload import parse_access_upload_config_json
+from md_generator.db.api.elasticsearch_upload import parse_elasticsearch_upload_config_json
 from md_generator.db.api.sqlite_upload import parse_sqlite_upload_config_json
+from md_generator.db.core.elasticsearch_bundle import extract_zip_bundle, is_elasticsearch_bundle_dir
 from md_generator.db.core.job_manager import JobManager
 from md_generator.db.core.util import is_sqlite_database_bytes, sqlite_uri_for_path
 from md_generator.db.core.zip_export import build_markdown_zip_bytes
@@ -134,6 +136,97 @@ async def db_job_sqlite_upload(
     cfg_template = opts.to_run_config("sqlite:///placeholder")
     try:
         rec = jobs.create_sqlite_file_job(data, cfg_template)
+        jobs.run_job_thread(rec.job_id)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+    return {"job_id": rec.job_id}
+
+
+@app.post("/db-to-md/run/elasticsearch")
+async def db_run_elasticsearch_upload(
+    request: Request,
+    file: UploadFile = File(
+        ...,
+        description="ZIP of Elasticsearch metadata JSON (mappings/, settings/, pipelines/, …)",
+    ),
+    config: str | None = Form(None, description="Optional JSON: output, features, execution, limits"),
+) -> Response:
+    import tempfile
+
+    settings: DbApiSettings = request.app.state.settings
+    max_upload = max(1, settings.max_elasticsearch_upload_mb) * 1024 * 1024
+    data = await file.read()
+    if len(data) > max_upload:
+        raise HTTPException(
+            status_code=413,
+            detail=(
+                f"Elasticsearch upload exceeds DB_TO_MD_MAX_ELASTICSEARCH_UPLOAD_MB "
+                f"({settings.max_elasticsearch_upload_mb})"
+            ),
+        )
+    if not data or data[:2] != b"PK":
+        raise HTTPException(status_code=400, detail="File must be a ZIP archive")
+    try:
+        opts = parse_elasticsearch_upload_config_json(config)
+    except (ValueError, ValidationError) as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+    try:
+        with tempfile.TemporaryDirectory() as td:
+            bundle_dir = extract_zip_bundle(data, Path(td) / "bundle")
+            if not is_elasticsearch_bundle_dir(bundle_dir):
+                raise ValueError(
+                    "ZIP must contain Elasticsearch bundle layout "
+                    "(e.g. mappings/, settings/, or *.json at root)"
+                )
+            cfg = opts.to_run_config(bundle_dir)
+            zip_data = build_markdown_zip_bytes(cfg)
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+    max_b = settings.max_sync_zip_mb * 1024 * 1024
+    if len(zip_data) > max_b:
+        raise HTTPException(
+            status_code=413,
+            detail=(
+                f"ZIP exceeds DB_TO_MD_MAX_SYNC_ZIP_MB ({settings.max_sync_zip_mb}); "
+                "use POST /db-to-md/job/elasticsearch"
+            ),
+        )
+    return Response(
+        content=zip_data,
+        media_type="application/zip",
+        headers={"Content-Disposition": 'attachment; filename="elasticsearch-metadata.zip"'},
+    )
+
+
+@app.post("/db-to-md/job/elasticsearch")
+async def db_job_elasticsearch_upload(
+    request: Request,
+    file: UploadFile = File(..., description="ZIP of Elasticsearch metadata JSON"),
+    config: str | None = Form(None, description="Optional JSON export options"),
+) -> dict[str, str]:
+    settings: DbApiSettings = request.app.state.settings
+    jobs: JobManager = request.app.state.jobs
+    max_upload = max(1, settings.max_elasticsearch_upload_mb) * 1024 * 1024
+    data = await file.read()
+    if len(data) > max_upload:
+        raise HTTPException(
+            status_code=413,
+            detail=(
+                f"Elasticsearch upload exceeds DB_TO_MD_MAX_ELASTICSEARCH_UPLOAD_MB "
+                f"({settings.max_elasticsearch_upload_mb})"
+            ),
+        )
+    if not data or data[:2] != b"PK":
+        raise HTTPException(status_code=400, detail="File must be a ZIP archive")
+    try:
+        opts = parse_elasticsearch_upload_config_json(config)
+    except (ValueError, ValidationError) as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+    cfg_template = opts.to_run_config(Path("bundle"))
+    try:
+        rec = jobs.create_elasticsearch_bundle_job(data, cfg_template)
         jobs.run_job_thread(rec.job_id)
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e)) from e

@@ -101,6 +101,7 @@ db = [
   "pyodbc>=5.0.0",
   "oracledb>=2.0.0",
   "pymongo>=4.6.0",
+  "elasticsearch>=8.0.0",
   "mermaid-py>=0.8.0",
 ]
 graph = [

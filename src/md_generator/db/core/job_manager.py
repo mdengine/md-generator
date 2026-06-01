@@ -14,6 +14,7 @@ from typing import Any
 
 from md_generator.db.core.extractor import extract_to_markdown
 from md_generator.db.core.models import JobStatus
+from md_generator.db.core.elasticsearch_output import ElasticsearchOutputConfig
 from md_generator.db.core.run_config import ErdConfig, RunConfig
 
 logger = logging.getLogger(__name__)
@@ -176,6 +177,40 @@ class JobManager:
         )
         return self._insert_job_record(jid, ws, cfg)
 
+    def create_elasticsearch_bundle_job(
+        self, zip_bytes: bytes, cfg_template: RunConfig
+    ) -> DbJobRecord:
+        """Extract Elasticsearch metadata ZIP to ``{workspace}/bundle`` and run JSON adapter export."""
+        from md_generator.db.core.elasticsearch_bundle import extract_zip_bundle
+
+        jid = str(uuid.uuid4())
+        base = self._root or Path.cwd() / "db-md-jobs"
+        ws = (base / jid).resolve()
+        ws.mkdir(parents=True, exist_ok=True)
+        bundle_dir = ws / "bundle"
+        extract_zip_bundle(zip_bytes, bundle_dir)
+        lim = dict(cfg_template.limits)
+        lim["json_bundle_dir"] = str(bundle_dir)
+        cfg = RunConfig(
+            db_type="elasticsearch",
+            uri="json-bundle://local",
+            schema=cfg_template.schema,
+            database=cfg_template.database,
+            output_path=cfg_template.output_path,
+            split_files=cfg_template.split_files,
+            write_combined_feature_markdown=cfg_template.write_combined_feature_markdown,
+            readme_feature_merge=cfg_template.readme_feature_merge,
+            write_manifest=cfg_template.write_manifest,
+            markdown_cross_links=cfg_template.markdown_cross_links,
+            include=cfg_template.include,
+            exclude=cfg_template.exclude,
+            workers=cfg_template.workers,
+            limits=lim,
+            erd=cfg_template.erd,
+            elasticsearch=cfg_template.elasticsearch,
+        )
+        return self._insert_job_record(jid, ws, cfg)
+
     def _insert_job_record(self, jid: str, ws: Path, cfg: RunConfig) -> DbJobRecord:
         now = time.time()
         cfg_dump = json.dumps(_config_to_jsonable(cfg), sort_keys=True)
@@ -275,6 +310,7 @@ class JobManager:
             workers=int(data.get("workers", 4)),
             limits=dict(data.get("limits", {})),
             erd=erd,
+            elasticsearch=_elasticsearch_config_from_dict(data.get("elasticsearch")),
         )
 
     def run_job_thread(self, job_id: str) -> None:
@@ -323,6 +359,16 @@ class JobManager:
             self._conn.commit()
 
 
+def _elasticsearch_config_from_dict(raw: Any) -> ElasticsearchOutputConfig:
+    if not isinstance(raw, dict):
+        return ElasticsearchOutputConfig()
+    return ElasticsearchOutputConfig(
+        mapping_mode=str(raw.get("mapping_mode", "flattened")),
+        include_raw_json=bool(raw.get("include_raw_json", False)),
+        analyzer_format=str(raw.get("analyzer_format", "chain")),
+    ).normalized()
+
+
 def _default_sqlite_path() -> Path:
     import tempfile
 
@@ -346,6 +392,11 @@ def _config_to_jsonable(cfg: RunConfig) -> dict[str, Any]:
         "workers": cfg.workers,
         "limits": cfg.limits,
         "erd": {"max_tables": cfg.erd.max_tables, "scope": cfg.erd.scope},
+        "elasticsearch": {
+            "mapping_mode": cfg.elasticsearch.mapping_mode,
+            "include_raw_json": cfg.elasticsearch.include_raw_json,
+            "analyzer_format": cfg.elasticsearch.analyzer_format,
+        },
     }
 
 

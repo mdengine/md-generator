@@ -1,10 +1,13 @@
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Any
 
 from sqlalchemy.engine.url import make_url
 
 from md_generator.db.adapters.access_adapter import AccessAdapter
+from md_generator.db.adapters.elasticsearch_adapter import ElasticsearchAdapter
+from md_generator.db.adapters.elasticsearch_json_adapter import ElasticsearchJsonAdapter
 from md_generator.db.adapters.mongo_adapter import MongoAdapter
 from md_generator.db.adapters.mysql_adapter import MysqlAdapter
 from md_generator.db.adapters.oracle_adapter import OracleAdapter
@@ -53,4 +56,9 @@ def create_adapter(
         if sch.lower() == "public":
             sch = "main"
         return AccessAdapter(uri, sch, lim)
+    if t in ("elasticsearch", "es"):
+        bundle = lim.get("json_bundle_dir")
+        if bundle:
+            return ElasticsearchJsonAdapter(Path(str(bundle)), lim)
+        return ElasticsearchAdapter(uri, lim)
     raise ValueError(f"Unsupported database type: {db_type!r}")

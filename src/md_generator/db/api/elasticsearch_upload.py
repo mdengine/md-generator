@@ -1,26 +1,20 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
 from typing import Any, Literal
 
 from pydantic import BaseModel, Field, model_validator
 
-from md_generator.db.core.elasticsearch_output import elasticsearch_output_from_dict
+from md_generator.db.core.elasticsearch_output import (
+    ElasticsearchOutputConfig,
+    elasticsearch_output_from_dict,
+)
 from md_generator.db.core.models import ELASTICSEARCH_FEATURES, FEATURES
-from md_generator.db.core.run_config import ErdConfig, RunConfig
+from md_generator.db.core.run_config import RunConfig
 
 
-class DatabaseSection(BaseModel):
-    type: str = Field(
-        ...,
-        description="postgres | mysql | mssql | oracle | mongo | sqlite | access | elasticsearch",
-    )
-    uri: str
-    schema: str | None = None
-    database: str | None = None
-
-
-class OutputSection(BaseModel):
+class ElasticsearchUploadOutputSection(BaseModel):
     path: str = "./docs"
     split_files: bool = True
     write_combined_feature_markdown: bool = False
@@ -32,33 +26,25 @@ class OutputSection(BaseModel):
     elasticsearch_analyzer_format: str | None = None
 
 
-class FeaturesSection(BaseModel):
+class ElasticsearchUploadFeaturesSection(BaseModel):
     include: list[str] | None = None
     exclude: list[str] = Field(default_factory=list)
 
 
-class ExecutionSection(BaseModel):
+class ElasticsearchUploadExecutionSection(BaseModel):
     workers: int = Field(default=4, ge=1, le=32)
 
 
-class ErdSection(BaseModel):
-    max_tables: int = Field(default=100, ge=1, le=100_000)
-    scope: Literal["full", "per_schema", "per_table"] = Field(
-        default="full",
-        description="full | per_schema | per_table",
-    )
+class ElasticsearchUploadJsonBody(BaseModel):
+    """Export options for Elasticsearch JSON/ZIP bundle upload (no live ``database`` block)."""
 
-
-class DbToMdRunBody(BaseModel):
-    database: DatabaseSection
-    output: OutputSection = Field(default_factory=OutputSection)
-    features: FeaturesSection = Field(default_factory=FeaturesSection)
-    execution: ExecutionSection = Field(default_factory=ExecutionSection)
+    output: ElasticsearchUploadOutputSection = Field(default_factory=ElasticsearchUploadOutputSection)
+    features: ElasticsearchUploadFeaturesSection = Field(default_factory=ElasticsearchUploadFeaturesSection)
+    execution: ElasticsearchUploadExecutionSection = Field(default_factory=ElasticsearchUploadExecutionSection)
     limits: dict[str, Any] = Field(default_factory=dict)
-    erd: ErdSection = Field(default_factory=ErdSection)
 
     @model_validator(mode="after")
-    def check_features(self) -> DbToMdRunBody:
+    def check_features(self) -> ElasticsearchUploadJsonBody:
         if self.features.include:
             bad = set(self.features.include) - FEATURES
             if bad:
@@ -68,26 +54,23 @@ class DbToMdRunBody(BaseModel):
             raise ValueError(f"Unknown features in exclude: {sorted(bad_ex)}")
         return self
 
-    def to_run_config(self) -> RunConfig:
-        db_t = self.database.type.lower().strip()
+    def to_run_config(self, bundle_dir: Path) -> RunConfig:
         if self.features.include:
             inc = frozenset(self.features.include)
-        elif db_t in ("elasticsearch", "es"):
-            inc = frozenset(ELASTICSEARCH_FEATURES)
         else:
-            inc = frozenset(FEATURES)
+            inc = frozenset(ELASTICSEARCH_FEATURES)
         merge = self.output.readme_feature_merge
         write_combined = self.output.write_combined_feature_markdown
         if merge != "none" and self.output.split_files:
             write_combined = True
-        es_out = elasticsearch_output_from_dict(
-            self.output.model_dump(exclude_none=True),
-        )
+        es_out = elasticsearch_output_from_dict(self.output.model_dump(exclude_none=True))
+        lim = dict(self.limits)
+        lim["json_bundle_dir"] = str(bundle_dir.resolve())
         return RunConfig(
-            db_type=self.database.type,
-            uri=self.database.uri,
-            schema=self.database.schema,
-            database=self.database.database,
+            db_type="elasticsearch",
+            uri="json-bundle://local",
+            schema=None,
+            database=None,
             output_path=Path(self.output.path),
             split_files=self.output.split_files,
             write_combined_feature_markdown=write_combined,
@@ -97,7 +80,15 @@ class DbToMdRunBody(BaseModel):
             include=inc,
             exclude=frozenset(self.features.exclude),
             workers=self.execution.workers,
-            limits=dict(self.limits),
-            erd=ErdConfig(max_tables=self.erd.max_tables, scope=self.erd.scope).normalized(),
+            limits=lim,
             elasticsearch=es_out,
         )
+
+
+def parse_elasticsearch_upload_config_json(raw: str | None) -> ElasticsearchUploadJsonBody:
+    if raw is None or not str(raw).strip():
+        return ElasticsearchUploadJsonBody()
+    data = json.loads(raw)
+    if not isinstance(data, dict):
+        raise ValueError("config must be a JSON object")
+    return ElasticsearchUploadJsonBody.model_validate(data)
