@@ -7,8 +7,11 @@ from typing import Any
 from md_generator.sap.core.export_manifest import ExportManifestBuilder
 from md_generator.sap.core.link_graph import SapLinkGraph
 from md_generator.sap.core.run_config import SapRunConfig
+from md_generator.sap.models.entities.kinds import SapObjectKind
 from md_generator.sap.markdown.builders.entity_builder import build_entity_markdown
+from md_generator.sap.markdown.builders.odata_builder import render_odata_catalog
 from md_generator.sap.models.entities.sap_object import SapObject
+from md_generator.sap.models.metadata.odata import ODataMetadataDocument
 
 
 def write_text(path: Path, content: str) -> None:
@@ -28,6 +31,7 @@ def render_all(
     governance: list[dict[str, Any]] | None = None,
     link_graph: SapLinkGraph | None = None,
     manifest: ExportManifestBuilder | None = None,
+    odata_documents: list[ODataMetadataDocument] | None = None,
 ) -> SapLinkGraph:
     lg = link_graph or SapLinkGraph()
     feats = cfg.effective_features()
@@ -47,6 +51,12 @@ def render_all(
         gov_by_obj.setdefault(g.get("object_id", ""), []).append(g)
 
     for obj in objects:
+        _skip_entity_md = obj.kind in (
+            SapObjectKind.ODATA_SERVICE,
+            SapObjectKind.ODATA_ENTITY_SET,
+            SapObjectKind.ODATA_ACTION,
+            SapObjectKind.ODATA_FUNCTION,
+        )
         rel_path = lg.entity_rel_path(obj.package, obj.name)
         lg.register(obj.kind.value, obj.package, obj.name, rel_path)
         obj_rels = rels_map.get(obj.object_id, [])
@@ -70,7 +80,7 @@ def render_all(
             cap=cfg.performance.intelligence_list_cap,
         )
 
-        if "entities" in feats:
+        if "entities" in feats and not _skip_entity_md:
             p = root / rel_path
             write_text(p, md)
             if manifest:
@@ -124,6 +134,14 @@ def render_all(
         write_text(gp, json.dumps(governance, indent=2))
         if manifest:
             manifest.add_file(gp, root)
+
+    if "odata_catalog" in feats and odata_documents:
+        def _on_odata_file(p: Path) -> None:
+            if manifest:
+                manifest.add_file(p, root)
+                manifest.bump("odata_catalog")
+
+        render_odata_catalog(root, odata_documents, on_file=_on_odata_file)
 
     return lg
 

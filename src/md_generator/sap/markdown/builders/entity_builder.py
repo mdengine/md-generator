@@ -137,7 +137,16 @@ def _format_apis(obj: SapObject) -> str:
     if "bapi" in meta:
         return f"- BAPI: `{obj.name}`"
     if "odata" in meta:
-        return f"- OData entity with {len(meta['odata'].get('properties', []))} properties"
+        lines = [f"- OData entity `{obj.name}` with {len(meta['odata'].get('properties', []))} properties"]
+        analysis = meta.get("odata_analysis") or {}
+        for es in analysis.get("entity_sets", [])[:10]:
+            lines.append(f"- Entity set: `{es.get('name')}` → `{es.get('entity_type')}`")
+        for nav in meta["odata"].get("navigation", [])[:10]:
+            lines.append(f"- Nav: `{nav.get('name')}` → `{nav.get('target')}` ({nav.get('multiplicity', '?')})")
+        return "\n".join(lines)
+    if "odata_entity_set" in meta:
+        cap = meta.get("capabilities", {})
+        return f"- OData entity set `{obj.name}` → `{meta.get('entity_type')}` CRUD: {cap}"
     return ""
 
 

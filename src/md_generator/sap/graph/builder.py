@@ -76,6 +76,37 @@ def build_sap_graph(objects: list[SapObject]) -> nx.MultiDiGraph:
                         if tgt:
                             g.add_edge(src, _node_id(tgt), relation=rel.MASTER_TX)
 
+        if obj.kind == SapObjectKind.ODATA_SERVICE:
+            svc = obj.name
+            for other in objects:
+                if other.package.upper() == svc or other.package == obj.package:
+                    if other.kind == SapObjectKind.ODATA_ENTITY_SET:
+                        g.add_edge(src, _node_id(other), relation=rel.ODATA_ENTITY_SET)
+                    elif other.kind == SapObjectKind.ODATA_ACTION:
+                        g.add_edge(src, _node_id(other), relation=rel.ODATA_ACTION)
+
+        if obj.kind == SapObjectKind.ODATA_ENTITY_SET:
+            et_name = (meta.get("entity_type") or "").upper()
+            tgt = by_name.get(et_name)
+            if tgt:
+                g.add_edge(src, _node_id(tgt), relation=rel.ODATA_ENTITY_SET)
+
+        if obj.kind == SapObjectKind.ODATA_ENTITY and "odata" in meta:
+            odata = meta["odata"]
+            if isinstance(odata, dict):
+                for nav in odata.get("navigation", []):
+                    target = (nav.get("target") or "").upper()
+                    mult = nav.get("multiplicity", "n")
+                    tgt = by_name.get(target)
+                    if tgt:
+                        g.add_edge(
+                            src,
+                            _node_id(tgt),
+                            relation=rel.NAV_PROP,
+                            name=nav.get("name"),
+                            multiplicity=mult,
+                        )
+
     return g
 
 

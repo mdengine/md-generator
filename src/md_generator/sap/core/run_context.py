@@ -12,6 +12,9 @@ from md_generator.sap.models.entities.sap_object import SapObject
 from md_generator.sap.parser.base import SapParseResult
 
 
+from md_generator.sap.models.metadata.odata import ODataMetadataDocument
+
+
 @dataclass
 class RunContext:
     input_paths: list[Path]
@@ -20,6 +23,7 @@ class RunContext:
     started_at: datetime
     objects: list[SapObject] = field(default_factory=list)
     parse_results: list[SapParseResult] = field(default_factory=list)
+    odata_documents: list[ODataMetadataDocument] = field(default_factory=list)
     graph: nx.MultiDiGraph | None = None
     metrics: dict[str, Any] = field(default_factory=dict)
     governance_fields: list[dict[str, Any]] = field(default_factory=list)

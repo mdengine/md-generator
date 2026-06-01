@@ -13,5 +13,6 @@ FEATURES = frozenset(
         "graphs",
         "chunks",
         "json_output",
+        "odata_catalog",
     }
 )

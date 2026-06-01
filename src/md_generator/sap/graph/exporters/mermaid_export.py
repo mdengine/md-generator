@@ -21,7 +21,7 @@ def export_er_mermaid(g: nx.MultiDiGraph, path: Path, *, max_edges: int = 200) -
         if pair in seen_edges:
             continue
         seen_edges.add(pair)
-        label = _relation_label(relation)
+        label = _relation_label(relation, data)
         lines.append(f"    {su} {label} {sv} : \"{relation}\"")
         count += 1
     for n, data in g.nodes(data=True):
@@ -39,7 +39,13 @@ def _mermaid_id(node: str) -> str:
     return s[:40] if len(s) > 40 else s
 
 
-def _relation_label(relation: str) -> str:
+def _relation_label(relation: str, data: dict | None = None) -> str:
+    data = data or {}
+    if relation == rel.NAV_PROP:
+        mult = str(data.get("multiplicity", "n"))
+        if mult in ("1", "0..1"):
+            return "||--||"
+        return "||--o{"
     if relation == rel.FK:
         return "}o--||"
     if relation in (rel.READS_TABLE, rel.ASSOCIATION):

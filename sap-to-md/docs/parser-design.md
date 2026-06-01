@@ -1,27 +1,54 @@
-# Parser design
+# OData parser design
 
-## ABAP
+The SAP module parses OData CSDL metadata (V1–V4) from files or optional URL fetch.
 
-Hybrid lexer (comment/string aware) + statement regex extractors. Outputs `AbapAnalysis` JSON.
+## Version matrix
 
-## CDS
+| Version | Format | Parser | Notes |
+|---------|--------|--------|-------|
+| 1.0 | EDMX XML | `parser/odata/xml/v1.py` | Best-effort; Association-based model |
+| 2.0 | EDMX XML | `parser/odata/xml/v2_v3.py` | Production SAP Gateway path |
+| 3.0 | EDMX XML | `parser/odata/xml/v2_v3.py` | FunctionImport / ActionImport |
+| 4.0 | EDMX XML | `parser/odata/xml/v4.py` | Actions, functions, Capabilities |
+| 4.0 | CSDL JSON | `parser/odata/json/v4.py` | `$EntityType`, `$EntityContainer` |
 
-Regex-based `define view` parser with annotation and association extraction. Semantic entity from `@Semantics.businessObject` or name heuristics.
+## Architecture
 
-## DDIC
+1. **detector.py** — format (XML vs JSON) and version sniffing
+2. **namespaces.py** — namespace-agnostic XML helpers
+3. **registry.py** — dispatches to version-specific parsers
+4. **capabilities.py** — `Org.OData.Capabilities.V1` term parsing
+5. **associations.py** — V2 association index and nav resolution
+6. **legacy.py** — `to_legacy_entity_dict()` for backward-compatible `raw_metadata["odata"]`
+7. **parser.py** — thin facade (`ODataParserPlugin`, `parse_odata_metadata`)
 
-CSV DD02L/DD03L exports → `DdicTable` with inferred business names.
+## Canonical model
 
-## OData / BAPI / IDoc / Transport
+All parsers emit `ODataMetadataDocument` with stable IDs (`odata:v2_0:SAP:entity:Customer`).
 
-XML/JSON parsers for `$metadata.xml`, BAPI exports, IDoc definitions, transport CSV.
+Catalog objects emitted as `SapObject` with `category=API`:
 
-## Extension
+- `ODATA_SERVICE`, `ODATA_ENTITY_SET`, `ODATA_ENTITY`, `ODATA_ACTION`, `ODATA_FUNCTION`
 
-Register custom parsers in YAML:
+Schema artifacts (ComplexType, EnumType, Singleton) stay in `odata_analysis` only.
 
-```yaml
-parser:
-  plugins:
-    - mycorp.sap_plugin:MyParser
-```
+## Discovery
+
+`parser/discovery.py` recognizes:
+
+- `metadata.xml`, `$metadata.xml`, `*.edmx`, `*metadata*.xml`
+- `metadata.json`, `$metadata.json`, JSON with `@odata.context` or `$EntityType`
+
+BAPI JSON is excluded via stricter `can_parse()` on the OData plugin.
+
+## Backward compatibility
+
+- `ODataParserPlugin.name == "odata"`
+- `raw_metadata["odata"]` retains `name`, `properties`, `navigation` for entities
+- Existing V2 fixture (`CUSTOMER`) unchanged
+
+## URL fetch (optional)
+
+Use `--odata-url` or `input.odata_urls[]`. Requires `httpx` (`pip install mdengine[sap]`).
+
+Fetched documents populate `metadata_url` and inferred `service_root` on the canonical model.

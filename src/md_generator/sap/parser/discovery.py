@@ -5,7 +5,7 @@ from pathlib import Path
 ABAP_SUFFIXES = {".abap", ".prog", ".asprog", ".inc"}
 CDS_SUFFIXES = {".ddls", ".cds", ".ddlx"}
 DDIC_SUFFIXES = {".dd02l", ".dd03l", ".tabl", ".csv", ".xml"}
-ODATA_NAMES = {"$metadata.xml", "metadata.xml"}
+ODATA_NAMES = {"$metadata.xml", "metadata.xml", "$metadata", "metadata.json", "$metadata.json"}
 BAPI_SUFFIXES = {".bapi.json", ".bapi.xml"}
 IDOC_SUFFIXES = {".idoc", ".idoc.xml"}
 TRANSPORT_SUFFIXES = {".transport", ".tr", ".co", ".csv"}
@@ -40,6 +40,13 @@ def _is_candidate(p: Path) -> bool:
         return True
     if name_lower in ODATA_NAMES or name_lower.endswith(".edmx"):
         return True
+    if suf == ".json" and "bapi" not in name_lower:
+        try:
+            raw = p.read_text(encoding="utf-8", errors="replace")[:4096]
+            if "@odata.context" in raw or "$EntityType" in raw:
+                return True
+        except OSError:
+            pass
     if "dd02l" in name_lower or "dd03l" in name_lower:
         return True
     if "bapi" in name_lower and suf in {".json", ".xml"}:

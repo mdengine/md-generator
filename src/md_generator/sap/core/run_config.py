@@ -57,13 +57,22 @@ class PerformanceSection:
 
 
 @dataclass
+class ODataSection:
+    fetch_timeout_sec: int = 30
+    verify_tls: bool = True
+    cache_fetched: bool = True
+
+
+@dataclass
 class SapRunConfig:
     input_paths: list[Path] = field(default_factory=list)
+    odata_urls: list[str] = field(default_factory=list)
     output_path: Path = field(default_factory=lambda: Path("output/sap-md"))
     split_files: bool = True
     include: frozenset[str] = field(default_factory=lambda: frozenset(FEATURES))
     exclude: frozenset[str] = field(default_factory=frozenset)
     parser: ParserSection = field(default_factory=ParserSection)
+    odata: ODataSection = field(default_factory=ODataSection)
     analyzer: AnalyzerSection = field(default_factory=AnalyzerSection)
     chunking: ChunkingSection = field(default_factory=ChunkingSection)
     graph: GraphSection = field(default_factory=GraphSection)
@@ -133,15 +142,25 @@ def load_run_config(path: Path | None, overrides: dict[str, Any] | None = None) 
     paths = [Path(p) for p in (inp.get("paths") or [])]
     if not paths and inp.get("path"):
         paths = [Path(inp["path"])]
+    odata_urls = list(inp.get("odata_urls") or [])
 
     perf_raw = raw.get("performance") or raw.get("execution") or {}
+    odata_raw: dict[str, Any] = {}
+    if isinstance(raw.get("parser"), dict):
+        po = raw["parser"].get("odata")
+        if isinstance(po, dict):
+            odata_raw = {**odata_raw, **po}
+    if isinstance(raw.get("odata"), dict):
+        odata_raw = {**odata_raw, **raw["odata"]}
     return SapRunConfig(
         input_paths=paths,
+        odata_urls=odata_urls,
         output_path=Path(out.get("path", "output/sap-md")),
         split_files=bool(out.get("split_files", True)),
         include=include,
         exclude=exclude,
         parser=_section(ParserSection, raw.get("parser")),
+        odata=_section(ODataSection, odata_raw),
         analyzer=_section(AnalyzerSection, raw.get("analyzer")),
         chunking=_section(ChunkingSection, raw.get("chunking")),
         graph=_section(GraphSection, raw.get("graph")),

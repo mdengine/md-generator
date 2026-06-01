@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<edmx:Edmx Version="4.0" xmlns:edmx="http://docs.oasis-open.org/odata/ns/edmx">
+  <edmx:DataServices>
+    <Schema Namespace="com.example" xmlns="http://docs.oasis-open.org/odata/ns/edm">
+      <EntityType Name="Product">
+        <Key><PropertyRef Name="ID"/></Key>
+        <Property Name="ID" Type="Edm.String"/>
+        <NavigationProperty Name="Details" Type="Collection(com.example.ProductDetail)"/>
+      </EntityType>
+      <EntityType Name="ProductDetail">
+        <Property Name="Line" Type="Edm.Int32"/>
+      </EntityType>
+      <ComplexType Name="Address">
+        <Property Name="City" Type="Edm.String"/>
+      </ComplexType>
+      <EnumType Name="Status">
+        <Member Name="Active"/>
+        <Member Name="Inactive"/>
+      </EnumType>
+      <Action Name="ResetStock" IsBound="true"/>
+      <Function Name="GetStock" IsBound="false">
+        <ReturnType Type="Edm.Int32"/>
+      </Function>
+      <EntityContainer Name="Container">
+        <EntitySet Name="Products" EntityType="com.example.Product">
+          <Annotation Term="Org.OData.Capabilities.V1.InsertRestrictions" Insertable="true"/>
+          <Annotation Term="Org.OData.Capabilities.V1.DeleteRestrictions" Deletable="false"/>
+          <Annotation Term="Org.OData.Capabilities.V1.SearchRestrictions" Searchable="true"/>
+        </EntitySet>
+      </EntityContainer>
+    </Schema>
+  </edmx:DataServices>
+</edmx:Edmx>

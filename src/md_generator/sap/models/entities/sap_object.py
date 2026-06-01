@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Any
 
 from md_generator.sap.models.entities.kinds import SapObjectKind
+from md_generator.sap.models.metadata.odata import SapObjectCategory
 
 
 @dataclass(slots=True)
@@ -17,9 +18,14 @@ class SapObject:
     raw_metadata: dict[str, Any] = field(default_factory=dict)
     semantic_entity: str = ""
     tags: list[str] = field(default_factory=list)
+    category: SapObjectCategory = SapObjectCategory.PHYSICAL
+    is_catalog_object: bool = False
 
     @property
     def object_id(self) -> str:
+        stable = self.raw_metadata.get("stable_id")
+        if stable:
+            return str(stable)
         pkg = self.package or "_"
         return f"{self.kind.value}:{pkg}:{self.name}"
 
