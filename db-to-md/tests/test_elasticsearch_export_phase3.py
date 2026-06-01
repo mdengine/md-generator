@@ -55,6 +55,36 @@ def test_export_phase3_features(tmp_path: Path) -> None:
     assert (root / "elasticsearch" / "ilm" / "pol.md").is_file()
 
 
+def test_export_slm_policies(tmp_path: Path) -> None:
+    from md_generator.db.core.models import ElasticsearchSlmPolicyInfo
+
+    adapter = MagicMock()
+    adapter.db_type = "elasticsearch"
+    adapter.get_slm_policies.return_value = [
+        ElasticsearchSlmPolicyInfo(
+            name="daily",
+            policy={"schedule": "0 0 * * *", "repository": "backup"},
+            schedule="0 0 * * *",
+            repository="backup",
+        ),
+    ]
+    adapter.get_slm_export_diagnostics.return_value = None
+
+    cfg = RunConfig(
+        db_type="elasticsearch",
+        uri="https://localhost:9200",
+        output_path=tmp_path / "docs",
+        include=frozenset({"elasticsearch_slm_policies"}),
+        write_manifest=False,
+    )
+    root = export_elasticsearch_markdown(cfg, adapter, cfg.effective_features(), cfg.output_path)
+    slm_md = root / "elasticsearch" / "slm" / "daily.md"
+    assert slm_md.is_file()
+    text = slm_md.read_text(encoding="utf-8")
+    assert "SLM policy" in text
+    assert "`backup`" in text
+
+
 def test_export_snapshots_search_templates_and_security_placeholders(tmp_path: Path) -> None:
     adapter = MagicMock()
     adapter.db_type = "elasticsearch"

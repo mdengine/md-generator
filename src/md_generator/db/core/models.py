@@ -42,10 +42,12 @@ ELASTICSEARCH_FEATURES = frozenset(
         "elasticsearch_index_templates",
         "elasticsearch_ingest_pipelines",
         "elasticsearch_ilm_policies",
+        "elasticsearch_slm_policies",
         "elasticsearch_field_caps",
         "elasticsearch_snapshot_repositories",
         "elasticsearch_search_templates",
         "elasticsearch_search_architecture",
+        "elasticsearch_search_dependency_graph",
         # Reserved for future security export (validated but not exported yet).
         "elasticsearch_security_roles",
         "elasticsearch_security_users",
@@ -243,6 +245,15 @@ class ElasticsearchIlmPolicyInfo:
 
 
 @dataclass(frozen=True)
+class ElasticsearchSlmPolicyInfo:
+    name: str
+    policy: dict[str, Any]
+    schedule: str | None = None
+    repository: str | None = None
+    indices_pattern: str | None = None
+
+
+@dataclass(frozen=True)
 class ElasticsearchSnapshotRepositoryInfo:
     name: str
     repository_type: str
@@ -261,6 +272,7 @@ class ElasticsearchSearchTemplateInfo:
     source_preview: str | None = None
     source_truncated: bool = False
     diagnostics: str | None = None
+    query_types: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)

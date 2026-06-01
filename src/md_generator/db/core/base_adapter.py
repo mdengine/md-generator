@@ -14,6 +14,7 @@ from md_generator.db.core.models import (
     ElasticsearchIlmPolicyInfo,
     ElasticsearchPipelineInfo,
     ElasticsearchSearchTemplateInfo,
+    ElasticsearchSlmPolicyInfo,
     ElasticsearchSnapshotRepositoryInfo,
     ForeignKeyInfo,
     IndexInfo,
@@ -96,6 +97,12 @@ class BaseAdapter(ABC):
 
     def get_ilm_policies(self) -> list[ElasticsearchIlmPolicyInfo]:
         return []
+
+    def get_slm_policies(self) -> list[ElasticsearchSlmPolicyInfo]:
+        return []
+
+    def get_slm_export_diagnostics(self) -> str | None:
+        return None
 
     def get_snapshot_repositories(self) -> list[ElasticsearchSnapshotRepositoryInfo]:
         return []

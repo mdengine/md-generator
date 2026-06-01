@@ -191,6 +191,7 @@ def test_get_search_templates_mustache_only() -> None:
     assert len(templates) == 1
     assert templates[0].name == "search-tpl"
     assert templates[0].source_preview is not None
+    assert templates[0].query_types == ("FULL_TEXT",)
 
 
 def test_get_search_templates_nested_script_source() -> None:
@@ -199,13 +200,31 @@ def test_get_search_templates_nested_script_source() -> None:
     mock_client.transport.perform_request.return_value = {
         "tpl": {
             "lang": "mustache",
-            "script": {"source": '{"query": {"term": {"x": "{{v}}"}}}', "params": {"v": "a"}},
+            "script": {"source": {"query": {"term": {"x": "{{v}}"}}}, "params": {"v": "a"}},
         },
     }
     with patch.object(adapter, "_ensure_client", return_value=mock_client):
         templates = adapter.get_search_templates()
     assert len(templates) == 1
     assert templates[0].param_keys == ("v",)
+    assert templates[0].query_types == ("FULL_TEXT",)
+
+
+def test_get_search_templates_hybrid_knn_classified() -> None:
+    adapter = ElasticsearchAdapter("https://localhost:9200", {})
+    mock_client = MagicMock()
+    mock_client.transport.perform_request.return_value = {
+        "hybrid": {
+            "lang": "mustache",
+            "source": {
+                "query": {"match": {"text": "{{q}}"}},
+                "knn": {"field": "embedding", "query_vector": [], "k": 5},
+            },
+        },
+    }
+    with patch.object(adapter, "_ensure_client", return_value=mock_client):
+        templates = adapter.get_search_templates()
+    assert "HYBRID_SEARCH" in templates[0].query_types
 
 
 def test_get_search_templates_diagnostics_on_total_failure() -> None:
@@ -218,6 +237,26 @@ def test_get_search_templates_diagnostics_on_total_failure() -> None:
     assert templates == []
     assert adapter.get_search_template_export_diagnostics() is not None
     assert "forbidden" in adapter.get_search_template_export_diagnostics()
+
+
+def test_get_slm_policies_mock() -> None:
+    adapter = ElasticsearchAdapter("https://localhost:9200", {})
+    mock_client = MagicMock()
+    mock_client.slm.get_lifecycle.return_value = {
+        "daily": {
+            "policy": {
+                "schedule": "0 30 1 * * ?",
+                "repository": "my-repo",
+                "config": {"indices": ["*"]},
+            }
+        },
+    }
+    with patch.object(adapter, "_ensure_client", return_value=mock_client):
+        policies = adapter.get_slm_policies()
+    assert len(policies) == 1
+    assert policies[0].name == "daily"
+    assert policies[0].repository == "my-repo"
+    assert policies[0].indices_pattern == "*"
 
 
 def test_get_ilm_policies_opensearch_ism() -> None:

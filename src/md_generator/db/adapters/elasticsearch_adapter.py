@@ -17,6 +17,7 @@ from md_generator.db.core.elasticsearch_format import (
 from md_generator.db.core.elasticsearch_normalize import (
     filter_snapshot_repositories_by_type,
     normalize_search_template,
+    normalize_slm_policy,
     normalize_snapshot_repository,
 )
 from md_generator.db.core.models import (
@@ -27,6 +28,7 @@ from md_generator.db.core.models import (
     ElasticsearchIlmPolicyInfo,
     ElasticsearchPipelineInfo,
     ElasticsearchSearchTemplateInfo,
+    ElasticsearchSlmPolicyInfo,
     ElasticsearchSnapshotRepositoryInfo,
 )
 
@@ -50,6 +52,8 @@ class ElasticsearchAdapter(BaseAdapter):
         self._client: Any = None
         self.cluster_name: str | None = None
         self._search_template_diagnostics: str | None = None
+        self._slm_policies_cache: dict[str, Any] | None = None
+        self._slm_diagnostics: str | None = None
 
     def _ensure_client(self) -> Any:
         if self._client is not None:
@@ -419,6 +423,34 @@ class ElasticsearchAdapter(BaseAdapter):
     def get_search_template_export_diagnostics(self) -> str | None:
         return self._search_template_diagnostics
 
+    def get_slm_export_diagnostics(self) -> str | None:
+        return self._slm_diagnostics
+
+    def _fetch_slm_policies(self, client: Any) -> dict[str, Any]:
+        if self._slm_policies_cache is not None:
+            return self._slm_policies_cache
+        self._slm_diagnostics = None
+        try:
+            body = client.slm.get_lifecycle()
+            self._slm_policies_cache = body if isinstance(body, dict) else {}
+        except Exception as e:
+            logger.warning("slm.get_lifecycle failed: %s", e)
+            self._slm_diagnostics = f"slm.get_lifecycle failed: {e}"
+            self._slm_policies_cache = {}
+        return self._slm_policies_cache
+
+    def get_slm_policies(self) -> list[ElasticsearchSlmPolicyInfo]:
+        client = self._ensure_client()
+        max_p = self._max("max_slm_policies", 100)
+        policies = self._fetch_slm_policies(client)
+        out: list[ElasticsearchSlmPolicyInfo] = []
+        for name in sorted(policies.keys())[:max_p]:
+            raw = policies[name]
+            if not isinstance(raw, dict):
+                continue
+            out.append(normalize_slm_policy(str(name), raw))
+        return out
+
     def get_snapshot_repositories(self) -> list[ElasticsearchSnapshotRepositoryInfo]:
         client = self._ensure_client()
         max_r = self._max("max_snapshot_repositories", 100)
@@ -430,20 +462,16 @@ class ElasticsearchAdapter(BaseAdapter):
         if not isinstance(body, dict):
             return []
         body = filter_snapshot_repositories_by_type(body, self._limits)
-        slm_policies: dict[str, Any] | None = None
-        try:
-            slm_body = client.slm.get_lifecycle()
-            if isinstance(slm_body, dict):
-                slm_policies = slm_body
-        except Exception:
-            pass
+        slm_policies = self._fetch_slm_policies(client)
         out: list[ElasticsearchSnapshotRepositoryInfo] = []
         for name in sorted(body.keys())[:max_r]:
             repo = body[name]
             if not isinstance(repo, dict):
                 continue
             out.append(
-                normalize_snapshot_repository(str(name), repo, slm_policies=slm_policies)
+                normalize_snapshot_repository(
+                    str(name), repo, slm_policies=slm_policies or None
+                )
             )
         return out
 

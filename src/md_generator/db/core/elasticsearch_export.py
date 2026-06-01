@@ -3,9 +3,14 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Callable
+from typing import Any, Callable
 
 from md_generator.db.core.base_adapter import BaseAdapter
+from md_generator.db.core.elasticsearch_dependency_graph import (
+    build_template_dependency_rows,
+    format_search_dependency_graph_markdown,
+    should_emit_dependency_graph,
+)
 from md_generator.db.core.elasticsearch_markdown import (
     format_alias_graph_markdown,
     format_elasticsearch_component_template_markdown,
@@ -16,14 +21,26 @@ from md_generator.db.core.elasticsearch_markdown import (
     format_elasticsearch_pipeline_markdown,
     format_elasticsearch_search_template_markdown,
     format_elasticsearch_security_placeholder_markdown,
+    format_elasticsearch_slm_markdown,
     format_elasticsearch_snapshot_repository_markdown,
     format_search_architecture_markdown,
+)
+from md_generator.db.core.elasticsearch_redaction import (
+    RedactionAudit,
+    redact_elasticsearch_entity,
 )
 from md_generator.db.core.elasticsearch_normalize import (
     SECURITY_LIVE_EXPORT_BLOCKED,
     security_placeholder_sections,
 )
-from md_generator.db.core.elasticsearch_synthesis import ElasticsearchExportContext
+from md_generator.db.core.elasticsearch_output import ElasticsearchOutputConfig
+from md_generator.db.core.elasticsearch_synthesis import (
+    ElasticsearchExportContext,
+    aggregate_mapping_metrics,
+    aggregate_query_type_summary,
+    build_compatibility_probes,
+)
+from md_generator.db.core.elasticsearch_warnings import ExportWarningCollector
 from md_generator.db.core.export_manifest import ExportManifestBuilder
 from md_generator.db.core.markdown_writer import (
     format_empty_feature_section,
@@ -35,6 +52,64 @@ from md_generator.db.core.markdown_writer import (
 from md_generator.db.core.models import RunMetadata
 from md_generator.db.core.run_config import RunConfig
 from md_generator.db.core.util import redact_uri
+
+
+def _record_doc_warnings(
+    collector: ExportWarningCollector,
+    rel_file: str,
+    messages: list[str],
+) -> None:
+    collector.add_messages(messages, file=rel_file)
+
+
+def _render_es_doc(
+    rel_file: str,
+    entity: Any,
+    formatter: Callable[..., str],
+    *,
+    es_out: ElasticsearchOutputConfig,
+    warn_collector: ExportWarningCollector,
+    redaction_audit: RedactionAudit,
+    redaction: Any,
+) -> str:
+    entity, matched = redact_elasticsearch_entity(entity, redaction)
+    if matched:
+        redaction_audit.merge(matched)
+    doc_warnings: list[str] = []
+    if matched:
+        doc_warnings.append("Redaction applied")
+    body = formatter(entity, output=es_out, warnings=doc_warnings)
+    _record_doc_warnings(warn_collector, rel_file, doc_warnings)
+    return body
+
+
+def _format_export_objects(
+    items: list[Any],
+    *,
+    name_attr: str,
+    subdir: str,
+    formatter: Callable[..., str],
+    es_out: ElasticsearchOutputConfig,
+    warn_collector: ExportWarningCollector,
+    redaction_audit: RedactionAudit,
+    redaction: Any,
+) -> list[tuple[str, str]]:
+    objects: list[tuple[str, str]] = []
+    for item in items:
+        name = str(getattr(item, name_attr))
+        rel = f"{subdir}/{slugify_segment(name)}.md"
+        body = _render_es_doc(
+            rel,
+            item,
+            formatter,
+            es_out=es_out,
+            warn_collector=warn_collector,
+            redaction_audit=redaction_audit,
+            redaction=redaction,
+        )
+        objects.append((name, body))
+    return objects
+
 
 def _guard_security_live_export(adapter: BaseAdapter) -> None:
     if not SECURITY_LIVE_EXPORT_BLOCKED:
@@ -144,11 +219,20 @@ def export_elasticsearch_markdown(
     bundle_paths_written: list[str] = []
     scope = str(cfg.limits.get("index_pattern") or "*")
     es_out = cfg.elasticsearch.normalized()
+    redaction = cfg.security.normalized()
+    redaction_audit = RedactionAudit()
+    warn_collector = ExportWarningCollector()
+    if manifest is None and cfg.write_manifest:
+        manifest = ExportManifestBuilder()
     cluster_name = getattr(adapter, "cluster_name", None)
     ctx = ElasticsearchExportContext(
         cluster_name=cluster_name,
         index_pattern=scope,
     )
+    cached_search_templates: list[Any] = []
+    cached_index_templates: list[Any] = []
+    slm_diag: str | None = None
+    search_tpl_diag: str | None = None
 
     def notify_file(p: Path) -> None:
         if manifest is not None:
@@ -163,6 +247,7 @@ def export_elasticsearch_markdown(
         "elasticsearch_index_templates",
         "elasticsearch_ingest_pipelines",
         "elasticsearch_ilm_policies",
+        "elasticsearch_slm_policies",
         "elasticsearch_snapshot_repositories",
         "elasticsearch_search_templates",
     )
@@ -179,8 +264,18 @@ def export_elasticsearch_markdown(
         combined: list[tuple[str, str]] = []
         if indices:
             ctx.indices = [idx.name for idx in indices]
+            ctx.mapping_aggregate = aggregate_mapping_metrics(indices)
             for i, idx in enumerate(indices):
-                body = format_elasticsearch_index_markdown(idx, output=es_out)
+                rel = f"elasticsearch/indices/{slugify_segment(idx.name)}.md"
+                body = _render_es_doc(
+                    rel,
+                    idx,
+                    format_elasticsearch_index_markdown,
+                    es_out=es_out,
+                    warn_collector=warn_collector,
+                    redaction_audit=redaction_audit,
+                    redaction=redaction,
+                )
                 if cfg.split_files:
                     p = root / "elasticsearch" / "indices" / f"{slugify_segment(idx.name)}.md"
                     write_text(p, body)
@@ -223,7 +318,16 @@ def export_elasticsearch_markdown(
         if streams:
             ctx.data_streams = [(ds.name, ds.template, ds.indices) for ds in streams]
             for i, ds in enumerate(streams):
-                body = format_elasticsearch_data_stream_markdown(ds)
+                rel = f"elasticsearch/data_streams/{slugify_segment(ds.name)}.md"
+                body = _render_es_doc(
+                    rel,
+                    ds,
+                    format_elasticsearch_data_stream_markdown,
+                    es_out=es_out,
+                    warn_collector=warn_collector,
+                    redaction_audit=redaction_audit,
+                    redaction=redaction,
+                )
                 if cfg.split_files:
                     p = root / "elasticsearch" / "data_streams" / f"{slugify_segment(ds.name)}.md"
                     write_text(p, body)
@@ -256,7 +360,16 @@ def export_elasticsearch_markdown(
         if templates:
             ctx.component_templates = [t.name for t in templates]
             for i, t in enumerate(templates):
-                body = format_elasticsearch_component_template_markdown(t)
+                rel = f"elasticsearch/component_templates/{slugify_segment(t.name)}.md"
+                body = _render_es_doc(
+                    rel,
+                    t,
+                    format_elasticsearch_component_template_markdown,
+                    es_out=es_out,
+                    warn_collector=warn_collector,
+                    redaction_audit=redaction_audit,
+                    redaction=redaction,
+                )
                 if cfg.split_files:
                     p = (
                         root
@@ -293,6 +406,7 @@ def export_elasticsearch_markdown(
         step_i += 1
         pct = base_pct + step_i * step_span
         templates = adapter.get_index_templates()
+        cached_index_templates = templates
         ctx.index_templates = [
             (t.name, t.index_patterns, t.composed_of, t.legacy) for t in templates
         ]
@@ -301,9 +415,16 @@ def export_elasticsearch_markdown(
             root=root,
             subdir="elasticsearch/templates",
             combined_rel="elasticsearch/templates.md",
-            objects=[
-                (t.name, format_elasticsearch_index_template_markdown(t)) for t in templates
-            ],
+            objects=_format_export_objects(
+                templates,
+                name_attr="name",
+                subdir="elasticsearch/templates",
+                formatter=format_elasticsearch_index_template_markdown,
+                es_out=es_out,
+                warn_collector=warn_collector,
+                redaction_audit=redaction_audit,
+                redaction=redaction,
+            ),
             progress_prefix="elasticsearch/templates",
             on_progress=on_progress,
             on_file=on_file,
@@ -324,9 +445,16 @@ def export_elasticsearch_markdown(
             root=root,
             subdir="elasticsearch/pipelines",
             combined_rel="elasticsearch/pipelines.md",
-            objects=[
-                (p.name, format_elasticsearch_pipeline_markdown(p)) for p in pipelines
-            ],
+            objects=_format_export_objects(
+                pipelines,
+                name_attr="name",
+                subdir="elasticsearch/pipelines",
+                formatter=format_elasticsearch_pipeline_markdown,
+                es_out=es_out,
+                warn_collector=warn_collector,
+                redaction_audit=redaction_audit,
+                redaction=redaction,
+            ),
             progress_prefix="elasticsearch/pipelines",
             on_progress=on_progress,
             on_file=on_file,
@@ -347,7 +475,16 @@ def export_elasticsearch_markdown(
             root=root,
             subdir="elasticsearch/ilm",
             combined_rel="elasticsearch/ilm.md",
-            objects=[(p.name, format_elasticsearch_ilm_markdown(p)) for p in policies],
+            objects=_format_export_objects(
+                policies,
+                name_attr="name",
+                subdir="elasticsearch/ilm",
+                formatter=format_elasticsearch_ilm_markdown,
+                es_out=es_out,
+                warn_collector=warn_collector,
+                redaction_audit=redaction_audit,
+                redaction=redaction,
+            ),
             progress_prefix="elasticsearch/ilm",
             on_progress=on_progress,
             on_file=on_file,
@@ -357,6 +494,45 @@ def export_elasticsearch_markdown(
             empty_scope="cluster (ILM or OpenSearch ISM)",
             step_pct=pct,
         )
+
+    if "elasticsearch_slm_policies" in feats:
+        step_i += 1
+        pct = base_pct + step_i * step_span
+        slm_policies = adapter.get_slm_policies()
+        ctx.slm_policies = [(p.name, p.repository) for p in slm_policies]
+        slm_diag = None
+        if hasattr(adapter, "get_slm_export_diagnostics"):
+            slm_diag = adapter.get_slm_export_diagnostics()
+        _export_objects(
+            cfg=cfg,
+            root=root,
+            subdir="elasticsearch/slm",
+            combined_rel="elasticsearch/slm.md",
+            objects=_format_export_objects(
+                slm_policies,
+                name_attr="name",
+                subdir="elasticsearch/slm",
+                formatter=format_elasticsearch_slm_markdown,
+                es_out=es_out,
+                warn_collector=warn_collector,
+                redaction_audit=redaction_audit,
+                redaction=redaction,
+            ),
+            progress_prefix="elasticsearch/slm",
+            on_progress=on_progress,
+            on_file=on_file,
+            notify_file=notify_file,
+            bundle_paths_written=bundle_paths_written,
+            empty_label="Elasticsearch SLM policies",
+            empty_scope="cluster (Snapshot Lifecycle Management)",
+            step_pct=pct,
+        )
+        if slm_diag:
+            warn_collector.add(
+                "slm_unavailable",
+                slm_diag,
+                file="elasticsearch/slm",
+            )
 
     if "elasticsearch_snapshot_repositories" in feats:
         step_i += 1
@@ -368,9 +544,16 @@ def export_elasticsearch_markdown(
             root=root,
             subdir="elasticsearch/snapshots",
             combined_rel="elasticsearch/snapshots.md",
-            objects=[
-                (r.name, format_elasticsearch_snapshot_repository_markdown(r)) for r in repos
-            ],
+            objects=_format_export_objects(
+                repos,
+                name_attr="name",
+                subdir="elasticsearch/snapshots",
+                formatter=format_elasticsearch_snapshot_repository_markdown,
+                es_out=es_out,
+                warn_collector=warn_collector,
+                redaction_audit=redaction_audit,
+                redaction=redaction,
+            ),
             progress_prefix="elasticsearch/snapshots",
             on_progress=on_progress,
             on_file=on_file,
@@ -385,18 +568,30 @@ def export_elasticsearch_markdown(
         step_i += 1
         pct = base_pct + step_i * step_span
         templates = adapter.get_search_templates()
+        cached_search_templates = templates
         ctx.search_templates = [t.name for t in templates]
+        ctx.search_template_types = [(t.name, t.query_types) for t in templates]
+        ctx.search_template_entities = templates
         diag = None
         if hasattr(adapter, "get_search_template_export_diagnostics"):
             diag = adapter.get_search_template_export_diagnostics()
+            search_tpl_diag = diag
+        ctx.query_type_summary = aggregate_query_type_summary(ctx.search_template_types)
         _export_objects(
             cfg=cfg,
             root=root,
             subdir="elasticsearch/search_templates",
             combined_rel="elasticsearch/search_templates.md",
-            objects=[
-                (t.name, format_elasticsearch_search_template_markdown(t)) for t in templates
-            ],
+            objects=_format_export_objects(
+                templates,
+                name_attr="name",
+                subdir="elasticsearch/search_templates",
+                formatter=format_elasticsearch_search_template_markdown,
+                es_out=es_out,
+                warn_collector=warn_collector,
+                redaction_audit=redaction_audit,
+                redaction=redaction,
+            ),
             progress_prefix="elasticsearch/search_templates",
             on_progress=on_progress,
             on_file=on_file,
@@ -407,6 +602,12 @@ def export_elasticsearch_markdown(
             step_pct=pct,
         )
         if diag:
+            diag_rel = "elasticsearch/search_templates/_diagnostics.md"
+            warn_collector.add(
+                "search_templates_restricted",
+                diag,
+                file=diag_rel,
+            )
             diag_path = root / "elasticsearch" / "search_templates" / "_diagnostics.md"
             write_text(
                 diag_path,
@@ -431,6 +632,16 @@ def export_elasticsearch_markdown(
         bundle_paths_written.append(rel)
 
     if "elasticsearch_search_architecture" in feats:
+        if not ctx.query_type_summary and ctx.search_template_types:
+            ctx.query_type_summary = aggregate_query_type_summary(ctx.search_template_types)
+        opensearch_mode = bool(cfg.limits.get("opensearch"))
+        ctx.compatibility = build_compatibility_probes(
+            opensearch_mode=opensearch_mode,
+            feats=feats,
+            ctx=ctx,
+            slm_diagnostics=slm_diag,
+            search_template_diagnostics=search_tpl_diag,
+        )
         if not ctx.alias_map and hasattr(adapter, "get_alias_map"):
             ctx.alias_map = adapter.get_alias_map()
         alias_path = root / "elasticsearch" / "alias_graph.md"
@@ -442,6 +653,26 @@ def export_elasticsearch_markdown(
         write_text(p, format_search_architecture_markdown(ctx))
         notify_file(p)
         bundle_paths_written.append("elasticsearch/search_architecture.md")
+
+    if should_emit_dependency_graph(feats, cfg.limits):
+        templates_for_graph = cached_search_templates
+        if not templates_for_graph and hasattr(adapter, "get_search_templates"):
+            templates_for_graph = adapter.get_search_templates()
+        index_templates_for_graph = cached_index_templates
+        if not index_templates_for_graph and hasattr(adapter, "get_index_templates"):
+            index_templates_for_graph = adapter.get_index_templates()
+        dep_rows = build_template_dependency_rows(
+            templates_for_graph,
+            ctx,
+            index_templates_for_graph,
+        )
+        dep_path = root / "elasticsearch" / "search_dependency_graph.md"
+        write_text(
+            dep_path,
+            format_search_dependency_graph_markdown(dep_rows, index_pattern=scope),
+        )
+        notify_file(dep_path)
+        bundle_paths_written.append("elasticsearch/search_dependency_graph.md")
 
     if "elasticsearch_field_caps" in feats and "elasticsearch_indices" not in feats:
         p = root / "elasticsearch" / "field_caps.md"
@@ -477,5 +708,10 @@ def export_elasticsearch_markdown(
     )
     readme = write_run_readme(root, meta)
     notify_file(readme)
+    if manifest is not None:
+        manifest.set_warnings(warn_collector.to_manifest_list())
+        if redaction.enabled or redaction_audit.applied:
+            manifest.set_redaction(redaction_audit.to_manifest_dict())
+        manifest.write(root, cfg, meta)
     _emit(on_progress, 100, "README.md")
     return root

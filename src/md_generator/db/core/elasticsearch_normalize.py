@@ -4,8 +4,10 @@ from __future__ import annotations
 
 from typing import Any
 
+from md_generator.db.core.elasticsearch_query_classify import classify_search_template_spec
 from md_generator.db.core.models import (
     ElasticsearchSearchTemplateInfo,
+    ElasticsearchSlmPolicyInfo,
     ElasticsearchSnapshotRepositoryInfo,
 )
 
@@ -126,6 +128,29 @@ def _allowed_search_template_langs(limits: dict[str, Any]) -> frozenset[str]:
     return frozenset(x.lower() for x in langs)
 
 
+def normalize_slm_policy(name: str, raw: dict[str, Any]) -> ElasticsearchSlmPolicyInfo:
+    body = raw.get("policy", raw) if isinstance(raw, dict) else {}
+    if not isinstance(body, dict):
+        body = {}
+    schedule = body.get("schedule")
+    repository = body.get("repository")
+    indices_pattern: str | None = None
+    config = body.get("config")
+    if isinstance(config, dict):
+        indices = config.get("indices")
+        if isinstance(indices, list):
+            indices_pattern = ", ".join(str(x) for x in indices)
+        elif indices is not None:
+            indices_pattern = str(indices)
+    return ElasticsearchSlmPolicyInfo(
+        name=name,
+        policy=body,
+        schedule=str(schedule) if schedule is not None else None,
+        repository=str(repository) if repository is not None else None,
+        indices_pattern=indices_pattern,
+    )
+
+
 def normalize_search_template(
     name: str,
     spec: dict[str, Any],
@@ -166,6 +191,7 @@ def normalize_search_template(
         source_preview=source_preview,
         source_truncated=truncated,
         diagnostics=None,
+        query_types=classify_search_template_spec(spec),
     )
 
 

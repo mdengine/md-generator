@@ -18,6 +18,8 @@ class ExportManifestBuilder:
     generated_files: list[str] = field(default_factory=list)
     combined_bundles: list[str] = field(default_factory=list)
     dependency_edges: int = 0
+    warnings: list[dict[str, Any]] = field(default_factory=list)
+    redaction: dict[str, Any] | None = None
 
     def add_file(self, path: Path, output_root: Path) -> None:
         try:
@@ -30,6 +32,12 @@ class ExportManifestBuilder:
     def bump(self, key: str, n: int = 1) -> None:
         self.counts[key] = self.counts.get(key, 0) + n
 
+    def set_warnings(self, items: list[dict[str, Any]]) -> None:
+        self.warnings = list(items)
+
+    def set_redaction(self, audit: dict[str, Any]) -> None:
+        self.redaction = audit
+
     def to_dict(
         self,
         cfg: RunConfig,
@@ -37,7 +45,7 @@ class ExportManifestBuilder:
         *,
         database_name: str | None = None,
     ) -> dict[str, Any]:
-        return {
+        data: dict[str, Any] = {
             "generated_at_utc": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
             "database_type": meta.db_type,
             "database": database_name,
@@ -56,6 +64,11 @@ class ExportManifestBuilder:
                 "markdown_cross_links": cfg.markdown_cross_links,
             },
         }
+        if self.warnings:
+            data["warnings"] = self.warnings
+        if self.redaction is not None:
+            data["redaction"] = self.redaction
+        return data
 
     def write(self, output_root: Path, cfg: RunConfig, meta: RunMetadata) -> Path:
         data = self.to_dict(cfg, meta)

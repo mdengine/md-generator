@@ -16,6 +16,7 @@ from md_generator.db.core.elasticsearch_format import invert_alias_map
 from md_generator.db.core.elasticsearch_normalize import (
     filter_snapshot_repositories_by_type,
     normalize_search_template,
+    normalize_slm_policy,
     normalize_snapshot_repository,
 )
 from md_generator.db.core.models import (
@@ -26,6 +27,7 @@ from md_generator.db.core.models import (
     ElasticsearchIlmPolicyInfo,
     ElasticsearchPipelineInfo,
     ElasticsearchSearchTemplateInfo,
+    ElasticsearchSlmPolicyInfo,
     ElasticsearchSnapshotRepositoryInfo,
 )
 
@@ -223,6 +225,20 @@ class ElasticsearchJsonAdapter(BaseAdapter):
             for n, d in sorted(items.items())[: self._max("max_ilm_policies", 200)]
             if isinstance(d, dict)
         ]
+
+    def get_slm_policies(self) -> list[ElasticsearchSlmPolicyInfo]:
+        items = self._load_named_objects(self._dir / "slm")
+        single = self._dir / "slm.json"
+        if single.is_file():
+            body = read_json_file(single)
+            if isinstance(body, dict):
+                items = body
+        out: list[ElasticsearchSlmPolicyInfo] = []
+        for name, raw in sorted(items.items())[: self._max("max_slm_policies", 100)]:
+            if not isinstance(raw, dict):
+                continue
+            out.append(normalize_slm_policy(str(name), raw))
+        return out
 
     def get_snapshot_repositories(self) -> list[ElasticsearchSnapshotRepositoryInfo]:
         items = self._load_named_objects(self._dir / "snapshots")

@@ -6,6 +6,7 @@ from md_generator.db.core.elasticsearch_format import (
     flatten_mapping_properties,
     invert_alias_map,
 )
+from md_generator.db.core.elasticsearch_operational_notes import mapping_complexity_metrics
 
 
 def test_flatten_mapping_properties() -> None:
@@ -76,6 +77,29 @@ def test_field_caps_table_rows() -> None:
     rows = field_caps_table_rows(body)
     assert ("message", "text", "searchable=True, aggregatable=False") in rows
     assert any(r[0] == "@timestamp" for r in rows)
+
+
+def test_mapping_complexity_metrics() -> None:
+    props = {
+        "title": {"type": "text"},
+        "embedding": {"type": "dense_vector", "dims": 384},
+        "sparse": {"type": "sparse_vector"},
+        "semantic": {"type": "semantic_text"},
+        "items": {
+            "type": "nested",
+            "properties": {"sku": {"type": "keyword"}},
+        },
+    }
+    metrics = mapping_complexity_metrics(
+        props,
+        mappings_root={"dynamic": "strict", "properties": props},
+    )
+    assert metrics["total_fields"] == 6
+    assert metrics["nested_fields"] == 1
+    assert metrics["dense_vector_fields"] == 1
+    assert metrics["sparse_vector_fields"] == 1
+    assert metrics["semantic_text_fields"] == 1
+    assert metrics["dynamic_mappings"] == "strict"
 
 
 def test_invert_alias_map() -> None:

@@ -6,6 +6,7 @@ from typing import Any, Literal
 from pydantic import BaseModel, Field, model_validator
 
 from md_generator.db.core.elasticsearch_output import elasticsearch_output_from_dict
+from md_generator.db.core.elasticsearch_redaction import redaction_config_from_dict
 from md_generator.db.core.models import ELASTICSEARCH_FEATURES, FEATURES
 from md_generator.db.core.run_config import ErdConfig, RunConfig
 
@@ -49,6 +50,11 @@ class ErdSection(BaseModel):
     )
 
 
+class SecuritySection(BaseModel):
+    redact_sensitive_values: bool = False
+    redact_patterns: list[str] | None = None
+
+
 class DbToMdRunBody(BaseModel):
     database: DatabaseSection
     output: OutputSection = Field(default_factory=OutputSection)
@@ -56,6 +62,7 @@ class DbToMdRunBody(BaseModel):
     execution: ExecutionSection = Field(default_factory=ExecutionSection)
     limits: dict[str, Any] = Field(default_factory=dict)
     erd: ErdSection = Field(default_factory=ErdSection)
+    security: SecuritySection = Field(default_factory=SecuritySection)
 
     @model_validator(mode="after")
     def check_features(self) -> DbToMdRunBody:
@@ -83,6 +90,9 @@ class DbToMdRunBody(BaseModel):
         es_out = elasticsearch_output_from_dict(
             self.output.model_dump(exclude_none=True),
         )
+        security_cfg = redaction_config_from_dict(
+            self.security.model_dump(exclude_none=True),
+        )
         return RunConfig(
             db_type=self.database.type,
             uri=self.database.uri,
@@ -100,4 +110,5 @@ class DbToMdRunBody(BaseModel):
             limits=dict(self.limits),
             erd=ErdConfig(max_tables=self.erd.max_tables, scope=self.erd.scope).normalized(),
             elasticsearch=es_out,
+            security=security_cfg,
         )

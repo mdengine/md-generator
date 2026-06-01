@@ -54,6 +54,25 @@ def test_normalize_search_template_source_variants_and_truncation() -> None:
     assert "truncated" in tpl.source_preview
 
 
+def test_normalize_slm_policy() -> None:
+    from md_generator.db.core.elasticsearch_normalize import normalize_slm_policy
+
+    pol = normalize_slm_policy(
+        "daily",
+        {
+            "policy": {
+                "schedule": "0 0 * * *",
+                "repository": "backup",
+                "config": {"indices": ["logs-*"]},
+            }
+        },
+    )
+    assert pol.name == "daily"
+    assert pol.repository == "backup"
+    assert pol.schedule == "0 0 * * *"
+    assert pol.indices_pattern == "logs-*"
+
+
 def test_normalize_search_template_lang_filter() -> None:
     tpl = normalize_search_template(
         "p1",

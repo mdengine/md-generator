@@ -293,8 +293,10 @@ COMBINED_BUNDLE_ORDER: tuple[str, ...] = (
     "elasticsearch/templates.md",
     "elasticsearch/pipelines.md",
     "elasticsearch/ilm.md",
+    "elasticsearch/slm.md",
     "elasticsearch/snapshots.md",
     "elasticsearch/search_templates.md",
+    "elasticsearch/search_dependency_graph.md",
 )
 
 
@@ -324,6 +326,7 @@ def _bundle_heading_for_path(rel_path: str) -> str:
         "elasticsearch/templates": "Elasticsearch index templates (combined)",
         "elasticsearch/pipelines": "Elasticsearch ingest pipelines (combined)",
         "elasticsearch/ilm": "Elasticsearch ILM policies (combined)",
+        "elasticsearch/slm": "Elasticsearch SLM policies (combined)",
         "elasticsearch/snapshots": "Elasticsearch snapshot repositories (combined)",
         "elasticsearch/search_templates": "Elasticsearch search templates (combined)",
     }

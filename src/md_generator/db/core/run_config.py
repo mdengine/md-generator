@@ -11,6 +11,10 @@ from md_generator.db.core.elasticsearch_output import (
     ElasticsearchOutputConfig,
     elasticsearch_output_from_dict,
 )
+from md_generator.db.core.elasticsearch_redaction import (
+    RedactionConfig,
+    redaction_config_from_dict,
+)
 from md_generator.db.core.models import ELASTICSEARCH_FEATURES, FEATURES
 
 ALLOWED_ERD_SCOPES = frozenset({"full", "per_schema", "per_table"})
@@ -52,6 +56,7 @@ class RunConfig:
     elasticsearch: ElasticsearchOutputConfig = field(
         default_factory=ElasticsearchOutputConfig
     )
+    security: RedactionConfig = field(default_factory=RedactionConfig)
 
     def with_output(self, path: Path) -> RunConfig:
         return replace(self, output_path=path)
@@ -136,6 +141,8 @@ def load_run_config(path: Path | None, overrides: dict[str, Any] | None = None) 
         scope=str(erd_merged.get("scope", "full")),
     ).normalized()
 
+    security_cfg = redaction_config_from_dict(raw.get("security"))
+
     split_files = bool(out.get("split_files", True))
     write_combined = bool(out.get("write_combined_feature_markdown", False))
     readme_merge = str(out.get("readme_feature_merge", "none")).lower().strip()
@@ -173,4 +180,5 @@ def load_run_config(path: Path | None, overrides: dict[str, Any] | None = None) 
         limits=dict(lim),
         erd=erd_cfg,
         elasticsearch=es_out,
+        security=security_cfg,
     )
