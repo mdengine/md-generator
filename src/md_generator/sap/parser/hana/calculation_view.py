@@ -25,6 +25,7 @@ from md_generator.sap.graph.taxonomy import RelationshipType
 from md_generator.sap.models.entities.kinds import SapObjectKind
 from md_generator.sap.models.entities.sap_object import SapObject
 from md_generator.sap.models.metadata.odata import SapObjectCategory
+from md_generator.sap.framework.capabilities import ParserCapability
 from md_generator.sap.parser.base import ParseContext, SapParseResult, SapParserPlugin
 from md_generator.sap.parser.hana.xml_stream import iterparse_events, local_tag, text
 
@@ -32,6 +33,15 @@ from md_generator.sap.parser.hana.xml_stream import iterparse_events, local_tag,
 class HanaCalculationViewParser(SapParserPlugin):
     name = "hana.calculation_view"
     version = "1.0.0"
+
+    def capabilities(self) -> ParserCapability:
+        return ParserCapability(
+            lineage=True,
+            sql_generation="yes",
+            impact_analysis=True,
+            semantic_id=True,
+            transformation_graph=True,
+        )
 
     def can_parse(self, path: Path) -> bool:
         if path.suffix.lower() not in (".xml", ".calculationview"):
@@ -76,7 +86,7 @@ def parse_calculation_view_xml(path: Path) -> tuple[CalculationView, ArtifactGra
     attributes: list[Attribute] = []
     measures: list[Measure] = []
     calculated: list[CalculatedColumn] = []
-    tg = TransformationGraph(graph_id=f"tg:{path.stem}")
+    tg = TransformationGraph(graph_id=f"tg:{path.stem}", execution_semantic="hana_cv")
     graph = ArtifactGraph(graph_id=f"hana:{path.stem}")
     stable_id = f"HANA::{schema or '_'}::{name}".replace(" ", "_")
 
@@ -203,6 +213,7 @@ def parse_calculation_view_xml(path: Path) -> tuple[CalculationView, ArtifactGra
         calculated_columns=calculated,
         attributes=attributes,
         measures=measures,
+        artifact_hash=checksum,
         graph_fragment_id=graph.graph_id,
         transformation_graph_id=tg.graph_id,
         metadata={

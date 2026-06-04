@@ -32,6 +32,9 @@ class ParserSection:
     include_idoc: bool = True
     include_transport: bool = True
     include_hana: bool = True
+    include_bw: bool = True
+    include_datasphere: bool = True
+    include_external: bool = False
 
 
 @dataclass

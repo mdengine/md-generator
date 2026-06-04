@@ -4,8 +4,8 @@ import json
 import logging
 from pathlib import Path
 
-from md_generator.sap.canonical.base import CanonicalArtifact
-from md_generator.sap.canonical.hana.calculation_view import CalculationView
+from md_generator.sap.canonical.loader import canonical_from_object
+from md_generator.sap.graph.backends.memory import InMemoryGraphStore
 from md_generator.sap.chunking.registry_v2 import SemanticChunkRegistryV2
 from md_generator.sap.chunking.spec import SemanticChunkSpec
 from md_generator.sap.core.run_context import RunContext
@@ -24,29 +24,16 @@ from md_generator.sap.rules.engine import DeterministicRuleEngine
 logger = logging.getLogger(__name__)
 
 
-def _canonical_from_object(obj: SapObject, normalizer) -> tuple[CanonicalArtifact | None, object]:
-    if obj.raw_metadata and "hana" in obj.raw_metadata and "canonical" in obj.raw_metadata:
-        data = obj.raw_metadata["canonical"]
-        try:
-            cv = CalculationView.model_validate(data)
-            frag_data = obj.raw_metadata.get("graph_fragment")
-            from md_generator.sap.graph.model import ArtifactGraph
-
-            frag = ArtifactGraph.model_validate(frag_data) if frag_data else ArtifactGraph(graph_id=cv.identity.stable_id)
-            return cv, frag
-        except Exception as e:
-            logger.warning("Failed to load HANA canonical for %s: %s", obj.name, e)
-    return normalizer.normalize(obj)
-
-
 def run_pipeline_v2(ctx: RunContext) -> None:
     """Canonical + ArtifactGraph pipeline; runs v1 markdown first for compatibility."""
+    from md_generator.sap.canonical.base import CanonicalArtifact
+
     run_pipeline_legacy(ctx)
 
     cfg = ctx.config
     root = ctx.output_dir
     normalizer = default_normalizer_registry()
-    store = ArtifactGraphStore(graph_id="run")
+    store: InMemoryGraphStore = InMemoryGraphStore(graph_id="run")
     registry = SemanticEntityRegistry()
     index = MetadataIndex(root / "index")
     artifacts: list[CanonicalArtifact] = []
@@ -56,7 +43,7 @@ def run_pipeline_v2(ctx: RunContext) -> None:
     chunk_registry = SemanticChunkRegistryV2()
 
     for obj in ctx.objects:
-        artifact, fragment = _canonical_from_object(obj, normalizer)
+        artifact, fragment = canonical_from_object(obj, normalizer)
         if artifact is None:
             continue
         store.add_fragment(fragment)

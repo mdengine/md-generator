@@ -7,6 +7,9 @@ from md_generator.sap.canonical.transformation.node import TransformationNode
 
 class TransformationGraph(BaseModel):
     graph_id: str
+    graph_version: str = "1.0.0"
+    graph_schema_version: str = "1.0.0"
+    execution_semantic: str = "generic"
     root_node_id: str | None = None
     nodes: dict[str, TransformationNode] = Field(default_factory=dict)
 

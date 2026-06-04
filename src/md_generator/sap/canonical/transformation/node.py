@@ -51,6 +51,29 @@ class HanaSinkNode(TransformationNode):
     node_kind: str = "sink"
 
 
+class BwSourceNode(TransformationNode):
+    node_kind: str = "source"
+    object_name: str = ""
+
+
+class BwTransformNode(TransformationNode):
+    node_kind: str = "map"
+
+
+class BwJoinNode(TransformationNode):
+    node_kind: str = "join"
+    join_type: str = "union"
+
+
+class BwAggregateNode(TransformationNode):
+    node_kind: str = "aggregate"
+
+
+class BwDtpNode(TransformationNode):
+    node_kind: str = "sink"
+    target_name: str = ""
+
+
 NODE_KIND_SOURCE = "source"
 NODE_KIND_SINK = "sink"
 NODE_KIND_JOIN = "join"

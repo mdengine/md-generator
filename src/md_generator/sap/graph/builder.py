@@ -5,9 +5,7 @@ import networkx as nx
 from md_generator.sap.graph import relations as rel
 from md_generator.sap.models.entities.kinds import SapObjectKind
 from md_generator.sap.models.entities.sap_object import SapObject
-from md_generator.sap.models.metadata.abap import AbapAnalysis
-from md_generator.sap.models.metadata.cds import CdsAnalysis
-from md_generator.sap.models.metadata.ddic import DdicTable
+from md_generator.sap.parser.abap.view_resolver import _resolve_object
 
 
 def _node_id(obj: SapObject) -> str:
@@ -45,6 +43,27 @@ def build_sap_graph(objects: list[SapObject]) -> nx.MultiDiGraph:
                         g.add_node(f"FM:{fn}", kind="FUNCTION_MODULE", name=fn)
                 for inc in abap.get("includes", []):
                     g.add_edge(src, f"INC:{inc}", relation=rel.INCLUDES, target=inc)
+                seen_targets: set[str] = set()
+                for vr in abap.get("view_references", []) or []:
+                    if not isinstance(vr, dict):
+                        continue
+                    name = vr.get("name", "")
+                    schema = vr.get("schema", "")
+                    tgt_obj = _resolve_object(by_name, name, schema)
+                    if tgt_obj:
+                        tid = _node_id(tgt_obj)
+                        if tid in seen_targets:
+                            continue
+                        seen_targets.add(tid)
+                        res = vr.get("resolution") or {}
+                        g.add_edge(
+                            src,
+                            tid,
+                            relation=rel.READS_TABLE,
+                            view_kind=vr.get("kind"),
+                            confidence=res.get("confidence", vr.get("confidence")),
+                            resolution_strategy=res.get("resolution_strategy"),
+                        )
 
         if obj.kind == SapObjectKind.CDS_VIEW and "cds" in meta:
             cds = meta["cds"]

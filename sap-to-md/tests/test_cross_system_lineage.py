@@ -27,3 +27,4 @@ def test_cross_system_same_as_edges():
     assert linked == 1
     same_as = [e for e in store.graph.edges.values() if e.relationship.value == "SAME_AS"]
     assert len(same_as) == 1
+    assert same_as[0].properties.get("confidence_score") == 1.0

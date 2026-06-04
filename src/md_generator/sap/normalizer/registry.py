@@ -164,6 +164,43 @@ def _normalize_abap(obj: SapObject) -> tuple[CanonicalArtifact, ArtifactGraph]:
                 relationship=RelationshipType.CALLS,
             )
         )
+    seen_reads: set[str] = set()
+    for vr in meta.get("view_references", []) or []:
+        if not isinstance(vr, dict):
+            continue
+        name = str(vr.get("name", "")).upper()
+        res = vr.get("resolution") or {}
+        stable = res.get("resolved_stable_id") or vr.get("resolved_stable_id")
+        if stable and stable not in seen_reads:
+            seen_reads.add(stable)
+            graph.add_edge(
+                GraphEdge(
+                    edge_id=f"{obj.object_id}->reads->{stable}",
+                    source_id=obj.object_id,
+                    target_id=stable,
+                    relationship=RelationshipType.READS_FROM,
+                    properties={
+                        "view_kind": vr.get("kind"),
+                        "confidence": res.get("confidence", vr.get("confidence")),
+                        "resolution_strategy": res.get("resolution_strategy", "heuristic"),
+                    },
+                )
+            )
+            continue
+        tid = f"DDIC::{name}" if vr.get("kind") == "ddic_table" else f"ABAP::REF::{name}"
+        if tid in seen_reads:
+            continue
+        seen_reads.add(tid)
+        graph.add_node(GraphNode(node_id=tid, node_kind="dataset", label=name, namespace="ABAP::"))
+        graph.add_edge(
+            GraphEdge(
+                edge_id=f"{obj.object_id}->reads->{tid}",
+                source_id=obj.object_id,
+                target_id=tid,
+                relationship=RelationshipType.READS_FROM,
+                properties={"view_kind": vr.get("kind"), "confidence": vr.get("confidence", 0.5)},
+            )
+        )
     artifact = CanonicalArtifact(
         identity=_identity_for(obj, "ABAP::"),
         provenance=_base_provenance(obj, "abap", "1.0.0"),

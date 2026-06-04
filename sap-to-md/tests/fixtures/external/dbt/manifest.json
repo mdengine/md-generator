@@ -1,0 +1,1 @@
+{"metadata": {"dbt_schema_version": "https://schemas.getdbt.com/dbt/manifest/v12.json"}, "nodes": {"model.project.orders": {"name": "orders", "resource_type": "model", "package_name": "project"}}}

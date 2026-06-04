@@ -2,6 +2,13 @@ from __future__ import annotations
 
 from typing import Any
 
+from md_generator.sap.markdown.builders.abap_sections import (
+    format_dynamic_sql_warnings,
+    format_joins,
+    format_native_sql,
+    format_open_sql,
+    format_view_refs,
+)
 from md_generator.sap.models.entities.sap_object import SapObject
 
 
@@ -21,6 +28,7 @@ def build_entity_markdown(
     auths = (auth_checks or [])[:cap]
     gov = (governance or [])[:cap]
     lin = lineage or {}
+    abap = (obj.raw_metadata or {}).get("abap") if isinstance((obj.raw_metadata or {}).get("abap"), dict) else None
 
     sections = [
         _h1(f"{obj.semantic_entity or obj.name}"),
@@ -33,10 +41,23 @@ def build_entity_markdown(
         _section("Lineage", _format_lineage(lin)),
         _section("Dependencies", _format_dependencies(obj, rels)),
         _section("APIs", _format_apis(obj)),
-        _section("Related Tables", _related_tables(obj, rels)),
-        _section("Related CDS Views", _related_cds(obj, rels)),
-        _section("AI Semantic Tags", _semantic_tags(obj)),
     ]
+    if abap:
+        warn = format_dynamic_sql_warnings(abap)
+        if warn:
+            sections.append(_section("SQL Warnings", warn))
+        sections.append(_section("Open SQL", format_open_sql(abap)))
+        native = format_native_sql(abap)
+        if native:
+            sections.append(_section("Native SQL", native))
+        sections.append(_section("Joins", format_joins(abap)))
+    sections.extend([
+        _section("Related Tables", _related_tables(obj, rels)),
+        _section("Related CDS Views", _related_cds(obj, rels, abap)),
+    ])
+    if abap:
+        sections.append(_section("Views / CDS / HANA References", format_view_refs(abap)))
+    sections.append(_section("AI Semantic Tags", _semantic_tags(obj)))
     return "\n\n".join(s for s in sections if s)
 
 
@@ -163,8 +184,17 @@ def _related_tables(obj: SapObject, rels: list[dict[str, Any]]) -> str:
     return "\n".join(dict.fromkeys(lines))
 
 
-def _related_cds(obj: SapObject, rels: list[dict[str, Any]]) -> str:
+def _related_cds(obj: SapObject, rels: list[dict[str, Any]], abap: dict[str, Any] | None = None) -> str:
     lines = []
+    if abap:
+        for r in abap.get("view_references", []) or []:
+            if r.get("kind") == "cds":
+                name = r.get("name", "?")
+                path = r.get("resolved_path") or (r.get("resolution") or {}).get("resolved_path")
+                if path:
+                    lines.append(f"- [{name}]({path})")
+                else:
+                    lines.append(f"- `{name}`")
     for r in rels:
         if r.get("relation") in ("ASSOCIATION", "COMPOSITION"):
             lines.append(f"- `{r.get('target_name', r.get('target_id'))}`")

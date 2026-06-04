@@ -33,6 +33,10 @@ parser:
   include_bapi: true
   include_idoc: true
   include_transport: true
+  include_hana: true
+  include_bw: true
+  include_datasphere: true
+  include_external: false
 
 odata:
   fetch_timeout_sec: 30

@@ -74,9 +74,24 @@ def default_registry(cfg_parser: object | None = None) -> ParserRegistry:
     if include("include_transport"):
         reg.register(TransportParserPlugin())
     if include("include_hana"):
-        from md_generator.sap.parser.hana.calculation_view import HanaCalculationViewParserPlugin
+        from md_generator.sap.parser.hana.dispatch import HanaCalculationViewParserPlugin
 
         reg.register(HanaCalculationViewParserPlugin())
+    if include("include_bw"):
+        from md_generator.sap.parser.bw.registry import default_bw_plugins
+
+        for p in default_bw_plugins():
+            reg.register(p)
+    if include("include_datasphere"):
+        from md_generator.sap.parser.datasphere.registry import default_datasphere_plugins
+
+        for p in default_datasphere_plugins():
+            reg.register(p)
+    if include("include_external"):
+        from md_generator.sap.parser.external.registry import default_external_plugins
+
+        for p in default_external_plugins():
+            reg.register(p)
 
     if flags and getattr(flags, "plugins", None):
         reg.extend_from_specs(list(flags.plugins))

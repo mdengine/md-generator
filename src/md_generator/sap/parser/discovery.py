@@ -11,8 +11,18 @@ IDOC_SUFFIXES = {".idoc", ".idoc.xml"}
 TRANSPORT_SUFFIXES = {".transport", ".tr", ".co", ".csv"}
 
 
-HANA_SUFFIXES = {".calculationview"}
-HANA_NAME_HINTS = ("calculation:scenario", "calculationscenario")
+HANA_SUFFIXES = {".calculationview", ".hdbview", ".hdbcalculationview"}
+HANA_NAME_HINTS = (
+    "calculation:scenario",
+    "calculationscenario",
+    "analyticview",
+    "analytic:view",
+    "attributeview",
+    "attribute:view",
+)
+BW_SUFFIXES = {".adso", ".bwtr", ".compositeprovider", ".cp", ".infoobject", ".dtp"}
+DATASPHERE_SUFFIXES = {".dsview", ".view", ".dataflow", ".df", ".analyticalmodel", ".am"}
+EXTERNAL_SUFFIXES = {".avsc", ".avro"}
 
 
 def discover_files(paths: list[Path]) -> list[Path]:
@@ -58,6 +68,21 @@ def _is_candidate(p: Path) -> bool:
     if suf in TRANSPORT_SUFFIXES or "transport" in name_lower:
         return True
     if suf in HANA_SUFFIXES:
+        return True
+    if suf in BW_SUFFIXES:
+        return True
+    if suf in DATASPHERE_SUFFIXES:
+        return True
+    if suf in EXTERNAL_SUFFIXES:
+        return True
+    if suf == ".sql":
+        try:
+            head = p.read_text(encoding="utf-8", errors="replace")[:2048].upper()
+            if "CREATE VIEW" in head or "CREATE TABLE" in head:
+                return True
+        except OSError:
+            pass
+    if name_lower == "manifest.json":
         return True
     if suf == ".xml":
         try:

@@ -1,0 +1,1 @@
+{"name": "DS_VIEW_SALES", "source": "SNWD_SO", "columns": ["ORDER_ID", "AMOUNT"], "package": "DATASPHERE"}

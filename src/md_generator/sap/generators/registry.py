@@ -5,6 +5,7 @@ from pathlib import Path
 
 from md_generator.sap.canonical.base import CanonicalArtifact
 from md_generator.sap.canonical.transformation.graph import TransformationGraph
+from md_generator.sap.markdown.builders.abap_sections import build_abap_program_markdown
 from md_generator.sap.generators.lineage.from_graph import generate_impact_markdown, generate_lineage_json
 from md_generator.sap.generators.mermaid.transformation_graph import render_transformation_mermaid
 from md_generator.sap.graph.store import ArtifactGraphStore
@@ -34,10 +35,18 @@ class GeneratorRegistry:
 def default_generator_registry() -> GeneratorRegistry:
     reg = GeneratorRegistry()
     reg.register("hana.calculation_view", _generate_hana_cv)
+    reg.register("hana.analytic_view", _generate_hana_cv)
+    reg.register("hana.attribute_view", _generate_hana_cv)
+    reg.register("hana.hdi_calculation_view", _generate_hana_cv)
+    reg.register("hana.sql_view", _generate_hana_cv)
     reg.register("cds.view", _generate_cds)
     reg.register("ddic.table", _generate_ddic)
     reg.register("abap.program", _generate_abap)
     reg.register("odata.entity", _generate_odata)
+    for bw_type in ("bw.adso", "bw.composite_provider", "bw.transformation", "bw.dtp", "bw.info_object"):
+        reg.register(bw_type, _generate_bw)
+    for ds_type in ("datasphere.analytical_model", "datasphere.view", "datasphere.data_flow"):
+        reg.register(ds_type, _generate_datasphere)
     return reg
 
 
@@ -147,10 +156,7 @@ def _generate_abap(artifact: CanonicalArtifact, store: ArtifactGraphStore, outpu
     md = output_dir / "abap" / "programs" / f"{slug}.md"
     md.parent.mkdir(parents=True, exist_ok=True)
     meta = artifact.metadata.get("abap", {})
-    md.write_text(
-        f"# ABAP Program: {artifact.name}\n\nTables: {', '.join(meta.get('tables', []))}\n",
-        encoding="utf-8",
-    )
+    md.write_text(build_abap_program_markdown(artifact.name, meta), encoding="utf-8")
     paths.append(md)
     paths.append(generate_lineage_json(artifact, store, output_dir / "abap" / "lineage" / f"{slug}.json"))
     return paths
@@ -158,3 +164,29 @@ def _generate_abap(artifact: CanonicalArtifact, store: ArtifactGraphStore, outpu
 
 def _generate_odata(artifact: CanonicalArtifact, store: ArtifactGraphStore, output_dir: Path) -> list[Path]:
     return [_write_canonical_json(artifact, output_dir)]
+
+
+def _generate_bw(artifact: CanonicalArtifact, store: ArtifactGraphStore, output_dir: Path) -> list[Path]:
+    slug = _slug(artifact.name)
+    kind = artifact.artifact_type.replace("bw.", "")
+    paths = [_write_canonical_json(artifact, output_dir)]
+    md = output_dir / "bw" / kind.replace("_", "-") / f"{slug}.md"
+    md.parent.mkdir(parents=True, exist_ok=True)
+    md.write_text(f"# BW {artifact.artifact_type}: {artifact.name}\n", encoding="utf-8")
+    paths.append(md)
+    paths.append(render_transformation_mermaid(artifact, output_dir / "bw" / "diagrams" / f"{slug}.mmd"))
+    paths.append(generate_lineage_json(artifact, store, output_dir / "bw" / "lineage" / f"{slug}.json"))
+    paths.append(generate_impact_markdown(artifact, store, output_dir / "bw" / "impact" / f"{slug}.md"))
+    return paths
+
+
+def _generate_datasphere(artifact: CanonicalArtifact, store: ArtifactGraphStore, output_dir: Path) -> list[Path]:
+    slug = _slug(artifact.name)
+    kind = artifact.artifact_type.replace("datasphere.", "")
+    paths = [_write_canonical_json(artifact, output_dir)]
+    md = output_dir / "datasphere" / kind.replace("_", "-") / f"{slug}.md"
+    md.parent.mkdir(parents=True, exist_ok=True)
+    md.write_text(f"# Datasphere {artifact.artifact_type}: {artifact.name}\n", encoding="utf-8")
+    paths.append(md)
+    paths.append(generate_lineage_json(artifact, store, output_dir / "datasphere" / "lineage" / f"{slug}.json"))
+    return paths

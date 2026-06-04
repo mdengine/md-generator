@@ -5,7 +5,8 @@
 - **GraphNode** — artifact, column, dataset, transformation node
 - **GraphEdge** — typed relationship with optional column metadata
 - **ArtifactGraph** — merged graph for one run
-- **ArtifactGraphStore** — accumulates parser fragments; supports upstream/downstream/column lineage queries
+- **ArtifactGraphStore** / **InMemoryGraphStore** — implements `GraphStore` protocol; accumulates parser fragments
+- **GraphStore protocol** — `graph/backends/protocol.py`; swap backends (Neo4j/Arango stubs in `graph/backends/`)
 
 ## RelationshipType taxonomy
 

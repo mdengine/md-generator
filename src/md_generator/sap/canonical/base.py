@@ -20,4 +20,6 @@ class CanonicalArtifact(BaseModel):
     dependencies: list[str] = Field(default_factory=list)
     transformation_graph_id: str | None = None
     graph_fragment_id: str | None = None
+    artifact_hash: str = ""
+    dependency_hash: str = ""
     metadata: dict[str, Any] = Field(default_factory=dict)
