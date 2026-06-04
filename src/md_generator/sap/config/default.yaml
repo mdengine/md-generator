@@ -67,3 +67,12 @@ performance:
   incremental: true
   stream_threshold_mb: 5
   intelligence_list_cap: 80
+
+pipeline:
+  version: 1
+  canonical_json: true
+  artifact_graph: true
+  rule_engine: true
+  openlineage_export: false
+  cross_lineage: false
+  semantic_chunks_jsonl: false

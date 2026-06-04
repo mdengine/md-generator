@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Calculation:scenario xmlns:Calculation="http://www.sap.com/ndb/BiModelCalculation.ecore">
+  <calculationScenario schema="SALES" name="CV_SALES" package="sales.pkg">
+    <dataSource id="DS1" type="TABLE">
+      <schema>SNWD</schema>
+      <name>SO_Items</name>
+    </dataSource>
+    <dataSource id="DS2" type="TABLE">
+      <schema>SNWD</schema>
+      <name>SO_Header</name>
+    </dataSource>
+    <join id="JOIN1" joinType="inner">
+      <leftInput>DS1</leftInput>
+      <rightInput>DS2</rightInput>
+      <condition>
+        <left>DS1.ORDER_ID</left>
+        <right>DS2.ORDER_ID</right>
+        <operator>=</operator>
+      </condition>
+    </join>
+    <projectionView id="PROJ1" input="JOIN1">
+      <viewAttribute id="ORDER_ID"/>
+      <viewAttribute id="AMOUNT"/>
+      <viewAttribute id="CUSTOMER_ID"/>
+    </projectionView>
+    <viewAttribute id="ORDER_ID" datatype="NVARCHAR"/>
+    <viewAttribute id="AMOUNT" datatype="DECIMAL"/>
+    <measure id="TOTAL_AMOUNT" aggregation="SUM"/>
+    <calculatedViewAttribute id="NET_AMOUNT" formula="AMOUNT * 0.9"/>
+  </calculationScenario>
+</Calculation:scenario>

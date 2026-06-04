@@ -11,6 +11,10 @@ IDOC_SUFFIXES = {".idoc", ".idoc.xml"}
 TRANSPORT_SUFFIXES = {".transport", ".tr", ".co", ".csv"}
 
 
+HANA_SUFFIXES = {".calculationview"}
+HANA_NAME_HINTS = ("calculation:scenario", "calculationscenario")
+
+
 def discover_files(paths: list[Path]) -> list[Path]:
     out: list[Path] = []
     seen: set[Path] = set()
@@ -53,4 +57,13 @@ def _is_candidate(p: Path) -> bool:
         return True
     if suf in TRANSPORT_SUFFIXES or "transport" in name_lower:
         return True
+    if suf in HANA_SUFFIXES:
+        return True
+    if suf == ".xml":
+        try:
+            head = p.read_text(encoding="utf-8", errors="replace")[:4096].lower()
+            if any(h in head for h in HANA_NAME_HINTS):
+                return True
+        except OSError:
+            pass
     return False

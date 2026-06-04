@@ -11,6 +11,17 @@ from md_generator.sap.core.features import FEATURES
 
 
 @dataclass
+class PipelineSection:
+    version: int = 1
+    canonical_json: bool = True
+    artifact_graph: bool = True
+    rule_engine: bool = True
+    openlineage_export: bool = False
+    cross_lineage: bool = False
+    semantic_chunks_jsonl: bool = False
+
+
+@dataclass
 class ParserSection:
     plugins: list[str] = field(default_factory=list)
     include_abap: bool = True
@@ -20,6 +31,7 @@ class ParserSection:
     include_bapi: bool = True
     include_idoc: bool = True
     include_transport: bool = True
+    include_hana: bool = True
 
 
 @dataclass
@@ -76,6 +88,7 @@ class SapRunConfig:
     analyzer: AnalyzerSection = field(default_factory=AnalyzerSection)
     chunking: ChunkingSection = field(default_factory=ChunkingSection)
     graph: GraphSection = field(default_factory=GraphSection)
+    pipeline: PipelineSection = field(default_factory=PipelineSection)
     performance: PerformanceSection = field(default_factory=PerformanceSection)
     write_manifest: bool = True
     markdown_cross_links: bool = True
@@ -164,6 +177,7 @@ def load_run_config(path: Path | None, overrides: dict[str, Any] | None = None) 
         analyzer=_section(AnalyzerSection, raw.get("analyzer")),
         chunking=_section(ChunkingSection, raw.get("chunking")),
         graph=_section(GraphSection, raw.get("graph")),
+        pipeline=_section(PipelineSection, raw.get("pipeline")),
         performance=_section(PerformanceSection, perf_raw),
         write_manifest=bool(out.get("write_manifest", True)),
         markdown_cross_links=bool(out.get("markdown_cross_links", True)),

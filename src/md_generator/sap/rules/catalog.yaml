@@ -1,0 +1,9 @@
+rules:
+  - id: unused-columns-hana
+    artifact_type: hana.calculation_view
+    severity: info
+    description: Detect unused projection columns in HANA calculation views
+  - id: hana-expensive-joins
+    artifact_type: hana.calculation_view
+    severity: warning
+    description: Warn when join count exceeds threshold

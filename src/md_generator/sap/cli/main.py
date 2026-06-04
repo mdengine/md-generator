@@ -32,6 +32,7 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--json-output", action="store_true", help="Include json_output feature")
     p.add_argument("--odata-url", action="append", default=[], help="Fetch OData $metadata from URL (repeatable)")
     p.add_argument("--async", dest="async_job", action="store_true", help="Run as background job")
+    p.add_argument("--pipeline-version", type=int, default=None, help="Pipeline version (1=legacy, 2=canonical+graph)")
     return p
 
 
@@ -108,6 +109,8 @@ def main(argv: list[str] | None = None) -> int:
         overrides.setdefault("performance", {})["workers"] = ns.workers
     if ns.odata_url:
         overrides.setdefault("input", {})["odata_urls"] = ns.odata_url
+    if ns.pipeline_version is not None:
+        overrides.setdefault("pipeline", {})["version"] = ns.pipeline_version
 
     cfg = load_run_config(ns.config, overrides if overrides else None)
     cfg = _apply_cli_overrides(cfg, ns).normalized()

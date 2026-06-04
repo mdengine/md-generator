@@ -92,6 +92,18 @@ def run_pipeline(
     ctx: RunContext,
     on_progress: Callable[[int, str], None] | None = None,
 ) -> None:
+    if ctx.config.pipeline.version >= 2:
+        from md_generator.sap.orchestration.pipeline_v2 import run_pipeline_v2
+
+        run_pipeline_v2(ctx)
+        return
+    run_pipeline_legacy(ctx, on_progress)
+
+
+def run_pipeline_legacy(
+    ctx: RunContext,
+    on_progress: Callable[[int, str], None] | None = None,
+) -> None:
     cfg = ctx.config
     root = ctx.output_dir
     root.mkdir(parents=True, exist_ok=True)

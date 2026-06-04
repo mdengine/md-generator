@@ -130,6 +130,7 @@ sap = [
   "pydantic>=2.0.0",
   "pydantic-settings>=2.0.0",
   "httpx>=0.27.0",
+  "lxml>=5.0.0",
 ]
 # Optional: horizontal workers for codeflow API (Celery + Redis). Default job path uses threads.
 codeflow-worker = [
@@ -324,6 +325,7 @@ include = ["md_generator*"]
 "md_generator.odata.config" = ["*.yaml"]
 "md_generator.log.config" = ["*.yaml", "presets/*.yaml"]
 "md_generator.sap.config" = ["*.yaml"]
+"md_generator.sap.rules" = ["*.yaml"]
 "md_generator.tools.assistant" = ["data/**/*"]
 
 [tool.pytest.ini_options]

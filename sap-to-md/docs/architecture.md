@@ -2,7 +2,11 @@
 
 The `md_generator.sap` package mirrors **db** (metadata export), **codeflow** (dependency graphs), and **log** (semantic chunking).
 
-## Pipeline
+## Pipeline v2 (canonical + graph)
+
+When `pipeline.version >= 2` or `--pipeline-version 2`, the pipeline adds canonical JSON, ArtifactGraph merge, rule engine, and graph-based generators while preserving v1 Markdown output. See [canonical-model.md](canonical-model.md), [graph-model.md](graph-model.md), [hana-calculation-views.md](hana-calculation-views.md).
+
+## Pipeline v1 (default)
 
 1. Discover file-based SAP inputs
 2. Parse via plugin registry (ABAP, CDS, DDIC, OData, BAPI, IDoc, transport)

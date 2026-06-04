@@ -73,6 +73,10 @@ def default_registry(cfg_parser: object | None = None) -> ParserRegistry:
         reg.register(IdocParserPlugin())
     if include("include_transport"):
         reg.register(TransportParserPlugin())
+    if include("include_hana"):
+        from md_generator.sap.parser.hana.calculation_view import HanaCalculationViewParserPlugin
+
+        reg.register(HanaCalculationViewParserPlugin())
 
     if flags and getattr(flags, "plugins", None):
         reg.extend_from_specs(list(flags.plugins))
