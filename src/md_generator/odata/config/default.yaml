@@ -1,0 +1,27 @@
+input:
+  file: null
+  folder: null
+  zip: null
+  urls: []
+
+output:
+  path: output/odata-md
+  write_manifest: true
+
+features:
+  catalog: true
+  entities_json: true
+  graph: false
+  chunks: false
+
+odata:
+  fetch_timeout_sec: 30
+  verify_tls: true
+  cache_fetched: true
+
+chunking:
+  types:
+    - odata_service
+    - odata_entity_set
+    - odata_capabilities
+    - odata_index

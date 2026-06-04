@@ -155,6 +155,9 @@ If the shell reports “command not found”, ensure the Python **Scripts** dire
 | `md-openapi` | `md_generator.openapi.cli.main:main` | `pip install "mdengine[openapi]"` then `md-openapi generate --file openapi.yaml --output ./docs` (or `mdengine openapi-to-md generate …`) |
 | `md-openapi-api` | `md_generator.openapi.api.run:main` | FastAPI on port **8015** (`OPENAPI_TO_MD_PORT`): `POST /openapi-to-md/generate` (OpenAPI upload → ZIP), `/health`, MCP at **`/mcp`** |
 | `md-openapi-mcp` | `md_generator.openapi.api.mcp_server:main` | Standalone MCP: `api_validate_openapi_yaml`, `api_generate_readme_markdown`, `api_run_sync_zip_base64` |
+| `md-odata` | `md_generator.odata.cli.main:main` | `pip install "mdengine[odata]"` then `md-odata generate --folder ./odata --output ./out` (or `mdengine odata-to-md generate …`) |
+| `md-odata-api` | `md_generator.odata.api.run:main` | FastAPI on port **8017** (`ODATA_TO_MD_PORT`): `POST /odata-to-md/generate` (metadata upload → ZIP), `/health`, MCP at **`/mcp`** |
+| `md-odata-mcp` | `md_generator.odata.api.mcp_server:main` | Standalone MCP: `odata_validate_metadata`, `odata_generate_readme_markdown`, `odata_run_sync_zip_base64` |
 | `md-playwright` | `md_generator.playwright.cli:main` | `pip install "mdengine[playwright]"` then `md-playwright https://spa.example/app ./spa-out` (after `playwright install chromium`) |
 | `md-playwright-api` | `md_generator.playwright.api.run:main` | FastAPI + MCP on port **8014** (`PLAYWRIGHT_TO_MD_API_PORT` / settings); see [HTTP API](#http-api-fastapi) |
 | `md-playwright-mcp` | `md_generator.playwright.api.mcp_server:main` | Standalone MCP for Playwright capture tools |
@@ -169,7 +172,7 @@ If the shell reports “command not found”, ensure the Python **Scripts** dire
 | `md-sap` | `md_generator.sap.cli.main:main` | `pip install "mdengine[sap]"` then `md-sap ./sap-source --output ./sap-out --graph --chunk` (or `mdengine sap-to-md …`) |
 | `md-sap-api` | `md_generator.sap.api.run:main` | FastAPI on port **8020** (`SAP_TO_MD_PORT`): `POST /sap-to-md/run`, `POST /sap-to-md/job`, `GET /sap-to-md/job/{id}/download` |
 | `md-sap-mcp` | `md_generator.sap.api.mcp_server:main` | Runs the same FastAPI app as **`md-sap-api`** (MCP mount when enabled in app) |
-| `mdengine` | `md_generator.engine_cli:main` | `mdengine ai assist …`, `mdengine ai export …`, `mdengine skill build …`, `mdengine db-to-md …`, `mdengine log-to-md …`, `mdengine otel-to-md …`, `mdengine sap-to-md …`, `mdengine graph-to-md …`, `mdengine openapi-to-md generate …`, `mdengine codeflow-to-md scan …` |
+| `mdengine` | `md_generator.engine_cli:main` | `mdengine ai assist …`, `mdengine ai export …`, `mdengine skill build …`, `mdengine db-to-md …`, `mdengine log-to-md …`, `mdengine otel-to-md …`, `mdengine sap-to-md …`, `mdengine odata-to-md generate …`, `mdengine graph-to-md …`, `mdengine openapi-to-md generate …`, `mdengine codeflow-to-md scan …` |
 
 **openapi-to-md (`md-openapi`):** OpenAPI **3.x** is parsed directly; **Swagger 2.0** (`swagger: "2.0"`) documents are **converted in-process** to OpenAPI 3.0.3 (deterministic, in-repo converter) before `$ref` resolution. Edge-heavy specs (unusual OAuth2 flows, vendor extensions) may still need fixes after conversion.
 
@@ -220,6 +223,7 @@ md-video ./screen.mp4 ./screen.md --model base
 pip install "mdengine[graph]" && md-graph --source neo4j --uri neo4j://localhost:7687 --user neo4j --password secret --database neo4j --output ./graph-out --viz
 pip install "mdengine[playwright]" && playwright install chromium && md-playwright https://example.com/app ./spa-out
 pip install "mdengine[openapi]" && md-openapi generate --file openapi.yaml --output ./openapi-md
+pip install "mdengine[odata]" && md-odata generate --folder ./odata --output ./odata-md
 pip install "mdengine[log]" && md-log --config log.yaml
 pip install "mdengine[log-otel-proto]" && md-otel --input otlp-traces.json --output ./otel-docs
 pip install "mdengine[sap]" && md-sap ./sap-source --output ./sap-out --graph --chunk

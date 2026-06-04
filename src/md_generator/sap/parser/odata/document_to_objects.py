@@ -4,8 +4,9 @@ from pathlib import Path
 
 from md_generator.sap.models.entities.kinds import SapObjectKind
 from md_generator.sap.models.entities.sap_object import SapObject
-from md_generator.sap.models.metadata.odata import ODataMetadataDocument, SapObjectCategory
-from md_generator.sap.parser.odata.legacy import document_to_legacy_entities, to_legacy_entity_dict
+from md_generator.odata.models.domain import ODataMetadataDocument
+from md_generator.odata.parser.legacy import document_to_legacy_entities, to_legacy_entity_dict
+from md_generator.sap.models.metadata.odata import SapObjectCategory
 
 
 def document_to_sap_objects(doc: ODataMetadataDocument, source_path: Path, package_hint: str = "") -> list[SapObject]:

@@ -2,6 +2,8 @@
 
 When the `odata_catalog` feature is enabled (default), the pipeline writes a dedicated tree under `odata/`.
 
+> **Note:** Catalog rendering is implemented in [`md_generator.odata`](../../src/md_generator/odata/). Standalone users can run **`md-odata generate`** without the full SAP module. See [odata-to-md/README.md](../../odata-to-md/README.md).
+
 ## Layout
 
 | Path | Content |

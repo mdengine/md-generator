@@ -1,6 +1,8 @@
 # OData parser design
 
-The SAP module parses OData CSDL metadata (V1–V4) from files or optional URL fetch.
+The shared OData core lives in **`md_generator.odata`**. The SAP module consumes it via thin re-export shims under `sap/parser/odata/`.
+
+Standalone CLI: **`md-odata`** / **`mdengine odata-to-md`**. See [odata-to-md/docs/dual-mode.md](../../odata-to-md/docs/dual-mode.md).
 
 ## Version matrix
 
@@ -14,7 +16,7 @@ The SAP module parses OData CSDL metadata (V1–V4) from files or optional URL f
 
 ## Architecture
 
-1. **detector.py** — format (XML vs JSON) and version sniffing
+1. **detector.py** — format (XML vs JSON) and version sniffing (`md_generator.odata.parser`)
 2. **namespaces.py** — namespace-agnostic XML helpers
 3. **registry.py** — dispatches to version-specific parsers
 4. **capabilities.py** — `Org.OData.Capabilities.V1` term parsing

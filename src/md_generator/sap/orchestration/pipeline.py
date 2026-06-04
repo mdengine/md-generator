@@ -23,9 +23,9 @@ from md_generator.sap.markdown.chunking.writer import write_semantic_chunks
 from md_generator.sap.models.entities.sap_object import SapObject
 from md_generator.sap.parser.base import ParseContext
 from md_generator.sap.parser.discovery import discover_files
-from md_generator.sap.parser.odata.fetch import fetch_metadata, infer_service_root
+from md_generator.odata.fetch import fetch_metadata, infer_service_root
+from md_generator.odata.parser.registry import parse_document
 from md_generator.sap.parser.odata.parser import _is_odata_metadata
-from md_generator.sap.parser.odata.registry import parse_document
 from md_generator.sap.parser.registry import default_registry
 
 logger = logging.getLogger(__name__)

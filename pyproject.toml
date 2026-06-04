@@ -114,6 +114,12 @@ openapi = [
   "prance>=23.6.0",
   "openapi-spec-validator>=0.7.0",
 ]
+odata = [
+  "pyyaml>=6.0.0",
+  "httpx>=0.27.0",
+  "networkx>=3.2.0",
+  "pydantic-settings>=2.0.0",
+]
 codeflow = [
   "networkx>=3.2.0",
   "javalang>=0.13.0",
@@ -291,6 +297,9 @@ md-graph-mcp = "md_generator.graph.api.mcp_server:main"
 md-openapi = "md_generator.openapi.cli.main:main"
 md-openapi-api = "md_generator.openapi.api.run:main"
 md-openapi-mcp = "md_generator.openapi.api.mcp_server:main"
+md-odata = "md_generator.odata.cli.main:main"
+md-odata-api = "md_generator.odata.api.run:main"
+md-odata-mcp = "md_generator.odata.api.mcp_server:main"
 md-codeflow = "md_generator.codeflow.cli.main:main"
 codeflow = "md_generator.codeflow.cli.main:main"
 md-codeflow-api = "md_generator.codeflow.api.run:main"
@@ -312,6 +321,7 @@ include = ["md_generator*"]
 "md_generator.db.config" = ["*.yaml"]
 "md_generator.graph.config" = ["*.yaml"]
 "md_generator.openapi.config" = ["*.yaml"]
+"md_generator.odata.config" = ["*.yaml"]
 "md_generator.log.config" = ["*.yaml", "presets/*.yaml"]
 "md_generator.sap.config" = ["*.yaml"]
 "md_generator.tools.assistant" = ["data/**/*"]
@@ -335,6 +345,7 @@ testpaths = [
   "db-to-md/tests",
   "graph-to-md/tests",
   "openapi-to-md/tests",
+  "odata-to-md/tests",
   "codeflow-to-md/tests",
   "log-to-md/tests",
   "sap-to-md/tests",

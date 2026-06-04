@@ -2,11 +2,11 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from md_generator.sap.models.metadata.odata import ODataMetadataDocument
+from md_generator.odata.models.domain import ODataMetadataDocument
+from md_generator.odata.parser.registry import parse_document
 from md_generator.sap.parser.base import ParseContext, SapParseResult
 from md_generator.sap.parser.odata.document_to_objects import document_to_sap_objects
 from md_generator.sap.parser.odata.legacy import document_to_legacy_entities
-from md_generator.sap.parser.odata.registry import parse_document
 
 
 def parse_odata_metadata(path: Path) -> tuple[str, list[dict]]:

@@ -1,0 +1,96 @@
+{
+  "actions": [],
+  "complex_types": [],
+  "container_name": "Container",
+  "default_namespace": "SAP",
+  "entity_sets": [
+    {
+      "capabilities": {
+        "count_supported": null,
+        "deletable": null,
+        "expandable": null,
+        "filter_functions": [],
+        "filterable": null,
+        "insertable": null,
+        "searchable": null,
+        "skip_supported": null,
+        "sortable": null,
+        "top_supported": null,
+        "updatable": null
+      },
+      "entity_type": "Customer",
+      "name": "Customers",
+      "stable_id": "odata:v2_0:SAP:entitySet:Customers"
+    },
+    {
+      "capabilities": {
+        "count_supported": null,
+        "deletable": null,
+        "expandable": null,
+        "filter_functions": [],
+        "filterable": null,
+        "insertable": null,
+        "searchable": null,
+        "skip_supported": null,
+        "sortable": null,
+        "top_supported": null,
+        "updatable": null
+      },
+      "entity_type": "Order",
+      "name": "Orders",
+      "stable_id": "odata:v2_0:SAP:entitySet:Orders"
+    }
+  ],
+  "entity_types": [
+    {
+      "annotations": {},
+      "keys": [
+        "CustomerID"
+      ],
+      "name": "Customer",
+      "namespace": "SAP",
+      "navigation": [
+        {
+          "multiplicity": "n",
+          "name": "Orders",
+          "target": "Order"
+        }
+      ],
+      "properties": [
+        {
+          "name": "CustomerID",
+          "type": "Edm.String"
+        },
+        {
+          "name": "Email",
+          "type": "Edm.String"
+        }
+      ],
+      "stable_id": "odata:v2_0:SAP:entity:Customer"
+    },
+    {
+      "annotations": {},
+      "keys": [
+        "OrderID"
+      ],
+      "name": "Order",
+      "namespace": "SAP",
+      "navigation": [],
+      "properties": [
+        {
+          "name": "OrderID",
+          "type": "Edm.String"
+        }
+      ],
+      "stable_id": "odata:v2_0:SAP:entity:Order"
+    }
+  ],
+  "enum_types": [],
+  "functions": [],
+  "metadata_url": "FIXTURE",
+  "odata_format": "edmx_xml",
+  "odata_version": "2.0",
+  "service_name": "v2_with_container",
+  "service_root": "",
+  "stable_id": "odata:v2_0:_:service:v2_with_container"
+}

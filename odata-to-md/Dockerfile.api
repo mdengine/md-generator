@@ -1,0 +1,7 @@
+FROM python:3.12-slim
+WORKDIR /app
+COPY . .
+RUN pip install --no-cache-dir ".[api,odata]"
+EXPOSE 8017
+ENV ODATA_TO_MD_PORT=8017
+CMD ["md-odata-api"]
