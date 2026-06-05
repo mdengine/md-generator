@@ -97,11 +97,49 @@ def build_sap_graph(objects: list[SapObject]) -> nx.MultiDiGraph:
 
         if obj.kind == SapObjectKind.DATA_ELEMENT and "data_element" in meta:
             de = meta["data_element"]
-            if isinstance(de, dict) and de.get("type_kind") == "domain":
-                dom_name = (de.get("type_name") or "").upper()
-                tgt = by_name.get(dom_name)
-                if tgt:
-                    g.add_edge(src, _node_id(tgt), relation=rel.FK, reference="domain")
+            if isinstance(de, dict):
+                type_kind = de.get("type_kind", "")
+                type_name = (de.get("type_name") or "").upper()
+                resolved = de.get("resolved_type") or {}
+                tgt = by_name.get(type_name)
+                if tgt and type_kind:
+                    g.add_edge(src, _node_id(tgt), relation=rel.FK, reference=type_kind)
+
+        if obj.kind == SapObjectKind.STRUCTURE and "structure" in meta:
+            st = meta["structure"]
+            if isinstance(st, dict):
+                for comp in st.get("components", []):
+                    de = (comp.get("data_element") or "").upper()
+                    tgt = by_name.get(de)
+                    if tgt:
+                        g.add_edge(src, _node_id(tgt), relation=rel.ASSOCIATION, component=comp.get("name"))
+
+        if obj.kind == SapObjectKind.TABLE_TYPE and "table_type" in meta:
+            tt = meta["table_type"]
+            if isinstance(tt, dict):
+                for key in ("row_type", "line_type"):
+                    tname = (tt.get(key) or "").upper()
+                    tgt = by_name.get(tname)
+                    if tgt:
+                        g.add_edge(src, _node_id(tgt), relation=rel.ASSOCIATION, ref=key)
+
+        if obj.kind == SapObjectKind.RANGE_TYPE and "range_type" in meta:
+            rt = meta["range_type"]
+            if isinstance(rt, dict):
+                for key in ("data_element", "domain"):
+                    tname = (rt.get(key) or "").upper()
+                    tgt = by_name.get(tname)
+                    if tgt:
+                        g.add_edge(src, _node_id(tgt), relation=rel.FK, ref=key)
+
+        if obj.kind == SapObjectKind.REFERENCE_TYPE and "reference_type" in meta:
+            rt = meta["reference_type"]
+            if isinstance(rt, dict):
+                for key in ("referenced_type", "check_table"):
+                    tname = (rt.get(key) or "").upper()
+                    tgt = by_name.get(tname)
+                    if tgt:
+                        g.add_edge(src, _node_id(tgt), relation=rel.FK, ref=key)
 
         if obj.kind == SapObjectKind.DOMAIN and "domain" in meta:
             dom = meta["domain"]

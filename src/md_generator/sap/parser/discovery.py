@@ -91,7 +91,17 @@ def _is_candidate(p: Path) -> bool:
                 return True
             if "wbobj/dictionary" in head or "dtel:dataelement" in head:
                 return True
-            if "doma:domain" in head or "tabl:table" in head:
+            if any(
+                m in head
+                for m in (
+                    "doma:domain",
+                    "tabl:table",
+                    "tabl:structure",
+                    "ttyp:tabletype",
+                    "rsdt:rangestype",
+                    "reft:referencetype",
+                )
+            ):
                 return True
         except OSError:
             pass

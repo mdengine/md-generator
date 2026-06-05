@@ -17,6 +17,7 @@ from md_generator.sap.core.export_manifest import ExportManifestBuilder
 from md_generator.sap.core.run_context import RunContext
 from md_generator.sap.graph.builder import build_sap_graph
 from md_generator.sap.parser.abap.view_resolver import enrich_abap_objects_in_run
+from md_generator.sap.parser.ddic.ddic_resolver import enrich_ddic_objects_in_run
 from md_generator.sap.graph.exporters.json_export import export_graph_json
 from md_generator.sap.graph.exporters.mermaid_export import export_er_mermaid
 from md_generator.sap.markdown.builders.writer import render_all
@@ -152,6 +153,7 @@ def run_pipeline_legacy(
     ctx.objects = _merge_objects(all_objects)
     ctx.metrics["objects_parsed"] = len(ctx.objects)
     enrich_abap_objects_in_run(ctx.objects)
+    enrich_ddic_objects_in_run(ctx.objects)
 
     for path in files:
         if _is_odata_metadata(path):

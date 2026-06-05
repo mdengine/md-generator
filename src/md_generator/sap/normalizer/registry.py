@@ -10,6 +10,7 @@ from md_generator.sap.graph.model import ArtifactGraph, GraphEdge, GraphNode
 from md_generator.sap.graph.taxonomy import RelationshipType
 from md_generator.sap.models.entities.kinds import SapObjectKind
 from md_generator.sap.models.entities.sap_object import SapObject
+from md_generator.sap.parser.ddic.normalize_helpers import wire_components, wire_type_reference
 
 
 def _base_provenance(obj: SapObject, parser_id: str, parser_version: str) -> ProvenanceBundle:
@@ -50,6 +51,10 @@ def default_normalizer_registry() -> NormalizerRegistry:
     reg.register(SapObjectKind.TABLE, _normalize_ddic)
     reg.register(SapObjectKind.DATA_ELEMENT, _normalize_data_element)
     reg.register(SapObjectKind.DOMAIN, _normalize_domain)
+    reg.register(SapObjectKind.STRUCTURE, _normalize_structure)
+    reg.register(SapObjectKind.TABLE_TYPE, _normalize_table_type)
+    reg.register(SapObjectKind.RANGE_TYPE, _normalize_range_type)
+    reg.register(SapObjectKind.REFERENCE_TYPE, _normalize_reference_type)
     reg.register(SapObjectKind.PROGRAM, _normalize_abap)
     reg.register(SapObjectKind.ODATA_ENTITY, _normalize_odata_entity)
     reg.register(SapObjectKind.ODATA_ENTITY_SET, _normalize_odata_entity_set)
@@ -194,17 +199,16 @@ def _normalize_data_element(obj: SapObject) -> tuple[CanonicalArtifact, Artifact
         )
     )
     type_name = (meta.get("type_name") or "").upper()
-    if meta.get("type_kind") == "domain" and type_name:
-        did = f"DDIC::DOMAIN::{type_name}"
-        graph.add_node(GraphNode(node_id=did, node_kind="artifact", label=type_name, namespace="DDIC::"))
-        graph.add_edge(
-            GraphEdge(
-                edge_id=f"{obj.object_id}->refs->{did}",
-                source_id=obj.object_id,
-                target_id=did,
-                relationship=RelationshipType.REFERENCES,
-                properties={"reference_type": "domain"},
-            )
+    type_kind = meta.get("type_kind", "")
+    resolved = meta.get("resolved_type") or {}
+    resolved_id = resolved.get("object_id", "")
+    if type_kind and type_name:
+        wire_type_reference(
+            graph,
+            obj.object_id,
+            type_kind,
+            type_name,
+            resolved_object_id=resolved_id,
         )
     artifact = CanonicalArtifact(
         identity=_identity_for(obj, "DDIC::"),
@@ -252,6 +256,125 @@ def _normalize_domain(obj: SapObject) -> tuple[CanonicalArtifact, ArtifactGraph]
         package=obj.package or meta.get("package", ""),
         source_path=str(obj.source_path or ""),
         metadata={"domain": meta},
+        graph_fragment_id=graph.graph_id,
+    )
+    return artifact, graph
+
+
+def _normalize_structure(obj: SapObject) -> tuple[CanonicalArtifact, ArtifactGraph]:
+    meta = obj.raw_metadata.get("structure", {}) if obj.raw_metadata else {}
+    graph = ArtifactGraph(graph_id=f"ddic:struct:{obj.object_id}")
+    graph.add_node(
+        GraphNode(
+            node_id=obj.object_id,
+            node_kind="artifact",
+            label=obj.name,
+            namespace="DDIC::",
+            artifact_type="ddic.structure",
+        )
+    )
+    wire_components(graph, obj.object_id, meta.get("components", []) or [])
+    artifact = CanonicalArtifact(
+        identity=_identity_for(obj, "DDIC::"),
+        provenance=_base_provenance(obj, "ddic.adt", "1.0.0"),
+        artifact_type="ddic.structure",
+        name=obj.name,
+        package=obj.package or meta.get("package", ""),
+        source_path=str(obj.source_path or ""),
+        metadata={"structure": meta},
+        graph_fragment_id=graph.graph_id,
+    )
+    return artifact, graph
+
+
+def _normalize_table_type(obj: SapObject) -> tuple[CanonicalArtifact, ArtifactGraph]:
+    meta = obj.raw_metadata.get("table_type", {}) if obj.raw_metadata else {}
+    graph = ArtifactGraph(graph_id=f"ddic:ttyp:{obj.object_id}")
+    graph.add_node(
+        GraphNode(
+            node_id=obj.object_id,
+            node_kind="artifact",
+            label=obj.name,
+            namespace="DDIC::",
+            artifact_type="ddic.table_type",
+        )
+    )
+    row_type = (meta.get("row_type") or "").upper()
+    if row_type:
+        wire_type_reference(graph, obj.object_id, "structure", row_type)
+    line_type = (meta.get("line_type") or "").upper()
+    if line_type:
+        wire_type_reference(graph, obj.object_id, "tableType", line_type)
+    artifact = CanonicalArtifact(
+        identity=_identity_for(obj, "DDIC::"),
+        provenance=_base_provenance(obj, "ddic.adt", "1.0.0"),
+        artifact_type="ddic.table_type",
+        name=obj.name,
+        package=obj.package or meta.get("package", ""),
+        source_path=str(obj.source_path or ""),
+        metadata={"table_type": meta},
+        graph_fragment_id=graph.graph_id,
+    )
+    return artifact, graph
+
+
+def _normalize_range_type(obj: SapObject) -> tuple[CanonicalArtifact, ArtifactGraph]:
+    meta = obj.raw_metadata.get("range_type", {}) if obj.raw_metadata else {}
+    graph = ArtifactGraph(graph_id=f"ddic:range:{obj.object_id}")
+    graph.add_node(
+        GraphNode(
+            node_id=obj.object_id,
+            node_kind="artifact",
+            label=obj.name,
+            namespace="DDIC::",
+            artifact_type="ddic.range_type",
+        )
+    )
+    de = (meta.get("data_element") or "").upper()
+    if de:
+        wire_type_reference(graph, obj.object_id, "dataElement", de)
+    dom = (meta.get("domain") or "").upper()
+    if dom:
+        wire_type_reference(graph, obj.object_id, "domain", dom)
+    artifact = CanonicalArtifact(
+        identity=_identity_for(obj, "DDIC::"),
+        provenance=_base_provenance(obj, "ddic.adt", "1.0.0"),
+        artifact_type="ddic.range_type",
+        name=obj.name,
+        package=obj.package or meta.get("package", ""),
+        source_path=str(obj.source_path or ""),
+        metadata={"range_type": meta},
+        graph_fragment_id=graph.graph_id,
+    )
+    return artifact, graph
+
+
+def _normalize_reference_type(obj: SapObject) -> tuple[CanonicalArtifact, ArtifactGraph]:
+    meta = obj.raw_metadata.get("reference_type", {}) if obj.raw_metadata else {}
+    graph = ArtifactGraph(graph_id=f"ddic:reft:{obj.object_id}")
+    graph.add_node(
+        GraphNode(
+            node_id=obj.object_id,
+            node_kind="artifact",
+            label=obj.name,
+            namespace="DDIC::",
+            artifact_type="ddic.reference_type",
+        )
+    )
+    ref_type = (meta.get("referenced_type") or "").upper()
+    if ref_type:
+        wire_type_reference(graph, obj.object_id, "referenceType", ref_type)
+    check_table = (meta.get("check_table") or "").upper()
+    if check_table:
+        wire_type_reference(graph, obj.object_id, "table", check_table)
+    artifact = CanonicalArtifact(
+        identity=_identity_for(obj, "DDIC::"),
+        provenance=_base_provenance(obj, "ddic.adt", "1.0.0"),
+        artifact_type="ddic.reference_type",
+        name=obj.name,
+        package=obj.package or meta.get("package", ""),
+        source_path=str(obj.source_path or ""),
+        metadata={"reference_type": meta},
         graph_fragment_id=graph.graph_id,
     )
     return artifact, graph

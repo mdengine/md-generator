@@ -116,3 +116,107 @@ class DdicDomain:
             "lower_case": self.lower_case,
             "sign_flag": self.sign_flag,
         }
+
+
+@dataclass(slots=True)
+class DdicComponent:
+    name: str
+    data_element: str = ""
+    data_type: str = ""
+    type_name: str = ""
+    length: int = 0
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "name": self.name,
+            "data_element": self.data_element,
+            "data_type": self.data_type,
+            "type_name": self.type_name,
+            "length": self.length,
+        }
+
+
+@dataclass(slots=True)
+class DdicStructure:
+    name: str
+    description: str = ""
+    package: str = ""
+    components: list[DdicComponent] = field(default_factory=list)
+    definition_source: str = "adt_xml"
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "name": self.name,
+            "description": self.description,
+            "package": self.package,
+            "components": [c.to_dict() for c in self.components],
+            "definition_source": self.definition_source,
+        }
+
+
+@dataclass(slots=True)
+class DdicTableType:
+    name: str
+    description: str = ""
+    package: str = ""
+    row_type: str = ""
+    line_type: str = ""
+    access_mode: str = ""
+    primary_key: list[str] = field(default_factory=list)
+    definition_source: str = "adt_xml"
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "name": self.name,
+            "description": self.description,
+            "package": self.package,
+            "row_type": self.row_type,
+            "line_type": self.line_type,
+            "access_mode": self.access_mode,
+            "primary_key": list(self.primary_key),
+            "definition_source": self.definition_source,
+        }
+
+
+@dataclass(slots=True)
+class DdicRangeType:
+    name: str
+    description: str = ""
+    package: str = ""
+    data_element: str = ""
+    domain: str = ""
+    length: int = 0
+    decimals: int = 0
+    definition_source: str = "adt_xml"
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "name": self.name,
+            "description": self.description,
+            "package": self.package,
+            "data_element": self.data_element,
+            "domain": self.domain,
+            "length": self.length,
+            "decimals": self.decimals,
+            "definition_source": self.definition_source,
+        }
+
+
+@dataclass(slots=True)
+class DdicReferenceType:
+    name: str
+    description: str = ""
+    package: str = ""
+    referenced_type: str = ""
+    check_table: str = ""
+    definition_source: str = "adt_xml"
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "name": self.name,
+            "description": self.description,
+            "package": self.package,
+            "referenced_type": self.referenced_type,
+            "check_table": self.check_table,
+            "definition_source": self.definition_source,
+        }

@@ -1,0 +1,23 @@
+<?xml version="1.0" ?>
+<blue:wbobj xmlns:blue="http://www.sap.com/wbobj/dictionary/tabl"
+            xmlns:adtcore="http://www.sap.com/adt/core"
+            adtcore:name="BAL_S_CONT"
+            adtcore:type="TABL/DS"
+            adtcore:description="Application Log: Context"
+            adtcore:language="EN">
+  <adtcore:packageRef adtcore:name="SZS"/>
+  <tabl:structure xmlns:tabl="http://www.sap.com/adt/dictionary/structures">
+    <component>
+      <name>MSG</name>
+      <dataElement>SYCHAR100</dataElement>
+      <dataType>CHAR</dataType>
+      <length>100</length>
+    </component>
+    <component>
+      <name>CONTEXT</name>
+      <dataElement>CHAR100</dataElement>
+      <dataType>CHAR</dataType>
+      <length>100</length>
+    </component>
+  </tabl:structure>
+</blue:wbobj>
