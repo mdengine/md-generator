@@ -46,6 +46,7 @@ class NormalizerRegistry:
 def default_normalizer_registry() -> NormalizerRegistry:
     reg = NormalizerRegistry()
     reg.register(SapObjectKind.CDS_VIEW, _normalize_cds)
+    reg.register(SapObjectKind.CDS_STRUCTURE, _normalize_cds_structure)
     reg.register(SapObjectKind.TABLE, _normalize_ddic)
     reg.register(SapObjectKind.DATA_ELEMENT, _normalize_data_element)
     reg.register(SapObjectKind.DOMAIN, _normalize_domain)
@@ -87,6 +88,54 @@ def _normalize_cds(obj: SapObject) -> tuple[CanonicalArtifact, ArtifactGraph]:
         package=obj.package,
         source_path=str(obj.source_path or ""),
         metadata={"cds": meta},
+        graph_fragment_id=graph.graph_id,
+    )
+    return artifact, graph
+
+
+def _normalize_cds_structure(obj: SapObject) -> tuple[CanonicalArtifact, ArtifactGraph]:
+    meta = obj.raw_metadata.get("cds_structure", {}) if obj.raw_metadata else {}
+    graph = ArtifactGraph(graph_id=f"cds:struct:{obj.object_id}")
+    graph.add_node(
+        GraphNode(
+            node_id=obj.object_id,
+            node_kind="artifact",
+            label=obj.name,
+            namespace="CDS::",
+            artifact_type="cds.structure",
+        )
+    )
+    seen: set[str] = set()
+    for comp in meta.get("components", []) or []:
+        ctype = (comp.get("type_name") or "").upper()
+        if not ctype or ctype in seen:
+            continue
+        seen.add(ctype)
+        kind = comp.get("type_kind", "type")
+        if kind == "structure":
+            tid = f"CDS::STRUCT::{ctype}"
+            rel = RelationshipType.CONTAINS
+        else:
+            tid = f"DDIC::TYPE::{ctype}"
+            rel = RelationshipType.REFERENCES
+        graph.add_node(GraphNode(node_id=tid, node_kind="artifact", label=ctype, namespace="CDIC::"))
+        graph.add_edge(
+            GraphEdge(
+                edge_id=f"{obj.object_id}->{rel.value.lower()}->{tid}:{comp.get('name')}",
+                source_id=obj.object_id,
+                target_id=tid,
+                relationship=rel,
+                properties={"component": comp.get("name"), "type_kind": kind},
+            )
+        )
+    artifact = CanonicalArtifact(
+        identity=_identity_for(obj, "CDS::"),
+        provenance=_base_provenance(obj, "cds.type_ddl", "1.0.0"),
+        artifact_type="cds.structure",
+        name=obj.name,
+        package=obj.package,
+        source_path=str(obj.source_path or ""),
+        metadata={"cds_structure": meta},
         graph_fragment_id=graph.graph_id,
     )
     return artifact, graph

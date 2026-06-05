@@ -75,6 +75,16 @@ def build_sap_graph(objects: list[SapObject]) -> nx.MultiDiGraph:
                     if tgt:
                         g.add_edge(src, _node_id(tgt), relation=edge_rel, name=a.get("name"))
 
+        if obj.kind == SapObjectKind.CDS_STRUCTURE and "cds_structure" in meta:
+            st = meta["cds_structure"]
+            if isinstance(st, dict):
+                for comp in st.get("components", []):
+                    ctype = (comp.get("type_name") or "").upper()
+                    tgt = by_name.get(ctype)
+                    if tgt:
+                        edge_rel = rel.COMPOSITION if comp.get("type_kind") == "structure" else rel.ASSOCIATION
+                        g.add_edge(src, _node_id(tgt), relation=edge_rel, component=comp.get("name"))
+
         if obj.kind == SapObjectKind.TABLE and "ddic" in meta:
             ddic = meta["ddic"]
             if isinstance(ddic, dict):

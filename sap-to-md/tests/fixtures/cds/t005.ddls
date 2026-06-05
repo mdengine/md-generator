@@ -1,0 +1,46 @@
+@AbapCatalog.table type: #TRANSPARENT
+define table t005 {
+  prplz : pruef_005;
+  xplzs : xplzs_005;
+  xplpf : xplpf_005;
+  xland : xland_005;
+  xaddr : xaddr_005;
+  xregs : xregs_005;
+  xplst : xplst_005;
+  xegld : xegld;
+  xskfn : xskfn;
+  xmwsn : xmwsn;
+  prbkn : prbkn_005;
+  prblz : prblz_005;
+  bnkey : bnkey;
+  prpsk : prpsk_005;
+  xprbk : xprbk_005;
+  prbks : prbks_005;
+  pruin : pruin_005;
+  xprso : xprso_005;
+  prst1 : prst1_005;
+  prst2 : prst2_005;
+  prst3 : prst3_005;
+  prst4 : prst4_005;
+  prst5 : prst5_005;
+  lnplz : lnplz_005;
+  intca : intca;
+  lnbkn : lnbkn_005;
+  lnblz : lnblz_005;
+  lnpsk : lnpsk_005;
+  lnbks : lnbks_005;
+  lnst1 : lnst1_005;
+  uinln : uinln;
+  lnst2 : lnst2_005;
+  lnst3 : lnst3_005;
+  lnst4 : lnst4_005;
+  lnst5 : lnst5_005;
+  key land1 : land1;
+  landk : landk;
+  intca3 : intca3;
+  intcn3 : intcn3;
+  key mandt : mandt;
+  spras : spras;
+  nmfmt : nmfmt_005;
+  addrs : addrs_005;
+}

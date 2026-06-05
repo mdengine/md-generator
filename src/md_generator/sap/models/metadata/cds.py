@@ -44,3 +44,39 @@ class CdsAnalysis:
             "projections": list(self.projections),
             "semantic_entity": self.semantic_entity,
         }
+
+
+@dataclass(slots=True)
+class CdsTypeComponent:
+    name: str
+    type_name: str
+    type_kind: str = "type"
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "name": self.name,
+            "type_name": self.type_name,
+            "type_kind": self.type_kind,
+        }
+
+
+@dataclass(slots=True)
+class CdsStructuredType:
+    name: str
+    description: str = ""
+    package: str = ""
+    enhancement_category: str = ""
+    annotations: dict[str, str] = field(default_factory=dict)
+    components: list[CdsTypeComponent] = field(default_factory=list)
+    definition_source: str = "cds_ddl"
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "name": self.name,
+            "description": self.description,
+            "package": self.package,
+            "enhancement_category": self.enhancement_category,
+            "annotations": dict(self.annotations),
+            "components": [c.to_dict() for c in self.components],
+            "definition_source": self.definition_source,
+        }

@@ -1,0 +1,22 @@
+@EndUserText.label : 'Anwendungs-Log: Daten einer Meldung'
+@AbapCatalog.enhancementCategory : #NOT_CLASSIFIED
+define type bal_s_msg {
+  msgty     : symsgty;
+  msgid     : symsgid;
+  msgno     : symsgno;
+  msgv1     : symsgv;
+  msgv2     : symsgv;
+  msgv3     : symsgv;
+  msgv4     : symsgv;
+  msgv1_src : balmsgvsrc;
+  msgv2_src : balmsgvsrc;
+  msgv3_src : balmsgvsrc;
+  msgv4_src : balmsgvsrc;
+  detlevel  : ballevel;
+  probclass : balprobcl;
+  alsort    : balsort;
+  time_stmp : baltimstmp;
+  msg_count : balcntcum;
+  context   : bal_s_cont;
+  params    : bal_s_parm;
+}

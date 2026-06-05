@@ -40,6 +40,7 @@ def default_generator_registry() -> GeneratorRegistry:
     reg.register("hana.hdi_calculation_view", _generate_hana_cv)
     reg.register("hana.sql_view", _generate_hana_cv)
     reg.register("cds.view", _generate_cds)
+    reg.register("cds.structure", _generate_cds_structure)
     reg.register("ddic.table", _generate_ddic)
     reg.register("ddic.data_element", _generate_ddic_data_element)
     reg.register("ddic.domain", _generate_ddic_domain)
@@ -264,15 +265,49 @@ def _generate_cds(artifact: CanonicalArtifact, store: ArtifactGraphStore, output
     return paths
 
 
+def _generate_cds_structure(
+    artifact: CanonicalArtifact, store: ArtifactGraphStore, output_dir: Path
+) -> list[Path]:
+    slug = _slug(artifact.name)
+    paths = [_write_canonical_json(artifact, output_dir)]
+    md = output_dir / "cds" / "structures" / f"{slug}.md"
+    md.parent.mkdir(parents=True, exist_ok=True)
+    st = artifact.metadata.get("cds_structure", {})
+    lines = [
+        f"# CDS Structure: {artifact.name}",
+        "",
+        f"**Description:** {st.get('description') or artifact.description or '—'}",
+        f"**Package:** {artifact.package or st.get('package') or '—'}",
+    ]
+    if st.get("enhancement_category"):
+        lines.append(f"**Enhancement category:** `{st['enhancement_category']}`")
+    lines.extend(["", "## Components", ""])
+    for comp in st.get("components", []):
+        kind = comp.get("type_kind", "type")
+        lines.append(f"- `{comp.get('name')}` → `{comp.get('type_name')}` ({kind})")
+    md.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    paths.append(md)
+    paths.append(generate_lineage_json(artifact, store, output_dir / "cds" / "lineage" / f"{slug}.json"))
+    return paths
+
+
 def _generate_ddic(artifact: CanonicalArtifact, store: ArtifactGraphStore, output_dir: Path) -> list[Path]:
     slug = _slug(artifact.name)
     paths = [_write_canonical_json(artifact, output_dir)]
     md = output_dir / "ddic" / "tables" / f"{slug}.md"
     md.parent.mkdir(parents=True, exist_ok=True)
     fields = artifact.metadata.get("ddic", {}).get("fields", [])
-    lines = [f"# DDIC Table: {artifact.name}", "", "## Fields", ""]
+    ddic = artifact.metadata.get("ddic", {})
+    lines = [f"# DDIC Table: {artifact.name}", ""]
+    if ddic.get("table_type"):
+        lines.append(f"**Table type:** `{ddic['table_type']}`")
+    if ddic.get("definition_source"):
+        lines.append(f"**Source:** `{ddic['definition_source']}`")
+    lines.extend(["", "## Fields", ""])
     for f in fields:
-        lines.append(f"- {f.get('name')} ({f.get('type', '')})")
+        key_mark = " (key)" if f.get("key") else ""
+        de = f.get("data_element") or f.get("type", "")
+        lines.append(f"- `{f.get('name')}` → `{de}`{key_mark}")
     md.write_text("\n".join(lines) + "\n", encoding="utf-8")
     paths.append(md)
     paths.append(generate_impact_markdown(artifact, store, output_dir / "ddic" / "impact" / f"{slug}.md"))

@@ -23,6 +23,9 @@ class DdicTable:
     fields: list[DdicField] = field(default_factory=list)
     primary_key: list[str] = field(default_factory=list)
     package: str = ""
+    table_type: str = ""
+    annotations: dict[str, str] = field(default_factory=dict)
+    definition_source: str = ""
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -30,6 +33,9 @@ class DdicTable:
             "description": self.description,
             "primary_key": list(self.primary_key),
             "package": self.package,
+            "table_type": self.table_type,
+            "annotations": dict(self.annotations),
+            "definition_source": self.definition_source,
             "fields": [
                 {
                     "name": f.name,
