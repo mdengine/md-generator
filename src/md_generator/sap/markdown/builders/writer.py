@@ -77,6 +77,7 @@ def render_all(
             lineage=obj_lin,
             governance=obj_gov,
             related_links=links,
+            link_graph=lg,
             cap=cfg.performance.intelligence_list_cap,
         )
 

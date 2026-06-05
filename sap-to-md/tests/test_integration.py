@@ -31,3 +31,10 @@ def test_extract_to_markdown_mini_repo(tmp_path: Path):
     assert (out / "odata" / "index.md").is_file()
     assert (out / "graph-full.json").is_file()
     assert (out / "chunks" / "index.json").is_file()
+    entity_md = "\n".join(p.read_text(encoding="utf-8") for p in (out / "entities").glob("*.md"))
+    assert (
+        "## Structure" in entity_md
+        or "## DDIC Data Element" in entity_md
+        or "## DDIC Domain" in entity_md
+        or "## DDIC Table Fields" in entity_md
+    )

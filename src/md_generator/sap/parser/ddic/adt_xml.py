@@ -143,11 +143,11 @@ def parse_adt_ddic_xml(text: str) -> dict[str, Any] | None:
             return None
         return {"object_kind": "STRUCTURE", "structure": _parse_structure(name, description, package, payload).to_dict()}
 
-    if obj_type == "TABL/DT" or _find_payload(root, "table") is not None:
-        payload = _find_payload(root, "table")
+    if obj_type == "TABL/DT" or _find_payload(root, "table") is not None or _find_payload(root, "blueSource") is not None:
+        payload = _find_payload(root, "table") or _find_payload(root, "blueSource")
         if payload is None:
             return None
-        return {"object_kind": "TABLE", "ddic": _parse_table(name, description, package, payload).to_dict()}
+        return {"object_kind": "TABLE", "ddic": _parse_table(name, description, package, payload, obj_type).to_dict()}
 
     if obj_type == "TTYP/DA" or _find_payload(root, "tableType") is not None:
         payload = _find_payload(root, "tableType")
@@ -177,22 +177,48 @@ def _find_payload(root: ET.Element, local_name: str) -> ET.Element | None:
     return None
 
 
-def _parse_components(elem: ET.Element) -> list[DdicComponent]:
-    components: list[DdicComponent] = []
+def _iter_component_elements(elem: ET.Element):
+    """Yield component/field elements, recursing into components/fields wrappers."""
     for child in elem:
         tag = _local(child.tag)
-        if tag not in ("component", "field"):
+        if tag in ("components", "fields", "componentList"):
+            yield from _iter_component_elements(child)
             continue
-        cname = _child_text(child, "name").upper() or _attr(child, "name").upper()
-        if not cname:
+        if tag in ("component", "field"):
+            yield child
+
+
+def _component_name(child: ET.Element) -> str:
+    for key in ("name", "fieldName"):
+        val = _child_text(child, key).upper() or _attr(child, key).upper()
+        if val:
+            return val
+    return ""
+
+
+def _component_data_element(child: ET.Element) -> str:
+    for key in ("dataElement", "rollName"):
+        val = _child_text(child, key).upper()
+        if val:
+            return val
+    return ""
+
+
+def _parse_components(elem: ET.Element) -> list[DdicComponent]:
+    components: list[DdicComponent] = []
+    seen: set[str] = set()
+    for child in _iter_component_elements(elem):
+        cname = _component_name(child)
+        if not cname or cname in seen:
             continue
+        seen.add(cname)
         components.append(
             DdicComponent(
                 name=cname,
-                data_element=_child_text(child, "dataElement").upper(),
+                data_element=_component_data_element(child),
                 data_type=_child_text(child, "dataType"),
                 type_name=_child_text(child, "typeName").upper(),
-                length=_int_text(child, "length"),
+                length=_int_text(child, "length") or _int_text(child, "dataTypeLength"),
             )
         )
     return components
@@ -242,32 +268,25 @@ def _parse_structure(name: str, description: str, package: str, elem: ET.Element
     )
 
 
-def _parse_table(name: str, description: str, package: str, elem: ET.Element) -> DdicTable:
-    tbl = DdicTable(name=name, description=description, package=package, definition_source="adt_xml")
-    for comp in _parse_components(elem):
-        key = False
-        fld = DdicField(
-            name=comp.name,
-            data_type=comp.data_type,
-            length=comp.length,
-            key=key,
-            data_element=comp.data_element,
-        )
-        tbl.fields.append(fld)
-    for child in elem:
-        if _local(child.tag) != "field":
-            continue
-        fname = _child_text(child, "name").upper() or _attr(child, "name").upper()
-        if not fname or any(f.name == fname for f in tbl.fields):
+def _parse_table(name: str, description: str, package: str, elem: ET.Element, obj_type: str = "TABL/DT") -> DdicTable:
+    fields_from_components = list(_iter_component_elements(elem))
+    is_ddl_ref = _local(elem.tag) == "blueSource" or (
+        obj_type == "TABL/DT" and not fields_from_components
+    )
+    source = "adt_xml_ddl_ref" if is_ddl_ref else "adt_xml"
+    tbl = DdicTable(name=name, description=description, package=package, definition_source=source)
+    for child in fields_from_components:
+        fname = _component_name(child)
+        if not fname:
             continue
         key = _bool_text(child, "key") or _child_text(child, "keyFlag").upper() == "X"
         fld = DdicField(
             name=fname,
             data_type=_child_text(child, "dataType"),
-            length=_int_text(child, "length"),
+            length=_int_text(child, "length") or _int_text(child, "dataTypeLength"),
             key=key,
             domain=_child_text(child, "domain").upper(),
-            data_element=_child_text(child, "dataElement").upper(),
+            data_element=_component_data_element(child),
             check_table=_child_text(child, "checkTable").upper(),
         )
         tbl.fields.append(fld)

@@ -6,6 +6,26 @@ from pathlib import Path
 from md_generator.sap.canonical.base import CanonicalArtifact
 from md_generator.sap.canonical.transformation.graph import TransformationGraph
 from md_generator.sap.markdown.builders.abap_sections import build_abap_program_markdown
+from md_generator.sap.markdown.builders.ddic_adapters import (
+    data_element_view_from_raw,
+    domain_view_from_raw,
+    range_type_view_from_raw,
+    reference_type_view_from_raw,
+    structure_view_from_cds,
+    structure_view_from_ddic,
+    table_type_view_from_raw,
+    table_view_from_raw,
+)
+from md_generator.sap.markdown.builders.ddic_sections import (
+    format_data_element,
+    format_ddic_table,
+    format_domain,
+    format_range_type,
+    format_reference_type,
+    format_table_type,
+)
+from md_generator.sap.markdown.builders.renderer_context import RendererContext, build_path_registry
+from md_generator.sap.markdown.builders.structure_sections import format_structure, format_structure_title
 from md_generator.sap.generators.lineage.from_graph import generate_impact_markdown, generate_lineage_json
 from md_generator.sap.generators.mermaid.transformation_graph import render_transformation_mermaid
 from md_generator.sap.graph.store import ArtifactGraphStore
@@ -24,10 +44,13 @@ class GeneratorRegistry:
         store: ArtifactGraphStore,
         output_dir: Path,
     ) -> list[Path]:
+        path_registry = build_path_registry(artifacts)
+        ctx = RendererContext(graph_store=store, path_registry=path_registry)
+        structure_sources: dict[str, list[str]] = {}
         written: list[Path] = []
         for artifact in artifacts:
             fn = self._generators.get(artifact.artifact_type, _default_generate)
-            paths = fn(artifact, store, output_dir)  # type: ignore[operator]
+            paths = fn(artifact, store, output_dir, ctx, structure_sources)  # type: ignore[operator]
             written.extend(paths)
         return written
 
@@ -72,7 +95,13 @@ def _write_canonical_json(artifact: CanonicalArtifact, output_dir: Path) -> Path
     return path
 
 
-def _default_generate(artifact: CanonicalArtifact, store: ArtifactGraphStore, output_dir: Path) -> list[Path]:
+def _default_generate(
+    artifact: CanonicalArtifact,
+    store: ArtifactGraphStore,
+    output_dir: Path,
+    ctx: RendererContext,
+    structure_sources: dict[str, list[str]],
+) -> list[Path]:
     return [_write_canonical_json(artifact, output_dir)]
 
 
@@ -205,7 +234,33 @@ def _build_hana_cv_markdown(artifact: CanonicalArtifact) -> str:
     return "\n".join(lines) + "\n"
 
 
-def _generate_hana_cv(artifact: CanonicalArtifact, store: ArtifactGraphStore, output_dir: Path) -> list[Path]:
+def _write_unified_structure_md(
+    artifact: CanonicalArtifact,
+    output_dir: Path,
+    ctx: RendererContext,
+    structure_sources: dict[str, list[str]],
+    view,
+    source_label: str,
+) -> Path:
+    slug = _slug(artifact.name)
+    md = output_dir / "structures" / f"{slug}.md"
+    md.parent.mkdir(parents=True, exist_ok=True)
+    sources = structure_sources.setdefault(slug, [])
+    if source_label not in sources:
+        sources.append(source_label)
+    alternates = [s for s in sources if s != source_label] if len(sources) > 1 else None
+    body = format_structure_title(view) + format_structure(view, ctx, alternate_sources=alternates)
+    md.write_text(body, encoding="utf-8")
+    return md
+
+
+def _generate_hana_cv(
+    artifact: CanonicalArtifact,
+    store: ArtifactGraphStore,
+    output_dir: Path,
+    ctx: RendererContext,
+    structure_sources: dict[str, list[str]],
+) -> list[Path]:
     slug = _slug(artifact.name if not artifact.package else f"{artifact.package}#{artifact.name}")
     paths = [_write_canonical_json(artifact, output_dir)]
     md_path = output_dir / "hana" / "calculation-views" / f"{slug}.md"
@@ -257,7 +312,13 @@ def _write_hana_sql(artifact: CanonicalArtifact, path: Path) -> Path:
     return path
 
 
-def _generate_cds(artifact: CanonicalArtifact, store: ArtifactGraphStore, output_dir: Path) -> list[Path]:
+def _generate_cds(
+    artifact: CanonicalArtifact,
+    store: ArtifactGraphStore,
+    output_dir: Path,
+    ctx: RendererContext,
+    structure_sources: dict[str, list[str]],
+) -> list[Path]:
     slug = _slug(artifact.name)
     paths = [_write_canonical_json(artifact, output_dir)]
     md = output_dir / "cds" / "views" / f"{slug}.md"
@@ -270,48 +331,42 @@ def _generate_cds(artifact: CanonicalArtifact, store: ArtifactGraphStore, output
 
 
 def _generate_cds_structure(
-    artifact: CanonicalArtifact, store: ArtifactGraphStore, output_dir: Path
+    artifact: CanonicalArtifact,
+    store: ArtifactGraphStore,
+    output_dir: Path,
+    ctx: RendererContext,
+    structure_sources: dict[str, list[str]],
 ) -> list[Path]:
     slug = _slug(artifact.name)
     paths = [_write_canonical_json(artifact, output_dir)]
-    md = output_dir / "cds" / "structures" / f"{slug}.md"
-    md.parent.mkdir(parents=True, exist_ok=True)
     st = artifact.metadata.get("cds_structure", {})
-    lines = [
-        f"# CDS Structure: {artifact.name}",
-        "",
-        f"**Description:** {st.get('description') or artifact.description or '—'}",
-        f"**Package:** {artifact.package or st.get('package') or '—'}",
-    ]
-    if st.get("enhancement_category"):
-        lines.append(f"**Enhancement category:** `{st['enhancement_category']}`")
-    lines.extend(["", "## Components", ""])
-    for comp in st.get("components", []):
-        kind = comp.get("type_kind", "type")
-        lines.append(f"- `{comp.get('name')}` → `{comp.get('type_name')}` ({kind})")
-    md.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    view = structure_view_from_cds(st)
+    view.name = view.name or artifact.name
+    view.description = view.description or (artifact.metadata.get("cds_structure") or {}).get("description", "")
+    view.package = view.package or artifact.package or ""
+    md = _write_unified_structure_md(
+        artifact, output_dir, ctx, structure_sources, view, f"cds_ddl: {artifact.name}"
+    )
     paths.append(md)
     paths.append(generate_lineage_json(artifact, store, output_dir / "cds" / "lineage" / f"{slug}.json"))
     return paths
 
 
-def _generate_ddic(artifact: CanonicalArtifact, store: ArtifactGraphStore, output_dir: Path) -> list[Path]:
+def _generate_ddic(
+    artifact: CanonicalArtifact,
+    store: ArtifactGraphStore,
+    output_dir: Path,
+    ctx: RendererContext,
+    structure_sources: dict[str, list[str]],
+) -> list[Path]:
     slug = _slug(artifact.name)
     paths = [_write_canonical_json(artifact, output_dir)]
     md = output_dir / "ddic" / "tables" / f"{slug}.md"
     md.parent.mkdir(parents=True, exist_ok=True)
-    fields = artifact.metadata.get("ddic", {}).get("fields", [])
     ddic = artifact.metadata.get("ddic", {})
-    lines = [f"# DDIC Table: {artifact.name}", ""]
-    if ddic.get("table_type"):
-        lines.append(f"**Table type:** `{ddic['table_type']}`")
-    if ddic.get("definition_source"):
-        lines.append(f"**Source:** `{ddic['definition_source']}`")
-    lines.extend(["", "## Fields", ""])
-    for f in fields:
-        key_mark = " (key)" if f.get("key") else ""
-        de = f.get("data_element") or f.get("type", "")
-        lines.append(f"- `{f.get('name')}` → `{de}`{key_mark}")
+    view = table_view_from_raw(ddic)
+    view.name = view.name or artifact.name
+    lines = [f"# DDIC Table: {artifact.name}", "", format_ddic_table(view, ctx)]
     md.write_text("\n".join(lines) + "\n", encoding="utf-8")
     paths.append(md)
     paths.append(generate_impact_markdown(artifact, store, output_dir / "ddic" / "impact" / f"{slug}.md"))
@@ -319,162 +374,153 @@ def _generate_ddic(artifact: CanonicalArtifact, store: ArtifactGraphStore, outpu
 
 
 def _generate_ddic_data_element(
-    artifact: CanonicalArtifact, store: ArtifactGraphStore, output_dir: Path
+    artifact: CanonicalArtifact,
+    store: ArtifactGraphStore,
+    output_dir: Path,
+    ctx: RendererContext,
+    structure_sources: dict[str, list[str]],
 ) -> list[Path]:
     slug = _slug(artifact.name)
     paths = [_write_canonical_json(artifact, output_dir)]
     md = output_dir / "ddic" / "data-elements" / f"{slug}.md"
     md.parent.mkdir(parents=True, exist_ok=True)
     de = artifact.metadata.get("data_element", {})
+    view = data_element_view_from_raw(de)
     lines = [
         f"# DDIC Data Element: {artifact.name}",
         "",
-        f"**Description:** {de.get('description') or '—'}",
-        f"**Package:** {de.get('package') or artifact.package or '—'}",
+        f"**Description:** {view.description or '—'}",
+        f"**Package:** {view.package or artifact.package or '—'}",
         "",
         "## Type",
         "",
-        f"- **Type kind:** `{de.get('type_kind', '—')}`",
-        f"- **Type name:** `{de.get('type_name', '—')}`",
-        f"- **Data type:** `{de.get('data_type', '—')}`",
-        f"- **Length:** {de.get('data_type_length', 0)}",
-        f"- **Decimals:** {de.get('data_type_decimals', 0)}",
+        format_data_element(view, ctx),
         "",
     ]
-    labels = [
-        ("Short label", de.get("short_field_label")),
-        ("Medium label", de.get("medium_field_label")),
-        ("Long label", de.get("long_field_label")),
-        ("Heading label", de.get("heading_field_label")),
-    ]
-    if any(v for _, v in labels):
-        lines.extend(["## Field labels", ""])
-        for label, value in labels:
-            if value:
-                lines.append(f"- **{label}:** {value}")
-        lines.append("")
-    if de.get("search_help"):
-        lines.extend(["## Search help", "", f"- `{de['search_help']}`", ""])
     md.write_text("\n".join(lines) + "\n", encoding="utf-8")
     paths.append(md)
     paths.append(generate_lineage_json(artifact, store, output_dir / "ddic" / "lineage" / f"{slug}.json"))
     return paths
 
 
-def _generate_ddic_domain(artifact: CanonicalArtifact, store: ArtifactGraphStore, output_dir: Path) -> list[Path]:
+def _generate_ddic_domain(
+    artifact: CanonicalArtifact,
+    store: ArtifactGraphStore,
+    output_dir: Path,
+    ctx: RendererContext,
+    structure_sources: dict[str, list[str]],
+) -> list[Path]:
     slug = _slug(artifact.name)
     paths = [_write_canonical_json(artifact, output_dir)]
     md = output_dir / "ddic" / "domains" / f"{slug}.md"
     md.parent.mkdir(parents=True, exist_ok=True)
     dom = artifact.metadata.get("domain", {})
+    view = domain_view_from_raw(dom)
     lines = [
         f"# DDIC Domain: {artifact.name}",
         "",
-        f"**Description:** {dom.get('description') or '—'}",
-        f"**Package:** {dom.get('package') or artifact.package or '—'}",
+        f"**Description:** {view.description or '—'}",
+        f"**Package:** {view.package or artifact.package or '—'}",
         "",
         "## Technical",
         "",
-        f"- **Data type:** `{dom.get('data_type', '—')}`",
-        f"- **Length:** {dom.get('length', 0)}",
-        f"- **Decimals:** {dom.get('decimals', 0)}",
-        f"- **Output length:** {dom.get('output_length', 0)}",
+        format_domain(view, ctx),
+        "",
     ]
-    if dom.get("value_table"):
-        lines.append(f"- **Value table:** `{dom['value_table']}`")
-    if dom.get("conversion_routine"):
-        lines.append(f"- **Conversion routine:** `{dom['conversion_routine']}`")
     md.write_text("\n".join(lines) + "\n", encoding="utf-8")
     paths.append(md)
     paths.append(generate_lineage_json(artifact, store, output_dir / "ddic" / "lineage" / f"{slug}.json"))
     return paths
 
 
-def _generate_ddic_structure(artifact: CanonicalArtifact, store: ArtifactGraphStore, output_dir: Path) -> list[Path]:
+def _generate_ddic_structure(
+    artifact: CanonicalArtifact,
+    store: ArtifactGraphStore,
+    output_dir: Path,
+    ctx: RendererContext,
+    structure_sources: dict[str, list[str]],
+) -> list[Path]:
     slug = _slug(artifact.name)
     paths = [_write_canonical_json(artifact, output_dir)]
-    md = output_dir / "ddic" / "structures" / f"{slug}.md"
-    md.parent.mkdir(parents=True, exist_ok=True)
     st = artifact.metadata.get("structure", {})
-    lines = [
-        f"# DDIC Structure: {artifact.name}",
-        "",
-        f"**Description:** {st.get('description') or artifact.description or '—'}",
-        "",
-        "## Components",
-        "",
-    ]
-    for comp in st.get("components", []):
-        de = comp.get("data_element") or comp.get("type_name") or "—"
-        lines.append(f"- `{comp.get('name')}` → `{de}`")
-    md.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    view = structure_view_from_ddic(st)
+    view.name = view.name or artifact.name
+    view.description = view.description or (artifact.metadata.get("structure") or {}).get("description", "")
+    md = _write_unified_structure_md(
+        artifact, output_dir, ctx, structure_sources, view, f"adt_xml: {artifact.name}"
+    )
     paths.append(md)
     paths.append(generate_lineage_json(artifact, store, output_dir / "ddic" / "lineage" / f"{slug}.json"))
     return paths
 
 
-def _generate_ddic_table_type(artifact: CanonicalArtifact, store: ArtifactGraphStore, output_dir: Path) -> list[Path]:
+def _generate_ddic_table_type(
+    artifact: CanonicalArtifact,
+    store: ArtifactGraphStore,
+    output_dir: Path,
+    ctx: RendererContext,
+    structure_sources: dict[str, list[str]],
+) -> list[Path]:
     slug = _slug(artifact.name)
     paths = [_write_canonical_json(artifact, output_dir)]
     md = output_dir / "ddic" / "table-types" / f"{slug}.md"
     md.parent.mkdir(parents=True, exist_ok=True)
     tt = artifact.metadata.get("table_type", {})
-    lines = [
-        f"# DDIC Table Type: {artifact.name}",
-        "",
-        f"**Row type:** `{tt.get('row_type', '—')}`",
-        f"**Line type:** `{tt.get('line_type', '—')}`",
-        f"**Access mode:** `{tt.get('access_mode', '—')}`",
-        "",
-    ]
-    if tt.get("primary_key"):
-        lines.extend(["## Primary key", ""] + [f"- `{k}`" for k in tt["primary_key"]] + [""])
+    view = table_type_view_from_raw(tt)
+    lines = [f"# DDIC Table Type: {artifact.name}", "", format_table_type(view, ctx), ""]
     md.write_text("\n".join(lines) + "\n", encoding="utf-8")
     paths.append(md)
     paths.append(generate_lineage_json(artifact, store, output_dir / "ddic" / "lineage" / f"{slug}.json"))
     return paths
 
 
-def _generate_ddic_range_type(artifact: CanonicalArtifact, store: ArtifactGraphStore, output_dir: Path) -> list[Path]:
+def _generate_ddic_range_type(
+    artifact: CanonicalArtifact,
+    store: ArtifactGraphStore,
+    output_dir: Path,
+    ctx: RendererContext,
+    structure_sources: dict[str, list[str]],
+) -> list[Path]:
     slug = _slug(artifact.name)
     paths = [_write_canonical_json(artifact, output_dir)]
     md = output_dir / "ddic" / "range-types" / f"{slug}.md"
     md.parent.mkdir(parents=True, exist_ok=True)
     rt = artifact.metadata.get("range_type", {})
-    lines = [
-        f"# DDIC Range Type: {artifact.name}",
-        "",
-        f"**Data element:** `{rt.get('data_element', '—')}`",
-        f"**Domain:** `{rt.get('domain', '—')}`",
-        f"**Length:** {rt.get('length', 0)}",
-        "",
-    ]
+    view = range_type_view_from_raw(rt)
+    lines = [f"# DDIC Range Type: {artifact.name}", "", format_range_type(view, ctx), ""]
     md.write_text("\n".join(lines) + "\n", encoding="utf-8")
     paths.append(md)
     paths.append(generate_lineage_json(artifact, store, output_dir / "ddic" / "lineage" / f"{slug}.json"))
     return paths
 
 
-def _generate_ddic_reference_type(artifact: CanonicalArtifact, store: ArtifactGraphStore, output_dir: Path) -> list[Path]:
+def _generate_ddic_reference_type(
+    artifact: CanonicalArtifact,
+    store: ArtifactGraphStore,
+    output_dir: Path,
+    ctx: RendererContext,
+    structure_sources: dict[str, list[str]],
+) -> list[Path]:
     slug = _slug(artifact.name)
     paths = [_write_canonical_json(artifact, output_dir)]
     md = output_dir / "ddic" / "reference-types" / f"{slug}.md"
     md.parent.mkdir(parents=True, exist_ok=True)
     rt = artifact.metadata.get("reference_type", {})
-    lines = [
-        f"# DDIC Reference Type: {artifact.name}",
-        "",
-        f"**Referenced type:** `{rt.get('referenced_type', '—')}`",
-        f"**Check table:** `{rt.get('check_table', '—')}`",
-        "",
-    ]
+    view = reference_type_view_from_raw(rt)
+    lines = [f"# DDIC Reference Type: {artifact.name}", "", format_reference_type(view, ctx), ""]
     md.write_text("\n".join(lines) + "\n", encoding="utf-8")
     paths.append(md)
     paths.append(generate_lineage_json(artifact, store, output_dir / "ddic" / "lineage" / f"{slug}.json"))
     return paths
 
 
-def _generate_abap(artifact: CanonicalArtifact, store: ArtifactGraphStore, output_dir: Path) -> list[Path]:
+def _generate_abap(
+    artifact: CanonicalArtifact,
+    store: ArtifactGraphStore,
+    output_dir: Path,
+    ctx: RendererContext,
+    structure_sources: dict[str, list[str]],
+) -> list[Path]:
     slug = _slug(artifact.name)
     paths = [_write_canonical_json(artifact, output_dir)]
     md = output_dir / "abap" / "programs" / f"{slug}.md"
@@ -486,11 +532,23 @@ def _generate_abap(artifact: CanonicalArtifact, store: ArtifactGraphStore, outpu
     return paths
 
 
-def _generate_odata(artifact: CanonicalArtifact, store: ArtifactGraphStore, output_dir: Path) -> list[Path]:
+def _generate_odata(
+    artifact: CanonicalArtifact,
+    store: ArtifactGraphStore,
+    output_dir: Path,
+    ctx: RendererContext,
+    structure_sources: dict[str, list[str]],
+) -> list[Path]:
     return [_write_canonical_json(artifact, output_dir)]
 
 
-def _generate_bw(artifact: CanonicalArtifact, store: ArtifactGraphStore, output_dir: Path) -> list[Path]:
+def _generate_bw(
+    artifact: CanonicalArtifact,
+    store: ArtifactGraphStore,
+    output_dir: Path,
+    ctx: RendererContext,
+    structure_sources: dict[str, list[str]],
+) -> list[Path]:
     slug = _slug(artifact.name)
     kind = artifact.artifact_type.replace("bw.", "")
     paths = [_write_canonical_json(artifact, output_dir)]
@@ -504,7 +562,13 @@ def _generate_bw(artifact: CanonicalArtifact, store: ArtifactGraphStore, output_
     return paths
 
 
-def _generate_datasphere(artifact: CanonicalArtifact, store: ArtifactGraphStore, output_dir: Path) -> list[Path]:
+def _generate_datasphere(
+    artifact: CanonicalArtifact,
+    store: ArtifactGraphStore,
+    output_dir: Path,
+    ctx: RendererContext,
+    structure_sources: dict[str, list[str]],
+) -> list[Path]:
     slug = _slug(artifact.name)
     kind = artifact.artifact_type.replace("datasphere.", "")
     paths = [_write_canonical_json(artifact, output_dir)]

@@ -19,11 +19,25 @@ REFT_FIXTURE = FIXTURES / "char100_ref.reft.xml"
 DE_STRUCT_FIXTURE = FIXTURES / "bal_s_cont.dtel.xml"
 DTEL_FIXTURE = FIXTURES / "char100.dtel.xml"
 DOM_FIXTURE = FIXTURES / "char100.dom.xml"
+T005_FIXTURE = FIXTURES / "t005.tabl.xml"
 
 
 def test_new_kinds_detected():
-    for path in (STRUCT_FIXTURE, TTYP_FIXTURE, RSDT_FIXTURE, REFT_FIXTURE, DE_STRUCT_FIXTURE):
+    for path in (STRUCT_FIXTURE, TTYP_FIXTURE, RSDT_FIXTURE, REFT_FIXTURE, DE_STRUCT_FIXTURE, T005_FIXTURE):
         assert is_adt_ddic_xml(path)
+
+
+def test_parse_adt_table_t005():
+    parsed = parse_adt_ddic_file(T005_FIXTURE)
+    assert parsed is not None
+    assert parsed["object_kind"] == "TABLE"
+    ddic = parsed["ddic"]
+    assert ddic["name"] == "T005"
+    assert ddic["definition_source"] == "adt_xml"
+    assert len(ddic["fields"]) == 3
+    land1 = next(f for f in ddic["fields"] if f["name"] == "LAND1")
+    assert land1["key"] is True
+    assert land1["data_element"] == "LAND1"
 
 
 def test_parse_structure():
