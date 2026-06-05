@@ -85,6 +85,23 @@ def build_sap_graph(objects: list[SapObject]) -> nx.MultiDiGraph:
                         if tgt:
                             g.add_edge(src, _node_id(tgt), relation=rel.FK, field=f.get("name"))
 
+        if obj.kind == SapObjectKind.DATA_ELEMENT and "data_element" in meta:
+            de = meta["data_element"]
+            if isinstance(de, dict) and de.get("type_kind") == "domain":
+                dom_name = (de.get("type_name") or "").upper()
+                tgt = by_name.get(dom_name)
+                if tgt:
+                    g.add_edge(src, _node_id(tgt), relation=rel.FK, reference="domain")
+
+        if obj.kind == SapObjectKind.DOMAIN and "domain" in meta:
+            dom = meta["domain"]
+            if isinstance(dom, dict):
+                vt = (dom.get("value_table") or "").upper()
+                if vt:
+                    tgt = by_name.get(vt)
+                    if tgt:
+                        g.add_edge(src, _node_id(tgt), relation=rel.FK, reference="value_table")
+
         if obj.kind == SapObjectKind.BAPI and "bapi" in meta:
             bapi = meta["bapi"]
             if isinstance(bapi, dict):

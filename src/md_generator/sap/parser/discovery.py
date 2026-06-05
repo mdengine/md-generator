@@ -89,6 +89,10 @@ def _is_candidate(p: Path) -> bool:
             head = p.read_text(encoding="utf-8", errors="replace")[:4096].lower()
             if any(h in head for h in HANA_NAME_HINTS):
                 return True
+            if "wbobj/dictionary" in head or "dtel:dataelement" in head:
+                return True
+            if "doma:domain" in head or "tabl:table" in head:
+                return True
         except OSError:
             pass
     return False

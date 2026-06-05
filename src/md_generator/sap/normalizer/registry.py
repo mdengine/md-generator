@@ -47,6 +47,8 @@ def default_normalizer_registry() -> NormalizerRegistry:
     reg = NormalizerRegistry()
     reg.register(SapObjectKind.CDS_VIEW, _normalize_cds)
     reg.register(SapObjectKind.TABLE, _normalize_ddic)
+    reg.register(SapObjectKind.DATA_ELEMENT, _normalize_data_element)
+    reg.register(SapObjectKind.DOMAIN, _normalize_domain)
     reg.register(SapObjectKind.PROGRAM, _normalize_abap)
     reg.register(SapObjectKind.ODATA_ENTITY, _normalize_odata_entity)
     reg.register(SapObjectKind.ODATA_ENTITY_SET, _normalize_odata_entity_set)
@@ -125,6 +127,82 @@ def _normalize_ddic(obj: SapObject) -> tuple[CanonicalArtifact, ArtifactGraph]:
         package=obj.package,
         source_path=str(obj.source_path or ""),
         metadata={"ddic": meta},
+        graph_fragment_id=graph.graph_id,
+    )
+    return artifact, graph
+
+
+def _normalize_data_element(obj: SapObject) -> tuple[CanonicalArtifact, ArtifactGraph]:
+    meta = obj.raw_metadata.get("data_element", {}) if obj.raw_metadata else {}
+    graph = ArtifactGraph(graph_id=f"ddic:dtel:{obj.object_id}")
+    graph.add_node(
+        GraphNode(
+            node_id=obj.object_id,
+            node_kind="artifact",
+            label=obj.name,
+            namespace="DDIC::",
+            artifact_type="ddic.data_element",
+        )
+    )
+    type_name = (meta.get("type_name") or "").upper()
+    if meta.get("type_kind") == "domain" and type_name:
+        did = f"DDIC::DOMAIN::{type_name}"
+        graph.add_node(GraphNode(node_id=did, node_kind="artifact", label=type_name, namespace="DDIC::"))
+        graph.add_edge(
+            GraphEdge(
+                edge_id=f"{obj.object_id}->refs->{did}",
+                source_id=obj.object_id,
+                target_id=did,
+                relationship=RelationshipType.REFERENCES,
+                properties={"reference_type": "domain"},
+            )
+        )
+    artifact = CanonicalArtifact(
+        identity=_identity_for(obj, "DDIC::"),
+        provenance=_base_provenance(obj, "ddic.adt", "1.0.0"),
+        artifact_type="ddic.data_element",
+        name=obj.name,
+        package=obj.package or meta.get("package", ""),
+        source_path=str(obj.source_path or ""),
+        metadata={"data_element": meta},
+        graph_fragment_id=graph.graph_id,
+    )
+    return artifact, graph
+
+
+def _normalize_domain(obj: SapObject) -> tuple[CanonicalArtifact, ArtifactGraph]:
+    meta = obj.raw_metadata.get("domain", {}) if obj.raw_metadata else {}
+    graph = ArtifactGraph(graph_id=f"ddic:dom:{obj.object_id}")
+    graph.add_node(
+        GraphNode(
+            node_id=obj.object_id,
+            node_kind="artifact",
+            label=obj.name,
+            namespace="DDIC::",
+            artifact_type="ddic.domain",
+        )
+    )
+    value_table = (meta.get("value_table") or "").upper()
+    if value_table:
+        tid = f"DDIC::{value_table}"
+        graph.add_node(GraphNode(node_id=tid, node_kind="dataset", label=value_table, namespace="DDIC::"))
+        graph.add_edge(
+            GraphEdge(
+                edge_id=f"{obj.object_id}->refs->{tid}",
+                source_id=obj.object_id,
+                target_id=tid,
+                relationship=RelationshipType.REFERENCES,
+                properties={"reference_type": "value_table"},
+            )
+        )
+    artifact = CanonicalArtifact(
+        identity=_identity_for(obj, "DDIC::"),
+        provenance=_base_provenance(obj, "ddic.adt", "1.0.0"),
+        artifact_type="ddic.domain",
+        name=obj.name,
+        package=obj.package or meta.get("package", ""),
+        source_path=str(obj.source_path or ""),
+        metadata={"domain": meta},
         graph_fragment_id=graph.graph_id,
     )
     return artifact, graph

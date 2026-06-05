@@ -41,6 +41,8 @@ def default_generator_registry() -> GeneratorRegistry:
     reg.register("hana.sql_view", _generate_hana_cv)
     reg.register("cds.view", _generate_cds)
     reg.register("ddic.table", _generate_ddic)
+    reg.register("ddic.data_element", _generate_ddic_data_element)
+    reg.register("ddic.domain", _generate_ddic_domain)
     reg.register("abap.program", _generate_abap)
     reg.register("odata.entity", _generate_odata)
     for bw_type in ("bw.adso", "bw.composite_provider", "bw.transformation", "bw.dtp", "bw.info_object"):
@@ -274,6 +276,78 @@ def _generate_ddic(artifact: CanonicalArtifact, store: ArtifactGraphStore, outpu
     md.write_text("\n".join(lines) + "\n", encoding="utf-8")
     paths.append(md)
     paths.append(generate_impact_markdown(artifact, store, output_dir / "ddic" / "impact" / f"{slug}.md"))
+    return paths
+
+
+def _generate_ddic_data_element(
+    artifact: CanonicalArtifact, store: ArtifactGraphStore, output_dir: Path
+) -> list[Path]:
+    slug = _slug(artifact.name)
+    paths = [_write_canonical_json(artifact, output_dir)]
+    md = output_dir / "ddic" / "data-elements" / f"{slug}.md"
+    md.parent.mkdir(parents=True, exist_ok=True)
+    de = artifact.metadata.get("data_element", {})
+    lines = [
+        f"# DDIC Data Element: {artifact.name}",
+        "",
+        f"**Description:** {de.get('description') or '—'}",
+        f"**Package:** {de.get('package') or artifact.package or '—'}",
+        "",
+        "## Type",
+        "",
+        f"- **Type kind:** `{de.get('type_kind', '—')}`",
+        f"- **Type name:** `{de.get('type_name', '—')}`",
+        f"- **Data type:** `{de.get('data_type', '—')}`",
+        f"- **Length:** {de.get('data_type_length', 0)}",
+        f"- **Decimals:** {de.get('data_type_decimals', 0)}",
+        "",
+    ]
+    labels = [
+        ("Short label", de.get("short_field_label")),
+        ("Medium label", de.get("medium_field_label")),
+        ("Long label", de.get("long_field_label")),
+        ("Heading label", de.get("heading_field_label")),
+    ]
+    if any(v for _, v in labels):
+        lines.extend(["## Field labels", ""])
+        for label, value in labels:
+            if value:
+                lines.append(f"- **{label}:** {value}")
+        lines.append("")
+    if de.get("search_help"):
+        lines.extend(["## Search help", "", f"- `{de['search_help']}`", ""])
+    md.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    paths.append(md)
+    paths.append(generate_lineage_json(artifact, store, output_dir / "ddic" / "lineage" / f"{slug}.json"))
+    return paths
+
+
+def _generate_ddic_domain(artifact: CanonicalArtifact, store: ArtifactGraphStore, output_dir: Path) -> list[Path]:
+    slug = _slug(artifact.name)
+    paths = [_write_canonical_json(artifact, output_dir)]
+    md = output_dir / "ddic" / "domains" / f"{slug}.md"
+    md.parent.mkdir(parents=True, exist_ok=True)
+    dom = artifact.metadata.get("domain", {})
+    lines = [
+        f"# DDIC Domain: {artifact.name}",
+        "",
+        f"**Description:** {dom.get('description') or '—'}",
+        f"**Package:** {dom.get('package') or artifact.package or '—'}",
+        "",
+        "## Technical",
+        "",
+        f"- **Data type:** `{dom.get('data_type', '—')}`",
+        f"- **Length:** {dom.get('length', 0)}",
+        f"- **Decimals:** {dom.get('decimals', 0)}",
+        f"- **Output length:** {dom.get('output_length', 0)}",
+    ]
+    if dom.get("value_table"):
+        lines.append(f"- **Value table:** `{dom['value_table']}`")
+    if dom.get("conversion_routine"):
+        lines.append(f"- **Conversion routine:** `{dom['conversion_routine']}`")
+    md.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    paths.append(md)
+    paths.append(generate_lineage_json(artifact, store, output_dir / "ddic" / "lineage" / f"{slug}.json"))
     return paths
 
 
