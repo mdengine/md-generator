@@ -16,9 +16,11 @@ def iterparse_events(path: str, tag_names: set[str]) -> Iterator[tuple[str, Any]
         local = elem.tag.split("}")[-1] if "}" in elem.tag else elem.tag
         if local in tag_names:
             yield local, elem
-        elem.clear()
-        while elem.getprevious() is not None:
-            del elem.getparent()[0]
+            parent = elem.getparent()
+            elem.clear()
+            if parent is not None:
+                while elem.getprevious() is not None:
+                    del parent[0]
 
 
 def local_tag(elem: Any) -> str:

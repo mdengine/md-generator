@@ -69,29 +69,141 @@ def _default_generate(artifact: CanonicalArtifact, store: ArtifactGraphStore, ou
     return [_write_canonical_json(artifact, output_dir)]
 
 
-def _generate_hana_cv(artifact: CanonicalArtifact, store: ArtifactGraphStore, output_dir: Path) -> list[Path]:
-    slug = _slug(artifact.name)
-    paths = [_write_canonical_json(artifact, output_dir)]
-    md_path = output_dir / "hana" / "calculation-views" / f"{slug}.md"
-    md_path.parent.mkdir(parents=True, exist_ok=True)
-    findings = artifact.metadata.get("rule_findings", [])
-    md_lines = [
+def _hana_list(meta: dict, artifact: CanonicalArtifact, key: str) -> list:
+    val = meta.get(key)
+    if val:
+        return list(val)
+    top = getattr(artifact, key, None)
+    return list(top) if top else []
+
+
+def _build_hana_cv_markdown(artifact: CanonicalArtifact) -> str:
+    meta = artifact.metadata or {}
+    semantics = meta.get("semantics") or getattr(artifact, "semantics", {}) or {}
+    findings = meta.get("rule_findings", [])
+    lines = [
         f"# {artifact.name}",
         "",
         f"**Type:** HANA Calculation View",
-        f"**Schema:** {artifact.schema}",
-        f"**Package:** {artifact.package}",
-        "",
-        "## Data sources",
-        "",
+        f"**Schema:** {artifact.schema or '—'}",
+        f"**Package:** {artifact.package or '—'}",
     ]
-    for ds in artifact.metadata.get("data_sources", []):
-        md_lines.append(f"- {ds.get('name', ds)}")
+    if semantics.get("description"):
+        lines.extend(["", f"**Description:** {semantics['description']}"])
+    if semantics.get("data_category"):
+        lines.append(f"**Data category:** {semantics['data_category']}")
+    if semantics.get("scenario_type"):
+        lines.append(f"**Scenario type:** {semantics['scenario_type']}")
+
+    lines.extend(["", "## Input parameters / variables", ""])
+    params = _hana_list(meta, artifact, "input_parameters")
+    variables = _hana_list(meta, artifact, "variables")
+    if params:
+        for p in params:
+            lines.append(f"- `{p.get('name', p)}` ({p.get('data_type', '')})")
+    elif variables:
+        for v in variables:
+            label = v.get("default_value") or v.get("name", v)
+            lines.append(f"- `{v.get('name', v)}` — {label}")
+    else:
+        lines.append("_None identified._")
+
+    lines.extend(["", "## Data sources", ""])
+    data_sources = _hana_list(meta, artifact, "data_sources")
+    if data_sources:
+        for ds in data_sources:
+            schema = ds.get("schema", "")
+            name = ds.get("name", ds)
+            obj_type = ds.get("object_type", "table")
+            ref = f"{schema}.{name}" if schema else str(name)
+            lines.append(f"- `{ref}` ({obj_type})")
+    else:
+        lines.append("_None identified._")
+
+    lines.extend(["", "## Transformation steps", ""])
+    steps = meta.get("calculation_views") or []
+    if steps:
+        for step in steps:
+            step_id = step.get("id", "")
+            kind = step.get("kind", "step")
+            inputs = step.get("inputs") or []
+            input_txt = ", ".join(f"`{i}`" for i in inputs) if inputs else "—"
+            lines.append(f"### {step_id} ({kind})")
+            lines.append(f"- **Inputs:** {input_txt}")
+            if kind == "join":
+                keys = step.get("join_keys") or []
+                key_txt = ", ".join(f"`{k}`" for k in keys) if keys else "—"
+                lines.append(f"- **Join:** {step.get('join_type', 'inner')} on {key_txt}")
+            if step.get("filter"):
+                lines.append(f"- **Filter:** `{step['filter']}`")
+            cols = step.get("columns") or []
+            if cols:
+                preview = ", ".join(f"`{c}`" for c in cols[:12])
+                if len(cols) > 12:
+                    preview += f", … (+{len(cols) - 12} more)"
+                lines.append(f"- **Columns:** {preview}")
+            lines.append("")
+    else:
+        lines.append("_None identified._")
+
+    lines.extend(["", "## Output attributes (logical model)", ""])
+    logical = meta.get("logical_attributes") or []
+    if logical:
+        for attr in sorted(logical, key=lambda a: int(a.get("order") or 0)):
+            desc = attr.get("description") or ""
+            suffix = f" — {desc}" if desc else ""
+            lines.append(f"- `{attr.get('name', attr)}`{suffix}")
+    else:
+        attrs = _hana_list(meta, artifact, "attributes")
+        if attrs:
+            seen: set[str] = set()
+            for attr in attrs:
+                name = attr.get("name", attr)
+                if name in seen:
+                    continue
+                seen.add(name)
+                dtype = attr.get("data_type", "")
+                suffix = f" ({dtype})" if dtype else ""
+                lines.append(f"- `{name}`{suffix}")
+        else:
+            lines.append("_None identified._")
+
+    lines.extend(["", "## Calculated columns", ""])
+    calculated = _hana_list(meta, artifact, "calculated_columns")
+    if calculated:
+        for col in calculated:
+            expr = col.get("expression", "")
+            if expr:
+                lines.append(f"- `{col.get('name', col)}`: `{expr}`")
+            else:
+                lines.append(f"- `{col.get('name', col)}`")
+    else:
+        lines.append("_None identified._")
+
+    lines.extend(["", "## Measures", ""])
+    measures = _hana_list(meta, artifact, "measures")
+    if measures:
+        for measure in measures:
+            agg = measure.get("aggregation", "")
+            suffix = f" ({agg})" if agg else ""
+            lines.append(f"- `{measure.get('name', measure)}`{suffix}")
+    else:
+        lines.append("_None identified._")
+
     if findings:
-        md_lines.extend(["", "## Optimization findings", ""])
+        lines.extend(["", "## Optimization findings", ""])
         for f in findings:
-            md_lines.append(f"- [{f.get('severity', 'info')}] {f.get('message', '')}")
-    md_path.write_text("\n".join(md_lines) + "\n", encoding="utf-8")
+            lines.append(f"- [{f.get('severity', 'info')}] {f.get('message', '')}")
+
+    return "\n".join(lines) + "\n"
+
+
+def _generate_hana_cv(artifact: CanonicalArtifact, store: ArtifactGraphStore, output_dir: Path) -> list[Path]:
+    slug = _slug(artifact.name if not artifact.package else f"{artifact.package}#{artifact.name}")
+    paths = [_write_canonical_json(artifact, output_dir)]
+    md_path = output_dir / "hana" / "calculation-views" / f"{slug}.md"
+    md_path.parent.mkdir(parents=True, exist_ok=True)
+    md_path.write_text(_build_hana_cv_markdown(artifact), encoding="utf-8")
     paths.append(md_path)
     paths.append(render_transformation_mermaid(artifact, output_dir / "hana" / "diagrams" / f"{slug}.mmd"))
     paths.append(_write_hana_sql(artifact, output_dir / "hana" / "sql" / f"{slug}.sql"))
@@ -105,19 +217,34 @@ def _write_hana_sql(artifact: CanonicalArtifact, path: Path) -> Path:
     lines = [f"-- SQL equivalent for {artifact.name}", ""]
     if tg_data:
         tg = TransformationGraph.model_validate(tg_data)
-        for nid in tg.topological_order():
+        ordered = tg.topological_order()
+        if not ordered:
+            ordered = list(tg.nodes.keys())
+        for nid in ordered:
             node = tg.nodes[nid]
             if node.node_kind == "source":
                 obj = node.properties.get("object_name", node.node_id)
                 lines.append(f"-- SOURCE: {obj}")
             elif node.node_kind == "join":
                 jt = node.properties.get("join_type", "inner")
-                lines.append(f"-- JOIN ({jt}): {nid}")
+                keys = node.properties.get("join_keys", [])
+                key_txt = ", ".join(keys) if keys else "—"
+                lines.append(f"-- JOIN ({jt}) {nid} ON {key_txt}")
+            elif node.node_kind == "aggregate":
+                cols = node.properties.get("columns", ["*"])
+                lines.append(f"-- AGGREGATE {nid}: {', '.join(cols)}")
+            elif node.node_kind == "filter":
+                expr = node.properties.get("expression", node.expression if hasattr(node, "expression") else "")
+                lines.append(f"-- FILTER: {expr}")
             elif node.node_kind == "projection":
                 cols = node.properties.get("columns", ["*"])
+                filt = node.properties.get("filter", "")
+                if filt:
+                    lines.append(f"-- PROJECTION {nid} WHERE {filt}")
                 lines.append(f"SELECT {', '.join(cols)} FROM {nid};")
     else:
-        lines.append(f"SELECT * FROM \"{artifact.schema}\".\"{artifact.name}\";")
+        schema = artifact.schema or "_SYS_BIC"
+        lines.append(f'SELECT * FROM "{schema}"."{artifact.package}/{artifact.name}";')
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")
     return path

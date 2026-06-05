@@ -33,6 +33,7 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--odata-url", action="append", default=[], help="Fetch OData $metadata from URL (repeatable)")
     p.add_argument("--async", dest="async_job", action="store_true", help="Run as background job")
     p.add_argument("--pipeline-version", type=int, default=None, help="Pipeline version (1=legacy, 2=canonical+graph)")
+    p.add_argument("--workers", type=int, default=None, help="Parallel parser workers")
     return p
 
 
