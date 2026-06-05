@@ -13,6 +13,22 @@ from md_generator.sap.models.entities.sap_object import SapObject
 from md_generator.sap.parser.ddic.normalize_helpers import wire_components, wire_type_reference
 
 
+def _attach_ddic_canonical(
+    metadata: dict,
+    object_kind: str,
+    payload: dict,
+    *,
+    definition_source: str = "adt_xml",
+) -> None:
+    from md_generator.sap.models.metadata.ddic_canonical import DdicCanonicalMetadata
+
+    metadata["ddic_canonical"] = DdicCanonicalMetadata(
+        object_kind=object_kind,  # type: ignore[arg-type]
+        definition_source=definition_source,
+        payload=payload,
+    ).model_dump(mode="json")
+
+
 def _base_provenance(obj: SapObject, parser_id: str, parser_version: str) -> ProvenanceBundle:
     return ProvenanceBundle(
         parser_id=parser_id,
@@ -173,6 +189,13 @@ def _normalize_ddic(obj: SapObject) -> tuple[CanonicalArtifact, ArtifactGraph]:
                 properties={"field": field.get("name")},
             )
         )
+    md: dict = {"ddic": meta}
+    _attach_ddic_canonical(
+        md,
+        "TABLE",
+        {"kind": "TABLE", "definition_source": meta.get("definition_source", ""), "fields": meta.get("fields", [])},
+        definition_source=meta.get("definition_source", "adt_xml"),
+    )
     artifact = CanonicalArtifact(
         identity=_identity_for(obj, "DDIC::"),
         provenance=_base_provenance(obj, "ddic", "1.0.0"),
@@ -180,7 +203,7 @@ def _normalize_ddic(obj: SapObject) -> tuple[CanonicalArtifact, ArtifactGraph]:
         name=obj.name,
         package=obj.package,
         source_path=str(obj.source_path or ""),
-        metadata={"ddic": meta},
+        metadata=md,
         graph_fragment_id=graph.graph_id,
     )
     return artifact, graph
@@ -210,6 +233,20 @@ def _normalize_data_element(obj: SapObject) -> tuple[CanonicalArtifact, Artifact
             type_name,
             resolved_object_id=resolved_id,
         )
+    md: dict = {"data_element": meta}
+    _attach_ddic_canonical(
+        md,
+        "DATA_ELEMENT",
+        {
+            "kind": "DATA_ELEMENT",
+            "type_kind": meta.get("type_kind", ""),
+            "type_name": meta.get("type_name", ""),
+            "data_type": meta.get("data_type", ""),
+            "data_type_length": meta.get("data_type_length", 0),
+            "data_type_decimals": meta.get("data_type_decimals", 0),
+        },
+        definition_source=meta.get("definition_source", "adt_xml"),
+    )
     artifact = CanonicalArtifact(
         identity=_identity_for(obj, "DDIC::"),
         provenance=_base_provenance(obj, "ddic.adt", "1.0.0"),
@@ -217,7 +254,7 @@ def _normalize_data_element(obj: SapObject) -> tuple[CanonicalArtifact, Artifact
         name=obj.name,
         package=obj.package or meta.get("package", ""),
         source_path=str(obj.source_path or ""),
-        metadata={"data_element": meta},
+        metadata=md,
         graph_fragment_id=graph.graph_id,
     )
     return artifact, graph
@@ -248,6 +285,19 @@ def _normalize_domain(obj: SapObject) -> tuple[CanonicalArtifact, ArtifactGraph]
                 properties={"reference_type": "value_table"},
             )
         )
+    md: dict = {"domain": meta}
+    _attach_ddic_canonical(
+        md,
+        "DOMAIN",
+        {
+            "kind": "DOMAIN",
+            "data_type": meta.get("data_type", ""),
+            "length": meta.get("length", 0),
+            "decimals": meta.get("decimals", 0),
+            "value_table": meta.get("value_table", ""),
+        },
+        definition_source=meta.get("definition_source", "adt_xml"),
+    )
     artifact = CanonicalArtifact(
         identity=_identity_for(obj, "DDIC::"),
         provenance=_base_provenance(obj, "ddic.adt", "1.0.0"),
@@ -255,7 +305,7 @@ def _normalize_domain(obj: SapObject) -> tuple[CanonicalArtifact, ArtifactGraph]
         name=obj.name,
         package=obj.package or meta.get("package", ""),
         source_path=str(obj.source_path or ""),
-        metadata={"domain": meta},
+        metadata=md,
         graph_fragment_id=graph.graph_id,
     )
     return artifact, graph
@@ -274,6 +324,17 @@ def _normalize_structure(obj: SapObject) -> tuple[CanonicalArtifact, ArtifactGra
         )
     )
     wire_components(graph, obj.object_id, meta.get("components", []) or [])
+    md: dict = {"structure": meta}
+    _attach_ddic_canonical(
+        md,
+        "STRUCTURE",
+        {
+            "kind": "STRUCTURE",
+            "definition_source": meta.get("definition_source", "adt_xml"),
+            "components": meta.get("components", []),
+        },
+        definition_source=meta.get("definition_source", "adt_xml"),
+    )
     artifact = CanonicalArtifact(
         identity=_identity_for(obj, "DDIC::"),
         provenance=_base_provenance(obj, "ddic.adt", "1.0.0"),
@@ -281,7 +342,7 @@ def _normalize_structure(obj: SapObject) -> tuple[CanonicalArtifact, ArtifactGra
         name=obj.name,
         package=obj.package or meta.get("package", ""),
         source_path=str(obj.source_path or ""),
-        metadata={"structure": meta},
+        metadata=md,
         graph_fragment_id=graph.graph_id,
     )
     return artifact, graph
@@ -305,6 +366,18 @@ def _normalize_table_type(obj: SapObject) -> tuple[CanonicalArtifact, ArtifactGr
     line_type = (meta.get("line_type") or "").upper()
     if line_type:
         wire_type_reference(graph, obj.object_id, "tableType", line_type)
+    md: dict = {"table_type": meta}
+    _attach_ddic_canonical(
+        md,
+        "TABLE_TYPE",
+        {
+            "kind": "TABLE_TYPE",
+            "row_type": meta.get("row_type", ""),
+            "line_type": meta.get("line_type", ""),
+            "access_mode": meta.get("access_mode", ""),
+        },
+        definition_source=meta.get("definition_source", "adt_xml"),
+    )
     artifact = CanonicalArtifact(
         identity=_identity_for(obj, "DDIC::"),
         provenance=_base_provenance(obj, "ddic.adt", "1.0.0"),
@@ -312,7 +385,7 @@ def _normalize_table_type(obj: SapObject) -> tuple[CanonicalArtifact, ArtifactGr
         name=obj.name,
         package=obj.package or meta.get("package", ""),
         source_path=str(obj.source_path or ""),
-        metadata={"table_type": meta},
+        metadata=md,
         graph_fragment_id=graph.graph_id,
     )
     return artifact, graph
@@ -336,6 +409,17 @@ def _normalize_range_type(obj: SapObject) -> tuple[CanonicalArtifact, ArtifactGr
     dom = (meta.get("domain") or "").upper()
     if dom:
         wire_type_reference(graph, obj.object_id, "domain", dom)
+    md: dict = {"range_type": meta}
+    _attach_ddic_canonical(
+        md,
+        "RANGE_TYPE",
+        {
+            "kind": "RANGE_TYPE",
+            "data_element": meta.get("data_element", ""),
+            "domain": meta.get("domain", ""),
+        },
+        definition_source=meta.get("definition_source", "adt_xml"),
+    )
     artifact = CanonicalArtifact(
         identity=_identity_for(obj, "DDIC::"),
         provenance=_base_provenance(obj, "ddic.adt", "1.0.0"),
@@ -343,7 +427,7 @@ def _normalize_range_type(obj: SapObject) -> tuple[CanonicalArtifact, ArtifactGr
         name=obj.name,
         package=obj.package or meta.get("package", ""),
         source_path=str(obj.source_path or ""),
-        metadata={"range_type": meta},
+        metadata=md,
         graph_fragment_id=graph.graph_id,
     )
     return artifact, graph
@@ -367,6 +451,17 @@ def _normalize_reference_type(obj: SapObject) -> tuple[CanonicalArtifact, Artifa
     check_table = (meta.get("check_table") or "").upper()
     if check_table:
         wire_type_reference(graph, obj.object_id, "table", check_table)
+    md: dict = {"reference_type": meta}
+    _attach_ddic_canonical(
+        md,
+        "REFERENCE_TYPE",
+        {
+            "kind": "REFERENCE_TYPE",
+            "referenced_type": meta.get("referenced_type", ""),
+            "check_table": meta.get("check_table", ""),
+        },
+        definition_source=meta.get("definition_source", "adt_xml"),
+    )
     artifact = CanonicalArtifact(
         identity=_identity_for(obj, "DDIC::"),
         provenance=_base_provenance(obj, "ddic.adt", "1.0.0"),
@@ -374,7 +469,7 @@ def _normalize_reference_type(obj: SapObject) -> tuple[CanonicalArtifact, Artifa
         name=obj.name,
         package=obj.package or meta.get("package", ""),
         source_path=str(obj.source_path or ""),
-        metadata={"reference_type": meta},
+        metadata=md,
         graph_fragment_id=graph.graph_id,
     )
     return artifact, graph

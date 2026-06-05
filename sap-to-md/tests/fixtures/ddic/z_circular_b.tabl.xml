@@ -1,0 +1,16 @@
+<?xml version="1.0" ?>
+<blue:wbobj xmlns:blue="http://www.sap.com/wbobj/dictionary/tabl"
+            xmlns:adtcore="http://www.sap.com/adt/core"
+            adtcore:name="Z_CIRC_B"
+            adtcore:type="TABL/DS"
+            adtcore:description="Circular B includes A">
+  <tabl:structure xmlns:tabl="http://www.sap.com/adt/dictionary/structures">
+    <tabl:components>
+      <tabl:component>
+        <tabl:fieldName>NESTED</tabl:fieldName>
+        <tabl:includeStructure>Z_CIRC_A</tabl:includeStructure>
+        <tabl:comptype>STRUCTURE</tabl:comptype>
+      </tabl:component>
+    </tabl:components>
+  </tabl:structure>
+</blue:wbobj>

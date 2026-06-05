@@ -10,9 +10,8 @@ from md_generator.sap.markdown.builders.ddic_adapters import (
 )
 from md_generator.sap.markdown.builders.renderer_context import (
     RendererContext,
-    link_for,
-    link_for_type_reference,
-    md_link,
+    resolve_kind_link,
+    resolve_type_link,
 )
 
 
@@ -22,8 +21,7 @@ def format_data_element(view: DataElementView, ctx: RendererContext | None = Non
         f"- **Type kind:** `{view.type_kind or '—'}`",
     ]
     type_name = view.type_name or "—"
-    type_path = link_for_type_reference(view.type_kind, view.type_name, ctx)
-    lines.append(f"- **Type name:** {md_link(type_name, type_path)}")
+    lines.append(f"- **Type name:** {resolve_type_link(view.type_kind, view.type_name, ctx)}")
     lines.extend([
         f"- **Data type:** `{view.data_type or '—'}`",
         f"- **Length:** {view.data_type_length}",
@@ -31,9 +29,11 @@ def format_data_element(view: DataElementView, ctx: RendererContext | None = Non
     ])
     if view.resolved_type:
         rt = view.resolved_type
+        conf = rt.get("confidence")
+        conf_txt = f", confidence {conf:.2f}" if conf is not None else ""
         lines.append(
             f"- **Resolved:** `{rt.get('ddic_object_kind', '?')}` "
-            f"({rt.get('resolution_strategy', '—')})"
+            f"({rt.get('resolution_strategy', '—')}{conf_txt})"
         )
     body = "\n".join(lines)
     labels = [
@@ -60,8 +60,7 @@ def format_domain(view: DomainView, ctx: RendererContext | None = None) -> str:
         f"- **Output length:** {view.output_length}",
     ]
     if view.value_table:
-        vt_path = link_for("TABLE", view.value_table, ctx)
-        lines.append(f"- **Value table:** {md_link(view.value_table, vt_path)}")
+        lines.append(f"- **Value table:** {resolve_kind_link('TABLE', view.value_table, ctx)}")
     if view.conversion_routine:
         lines.append(f"- **Conversion routine:** `{view.conversion_routine}`")
     if view.lower_case:
@@ -84,22 +83,18 @@ def format_ddic_table(view: TableView, ctx: RendererContext | None = None) -> st
     for f in view.fields:
         key = "yes" if f.key else ""
         de = f.data_element or "—"
-        de_path = link_for("DATA_ELEMENT", de, ctx) if de != "—" else None
         ct = f.check_table or ""
-        ct_path = link_for("TABLE", ct, ctx) if ct else None
         lines.append(
-            f"| `{f.name}` | {md_link(de, de_path)} | `{f.semantic_type.value}` | {key} | "
-            f"{md_link(ct, ct_path) if ct else ''} |"
+            f"| `{f.name}` | {resolve_kind_link('DATA_ELEMENT', de, ctx)} | `{f.semantic_type.value}` | {key} | "
+            f"{resolve_kind_link('TABLE', ct, ctx) if ct else ''} |"
         )
     return "\n".join(lines)
 
 
 def format_table_type(view: TableTypeView, ctx: RendererContext | None = None) -> str:
-    row_path = link_for_type_reference("structure", view.row_type, ctx)
-    line_path = link_for_type_reference("tableType", view.line_type, ctx)
     lines = [
-        f"- **Row type:** {md_link(view.row_type or '—', row_path)}",
-        f"- **Line type:** {md_link(view.line_type or '—', line_path)}",
+        f"- **Row type:** {resolve_type_link('structure', view.row_type, ctx)}",
+        f"- **Line type:** {resolve_type_link('tableType', view.line_type, ctx)}",
         f"- **Access mode:** `{view.access_mode or '—'}`",
     ]
     if view.primary_key:
@@ -108,20 +103,16 @@ def format_table_type(view: TableTypeView, ctx: RendererContext | None = None) -
 
 
 def format_range_type(view: RangeTypeView, ctx: RendererContext | None = None) -> str:
-    de_path = link_for("DATA_ELEMENT", view.data_element, ctx)
-    dom_path = link_for("DOMAIN", view.domain, ctx)
     return "\n".join([
-        f"- **Data element:** {md_link(view.data_element or '—', de_path)}",
-        f"- **Domain:** {md_link(view.domain or '—', dom_path)}",
+        f"- **Data element:** {resolve_kind_link('DATA_ELEMENT', view.data_element, ctx)}",
+        f"- **Domain:** {resolve_kind_link('DOMAIN', view.domain, ctx)}",
         f"- **Length:** {view.length}",
         f"- **Decimals:** {view.decimals}",
     ])
 
 
 def format_reference_type(view: ReferenceTypeView, ctx: RendererContext | None = None) -> str:
-    ref_path = link_for_type_reference("referenceType", view.referenced_type, ctx)
-    ct_path = link_for("TABLE", view.check_table, ctx)
     return "\n".join([
-        f"- **Referenced type:** {md_link(view.referenced_type or '—', ref_path)}",
-        f"- **Check table:** {md_link(view.check_table or '—', ct_path)}",
+        f"- **Referenced type:** {resolve_type_link('referenceType', view.referenced_type, ctx)}",
+        f"- **Check table:** {resolve_kind_link('TABLE', view.check_table, ctx)}",
     ])

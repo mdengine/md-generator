@@ -24,6 +24,44 @@ from md_generator.sap.rules.engine import DeterministicRuleEngine
 logger = logging.getLogger(__name__)
 
 
+def _refresh_entity_ddic_markdown(ctx: RunContext, unified, store) -> None:
+    from md_generator.sap.markdown.builders.entity_builder import build_entity_markdown
+    from md_generator.sap.markdown.builders.renderer_context import RendererContext
+    from md_generator.sap.markdown.cross_link_registry import build_cross_link_registry
+    from md_generator.sap.models.entities.kinds import SapObjectKind
+
+    ddic_kinds = {
+        SapObjectKind.DATA_ELEMENT,
+        SapObjectKind.DOMAIN,
+        SapObjectKind.STRUCTURE,
+        SapObjectKind.TABLE,
+        SapObjectKind.TABLE_TYPE,
+        SapObjectKind.RANGE_TYPE,
+        SapObjectKind.REFERENCE_TYPE,
+    }
+    cross = build_cross_link_registry(
+        path_registry=unified.path_registry,
+        graph_store=store,
+        link_graph=ctx.link_graph,
+    )
+    render_ctx = RendererContext(
+        link_graph=ctx.link_graph,
+        path_registry=unified.path_registry,
+        cross_link_registry=cross,
+    )
+    for obj in ctx.objects:
+        if obj.kind not in ddic_kinds:
+            continue
+        rel_path = ctx.link_graph.entity_rel_path(obj.package, obj.name) if ctx.link_graph else None
+        if not rel_path:
+            continue
+        path = ctx.output_dir / rel_path
+        if not path.is_file():
+            continue
+        md = build_entity_markdown(obj, link_graph=ctx.link_graph, renderer_ctx=render_ctx)
+        path.write_text(md, encoding="utf-8")
+
+
 def run_pipeline_v2(ctx: RunContext) -> None:
     """Canonical + ArtifactGraph pipeline; runs v1 markdown first for compatibility."""
     from md_generator.sap.canonical.base import CanonicalArtifact
@@ -89,7 +127,18 @@ def run_pipeline_v2(ctx: RunContext) -> None:
 
     gen_reg = default_generator_registry()
     if artifacts:
-        gen_reg.generate_all(artifacts, store, root)
+        gen_reg.generate_all(
+            artifacts,
+            store,
+            root,
+            semantic_narrative=cfg.pipeline.semantic_narrative,
+            link_graph=ctx.link_graph,
+        )
+        from md_generator.sap.markdown.unified_output_registry import build_unified_output_registry
+
+        unified = build_unified_output_registry(artifacts, ctx.link_graph)
+        unified.write_navigation_index(root, run_id=str(int(ctx.started_at.timestamp())))
+        _refresh_entity_ddic_markdown(ctx, unified, store)
 
     if cfg.pipeline.openlineage_export:
         ol = OpenLineageMapper(run_id=str(ctx.started_at.timestamp()))

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from md_generator.sap.markdown.resolved_link import confidence_for_strategy
 from md_generator.sap.models.entities.kinds import SapObjectKind
 from md_generator.sap.models.entities.sap_object import SapObject
 from md_generator.sap.models.metadata.ddic_kinds import (
@@ -70,4 +71,45 @@ def enrich_ddic_objects_in_run(objects: list[SapObject]) -> None:
                 "object_id": resolved.object_id,
                 "ddic_object_kind": _kind_for_object(resolved),
                 "resolution_strategy": strategy,
+                "confidence": confidence_for_strategy(strategy),
             }
+    expand_nested_structures(objects)
+
+
+def expand_nested_structures(objects: list[SapObject]) -> None:
+    structures: dict[str, list[dict]] = {}
+    for obj in objects:
+        if obj.kind != SapObjectKind.STRUCTURE:
+            continue
+        meta = (obj.raw_metadata or {}).get("structure")
+        if isinstance(meta, dict):
+            structures[obj.name.upper()] = list(meta.get("components") or [])
+
+    def _expand(comps: list[dict], visited: set[str]) -> list[dict]:
+        out: list[dict] = []
+        for raw in comps:
+            comp = dict(raw)
+            include = (comp.get("include_structure") or "").upper()
+            type_name = (comp.get("type_name") or include).upper()
+            if include or str(comp.get("type_kind", "")).lower() == "structure":
+                comp["type_kind"] = "structure"
+                comp["type_name"] = type_name or include
+                target = type_name or include
+                if target in visited:
+                    comp["cycle_detected"] = True
+                    comp["cycle_path"] = list(visited) + [target]
+                elif target in structures:
+                    child_visited = set(visited)
+                    child_visited.add(target)
+                    comp["children"] = _expand(structures[target], child_visited)
+            elif comp.get("children"):
+                comp["children"] = _expand(list(comp["children"]), set(visited))
+            out.append(comp)
+        return out
+
+    for obj in objects:
+        if obj.kind != SapObjectKind.STRUCTURE:
+            continue
+        meta = (obj.raw_metadata or {}).get("structure")
+        if isinstance(meta, dict):
+            meta["components"] = _expand(list(meta.get("components") or []), {obj.name.upper()})

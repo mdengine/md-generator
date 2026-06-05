@@ -1,0 +1,9 @@
+<?xml version="1.0" ?>
+<blue:wbobj xmlns:blue="http://www.sap.com/wbobj/dictionary/tabl"
+            xmlns:adtcore="http://www.sap.com/adt/core"
+            adtcore:name="T005"
+            adtcore:type="TABL/DT"
+            adtcore:description="Country table DDL ref">
+  <adtcore:packageRef adtcore:name="SZS"/>
+  <tabl:blueSource xmlns:tabl="http://www.sap.com/adt/dictionary/tables"/>
+</blue:wbobj>

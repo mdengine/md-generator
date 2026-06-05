@@ -212,13 +212,24 @@ def _parse_components(elem: ET.Element) -> list[DdicComponent]:
         if not cname or cname in seen:
             continue
         seen.add(cname)
+        comptype = _child_text(child, "comptype") or _attr(child, "comptype")
+        include_struct = _child_text(child, "includeStructure").upper() or _attr(child, "includeStructure").upper()
+        type_name = _child_text(child, "typeName").upper() or include_struct
+        type_kind = _child_text(child, "typeKind")
+        if include_struct or comptype.upper() == "STRUCTURE":
+            type_kind = "structure"
+            if include_struct:
+                type_name = include_struct
         components.append(
             DdicComponent(
                 name=cname,
                 data_element=_component_data_element(child),
                 data_type=_child_text(child, "dataType"),
-                type_name=_child_text(child, "typeName").upper(),
+                type_name=type_name,
+                type_kind=type_kind,
                 length=_int_text(child, "length") or _int_text(child, "dataTypeLength"),
+                include_structure=include_struct,
+                component_type=comptype,
             )
         )
     return components
@@ -336,4 +347,19 @@ def _parse_reference_type(name: str, description: str, package: str, elem: ET.El
 
 
 def parse_adt_ddic_file(path: Path) -> dict[str, Any] | None:
-    return parse_adt_ddic_xml(path.read_text(encoding="utf-8", errors="replace"))
+    parsed = parse_adt_ddic_xml(path.read_text(encoding="utf-8", errors="replace"))
+    if not parsed:
+        return None
+    if parsed.get("object_kind") == "TABLE":
+        ddic = parsed.get("ddic") or {}
+        if ddic.get("definition_source") == "adt_xml_ddl_ref":
+            from md_generator.sap.parser.ddic.adt_ddl_source import parse_adt_ddl_sidecar, resolve_adt_ddl_sidecar
+
+            sidecar = resolve_adt_ddl_sidecar(path, ddic.get("name", path.stem))
+            if sidecar:
+                sidecar_meta = parse_adt_ddl_sidecar(sidecar, ddic.get("name", path.stem))
+                if sidecar_meta:
+                    ddic.update(sidecar_meta)
+                    ddic["definition_source"] = "adt_ddl_sidecar"
+                    parsed["ddic"] = ddic
+    return parsed

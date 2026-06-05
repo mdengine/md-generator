@@ -19,6 +19,7 @@ class PipelineSection:
     openlineage_export: bool = False
     cross_lineage: bool = False
     semantic_chunks_jsonl: bool = False
+    semantic_narrative: bool = False
 
 
 @dataclass

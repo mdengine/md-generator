@@ -64,8 +64,10 @@ def default_registry(cfg_parser: object | None = None) -> ParserRegistry:
     if include("include_cds"):
         reg.register(CdsParserPlugin())
     if include("include_ddic"):
+        from md_generator.sap.parser.ddic.abapgit_tabl import AbapGitTablParserPlugin
         from md_generator.sap.parser.ddic.adt_parser import AdtDdicParserPlugin
 
+        reg.register(AbapGitTablParserPlugin())
         reg.register(AdtDdicParserPlugin())
         reg.register(DdicParserPlugin())
     if include("include_odata"):

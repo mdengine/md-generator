@@ -19,7 +19,10 @@ class StructureComponent:
     data_type: str = ""
     length: int = 0
     semantic_type: SemanticTypeKind = SemanticTypeKind.SCALAR
+    include_structure: str = ""
     children: list[StructureComponent] = field(default_factory=list)
+    cycle_detected: bool = False
+    cycle_path: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -122,19 +125,24 @@ class ReferenceTypeView:
     check_table: str = ""
 
 
+def _component_from_raw(raw: dict) -> StructureComponent:
+    return StructureComponent(
+        name=raw.get("name", ""),
+        type_name=raw.get("type_name", ""),
+        type_kind=raw.get("type_kind", ""),
+        data_element=raw.get("data_element", ""),
+        data_type=raw.get("data_type", ""),
+        length=int(raw.get("length") or 0),
+        semantic_type=semantic_type_from_ddic(raw.get("type_kind", ""), raw.get("data_type", "")),
+        include_structure=raw.get("include_structure", ""),
+        children=[_component_from_raw(c) for c in raw.get("children") or []],
+        cycle_detected=bool(raw.get("cycle_detected")),
+        cycle_path=list(raw.get("cycle_path") or []),
+    )
+
+
 def structure_view_from_ddic(meta: dict) -> StructureView:
-    components = [
-        StructureComponent(
-            name=c.get("name", ""),
-            type_name=c.get("type_name", ""),
-            type_kind=c.get("type_kind", ""),
-            data_element=c.get("data_element", ""),
-            data_type=c.get("data_type", ""),
-            length=int(c.get("length") or 0),
-            semantic_type=semantic_type_from_ddic(c.get("type_kind", ""), c.get("data_type", "")),
-        )
-        for c in meta.get("components", []) or []
-    ]
+    components = [_component_from_raw(c) for c in meta.get("components", []) or []]
     return StructureView(
         name=meta.get("name", ""),
         description=meta.get("description", ""),

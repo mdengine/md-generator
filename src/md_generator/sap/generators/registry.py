@@ -25,9 +25,12 @@ from md_generator.sap.markdown.builders.ddic_sections import (
     format_table_type,
 )
 from md_generator.sap.markdown.builders.renderer_context import RendererContext, build_path_registry
+from md_generator.sap.markdown.cross_link_registry import build_cross_link_registry
 from md_generator.sap.markdown.builders.structure_sections import format_structure, format_structure_title
 from md_generator.sap.generators.lineage.from_graph import generate_impact_markdown, generate_lineage_json
 from md_generator.sap.generators.mermaid.transformation_graph import render_transformation_mermaid
+from md_generator.sap.markdown.semantic_narrative import format_semantic_narrative
+from md_generator.sap.core.link_graph import SapLinkGraph
 from md_generator.sap.graph.store import ArtifactGraphStore
 
 
@@ -43,9 +46,24 @@ class GeneratorRegistry:
         artifacts: list[CanonicalArtifact],
         store: ArtifactGraphStore,
         output_dir: Path,
+        *,
+        semantic_narrative: bool = False,
+        link_graph: SapLinkGraph | None = None,
     ) -> list[Path]:
         path_registry = build_path_registry(artifacts)
-        ctx = RendererContext(graph_store=store, path_registry=path_registry)
+        cross_link_registry = build_cross_link_registry(
+            path_registry=path_registry,
+            graph_store=store,
+            artifacts=artifacts,
+            link_graph=link_graph,
+        )
+        ctx = RendererContext(
+            graph_store=store,
+            path_registry=path_registry,
+            cross_link_registry=cross_link_registry,
+            semantic_narrative=semantic_narrative,
+            link_graph=link_graph,
+        )
         structure_sources: dict[str, list[str]] = {}
         written: list[Path] = []
         for artifact in artifacts:
@@ -250,8 +268,27 @@ def _write_unified_structure_md(
         sources.append(source_label)
     alternates = [s for s in sources if s != source_label] if len(sources) > 1 else None
     body = format_structure_title(view) + format_structure(view, ctx, alternate_sources=alternates)
+    if ctx.semantic_narrative:
+        body += "\n" + format_semantic_narrative(artifact, ctx)
+    footer = _entity_doc_footer(artifact, ctx.link_graph)
+    if footer:
+        body += footer
     md.write_text(body, encoding="utf-8")
     return md
+
+
+def _entity_doc_footer(artifact: CanonicalArtifact, link_graph: SapLinkGraph | None) -> str:
+    if not link_graph:
+        return ""
+    from md_generator.sap.markdown.builders.renderer_context import ARTIFACT_TYPE_TO_PATH_KIND
+
+    kind = ARTIFACT_TYPE_TO_PATH_KIND.get(artifact.artifact_type, "")
+    entity_path = link_graph.entity_path_for(kind, artifact.name, artifact.package or "")
+    if not entity_path:
+        entity_path = link_graph.entity_path_for(artifact.artifact_type, artifact.name, artifact.package or "")
+    if not entity_path:
+        return ""
+    return f"\n---\n\n[Entity documentation](../{entity_path})\n"
 
 
 def _generate_hana_cv(

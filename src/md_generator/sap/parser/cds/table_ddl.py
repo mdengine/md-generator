@@ -1,77 +1,16 @@
 from __future__ import annotations
 
-import re
-
 from md_generator.sap.analyzer.semantics.entity_mapper import infer_semantic_entity
-from md_generator.sap.models.metadata.ddic import DdicField, DdicTable
-
-_RE_DEFINE_TABLE = re.compile(r"define\s+table\s+(\w+)", re.I)
-_RE_TABLE_TYPE = re.compile(
-    r"@AbapCatalog\.table\s+type\s*:\s*#(\w+)",
-    re.I,
-)
-_RE_ANNOTATION = re.compile(
-    r"@([\w.]+)\s*:\s*(?:#(\w+)|'([^']*)'|\"([^\"]*)\"|(\S+))",
-    re.I,
-)
-_RE_FIELD = re.compile(
-    r"^\s*(key\s+)?([\w/]+)\s*:\s*([\w/]+)\s*;",
-    re.I | re.M,
-)
+from md_generator.sap.models.metadata.ddic import DdicTable
+from md_generator.sap.parser.ddic.ddl_table_parser import is_ddl_table_source, parse_ddl_table
 
 
 def is_cds_table_ddl(source: str) -> bool:
-    return bool(_RE_DEFINE_TABLE.search(source))
-
-
-def _extract_body(source: str) -> str:
-    start = source.find("{")
-    end = source.rfind("}")
-    if start < 0 or end <= start:
-        return ""
-    return source[start + 1 : end]
+    return is_ddl_table_source(source)
 
 
 def parse_cds_table_ddl(source: str, fallback_name: str) -> DdicTable:
-    name = fallback_name.upper()
-    m = _RE_DEFINE_TABLE.search(source)
-    if m:
-        name = m.group(1).upper()
-
-    table_type = ""
-    tm = _RE_TABLE_TYPE.search(source)
-    if tm:
-        table_type = tm.group(1).upper()
-
-    annotations: dict[str, str] = {}
-    for am in _RE_ANNOTATION.finditer(source):
-        key = am.group(1)
-        value = am.group(2) or am.group(3) or am.group(4) or am.group(5) or ""
-        annotations[key] = value.strip().lstrip("#")
-
-    body = _extract_body(source)
-    fields: list[DdicField] = []
-    primary_key: list[str] = []
-
-    for fm in _RE_FIELD.finditer(body):
-        is_key = bool(fm.group(1))
-        fname = fm.group(2).split("/")[-1].upper()
-        data_element = fm.group(3).split("/")[-1].upper()
-        fld = DdicField(
-            name=fname,
-            data_element=data_element,
-            key=is_key,
-            business_name=infer_semantic_entity(fname, None),
-        )
-        fields.append(fld)
-        if is_key and fname not in primary_key:
-            primary_key.append(fname)
-
-    return DdicTable(
-        name=name,
-        fields=fields,
-        primary_key=primary_key,
-        table_type=table_type,
-        annotations=annotations,
-        definition_source="cds_ddl",
-    )
+    tbl = parse_ddl_table(source, fallback_name, definition_source="cds_ddl")
+    for fld in tbl.fields:
+        fld.business_name = infer_semantic_entity(fld.name, None)
+    return tbl

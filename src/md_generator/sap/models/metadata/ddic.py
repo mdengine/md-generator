@@ -124,16 +124,33 @@ class DdicComponent:
     data_element: str = ""
     data_type: str = ""
     type_name: str = ""
+    type_kind: str = ""
     length: int = 0
+    include_structure: str = ""
+    component_type: str = ""
+    children: list["DdicComponent"] = field(default_factory=list)
+    cycle_detected: bool = False
+    cycle_path: list[str] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
-        return {
+        d: dict[str, Any] = {
             "name": self.name,
             "data_element": self.data_element,
             "data_type": self.data_type,
             "type_name": self.type_name,
+            "type_kind": self.type_kind,
             "length": self.length,
         }
+        if self.include_structure:
+            d["include_structure"] = self.include_structure
+        if self.component_type:
+            d["component_type"] = self.component_type
+        if self.children:
+            d["children"] = [c.to_dict() for c in self.children]
+        if self.cycle_detected:
+            d["cycle_detected"] = True
+            d["cycle_path"] = list(self.cycle_path)
+        return d
 
 
 @dataclass(slots=True)

@@ -184,7 +184,7 @@ def run_pipeline_legacy(
             lineage = build_lineage_metadata(ctx.objects, graph)
 
     emit(70, "markdown")
-    render_all(
+    ctx.link_graph = render_all(
         root,
         ctx.objects,
         cfg,

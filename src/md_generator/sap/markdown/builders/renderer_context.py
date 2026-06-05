@@ -5,6 +5,10 @@ from dataclasses import dataclass, field
 from md_generator.sap.canonical.base import CanonicalArtifact
 from md_generator.sap.core.link_graph import SapLinkGraph
 from md_generator.sap.graph.store import ArtifactGraphStore
+from md_generator.sap.markdown.resolved_link import ResolvedLink
+
+if False:  # TYPE_CHECKING pattern without import cycle at runtime
+    from md_generator.sap.markdown.cross_link_registry import CrossLinkRegistry
 
 PathKey = tuple[str, str]
 
@@ -40,6 +44,8 @@ class RendererContext:
     path_registry: dict[PathKey, str] = field(default_factory=dict)
     artifact_by_name: dict[str, CanonicalArtifact] | None = None
     current_artifact_id: str = ""
+    cross_link_registry: object | None = None  # CrossLinkRegistry
+    semantic_narrative: bool = False
 
 
 def link_for(kind: str, name: str, ctx: RendererContext | None) -> str | None:
@@ -64,6 +70,35 @@ def md_link(label: str, path: str | None) -> str:
     if path:
         return f"[{label}]({path})"
     return f"`{label}`"
+
+
+def format_resolved_link(label: str, link: ResolvedLink | None, *, fallback_path: str | None = None) -> str:
+    href = link.href if link else fallback_path
+    if href:
+        if link and link.confidence < 0.6:
+            return f"[{label}]({href}) _(low confidence: {link.strategy})_"
+        return md_link(label, href)
+    if link and link.strategy == "heuristic_label":
+        return f"`{label}` _(unresolved)_"
+    return f"`{label}`"
+
+
+def resolve_kind_link(kind: str, name: str, ctx: RendererContext | None) -> str:
+    if not name or name == "—":
+        return "—"
+    reg = ctx.cross_link_registry if ctx else None
+    if reg is not None:
+        return format_resolved_link(name, reg.resolve_link(kind, name))
+    return md_link(name, link_for(kind, name, ctx))
+
+
+def resolve_type_link(type_kind: str, type_name: str, ctx: RendererContext | None) -> str:
+    if not type_name or type_name == "—":
+        return "—"
+    reg = ctx.cross_link_registry if ctx else None
+    if reg is not None:
+        return format_resolved_link(type_name, reg.resolve_type_reference(type_kind, type_name))
+    return md_link(type_name, link_for_type_reference(type_kind, type_name, ctx))
 
 
 def build_path_registry(artifacts: list[CanonicalArtifact], output_dir_rel: str = "") -> dict[PathKey, str]:

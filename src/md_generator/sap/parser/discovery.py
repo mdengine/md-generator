@@ -4,7 +4,7 @@ from pathlib import Path
 
 ABAP_SUFFIXES = {".abap", ".prog", ".asprog", ".inc"}
 CDS_SUFFIXES = {".ddls", ".cds", ".ddlx"}
-DDIC_SUFFIXES = {".dd02l", ".dd03l", ".tabl", ".csv", ".xml"}
+DDIC_SUFFIXES = {".dd02l", ".dd03l", ".tabl", ".csv", ".xml", ".ddl", ".asddls"}
 ODATA_NAMES = {"$metadata.xml", "metadata.xml", "$metadata", "metadata.json", "$metadata.json"}
 BAPI_SUFFIXES = {".bapi.json", ".bapi.xml"}
 IDOC_SUFFIXES = {".idoc", ".idoc.xml"}

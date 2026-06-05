@@ -49,6 +49,7 @@ def build_entity_markdown(
     governance: list[dict[str, Any]] | None = None,
     related_links: list[tuple[str, str]] | None = None,
     link_graph: SapLinkGraph | None = None,
+    renderer_ctx: RendererContext | None = None,
     cap: int = 80,
 ) -> str:
     rels = (relationships or [])[:cap]
@@ -58,7 +59,7 @@ def build_entity_markdown(
     lin = lineage or {}
     meta = obj.raw_metadata or {}
     abap = meta.get("abap") if isinstance(meta.get("abap"), dict) else None
-    ctx = RendererContext(link_graph=link_graph)
+    ctx = renderer_ctx or RendererContext(link_graph=link_graph)
 
     sections = [
         _h1(f"{obj.semantic_entity or obj.name}"),

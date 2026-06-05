@@ -7,6 +7,7 @@ from typing import Any
 
 import networkx as nx
 
+from md_generator.sap.core.link_graph import SapLinkGraph
 from md_generator.sap.core.run_config import SapRunConfig
 from md_generator.sap.models.entities.sap_object import SapObject
 from md_generator.sap.parser.base import SapParseResult
@@ -27,3 +28,4 @@ class RunContext:
     graph: nx.MultiDiGraph | None = None
     metrics: dict[str, Any] = field(default_factory=dict)
     governance_fields: list[dict[str, Any]] = field(default_factory=list)
+    link_graph: SapLinkGraph | None = None
