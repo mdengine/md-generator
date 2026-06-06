@@ -227,10 +227,22 @@ MODULES: list[ModuleSpec] = [
     ModuleSpec("sap", "SAP Intelligence", "md_generator.sap", "sap", "md-sap", cli_alt="mdengine sap-to-md", extra="sap", api_title="sap-to-md", service="sap-to-md",
                input_desc="ABAP, CDS, DDIC exports, OData, BAPI, IDoc, transport files", output_desc="AI-ready SAP knowledge packs, graphs, governance, chunks",
                tier="complex", has_jobs=True, test_dir="sap-to-md/tests", readme_link="sap-to-md/README.md",
-               deep_docs=["sap-to-md/docs/architecture.md", "sap-to-md/docs/parser-design.md"],
+               deep_docs=[],
                entry_functions=["extract_to_markdown", "SapRunConfig", "load_run_config", "SapJobManager"],
-               extension_notes="Parser plugins via YAML `parser.plugins`; file/export-only in v1.",
-               integration_items=["networkx", "pyyaml", "pydantic", "optional tree-sitter ABAP grammar"]),
+               extension_notes="Parser plugins via YAML `parser.plugins`; generators registered in `sap/generators/registry.py`.",
+               integration_items=["networkx", "pyyaml", "pydantic", "httpx", "lxml", "governance module", "optional tree-sitter ABAP"]),
+    ModuleSpec("odata", "OData Metadata", "md_generator.odata", "odata", "md-odata", cli_alt="mdengine odata-to-md generate", extra="odata", api_title="odata-to-md", service="odata-to-md",
+               input_desc="OData CSDL metadata (XML/JSON), folders, ZIP archives, or $metadata URLs", output_desc="Entity catalog Markdown, optional graph and semantic chunks",
+               tier="medium", has_jobs=False, test_dir="odata-to-md/tests", readme_link="odata-to-md/README.md",
+               entry_functions=["extract_to_markdown", "OdataRunConfig", "load_odata_run_config", "build_markdown_zip_bytes"],
+               extension_notes="Parsers under `odata/parser/`; namespace and relationship graph in `odata/core/`.",
+               integration_items=["httpx", "networkx", "pyyaml", "pydantic-settings"]),
+    ModuleSpec("otel", "OpenTelemetry Traces", "md_generator.otel", "otel", "md-otel", cli_alt="mdengine otel-to-md", extra="log-otel-proto for protobuf", api_title="(none)", service="otel-to-md",
+               input_desc="OTLP JSON or protobuf trace exports", output_desc="Trace summary Markdown (`trace.md`)",
+               tier="simple", has_mcp=False, has_jobs=False, test_dir="log-to-md/tests", readme_link="example/otel/README.md",
+               entry_functions=["load_otlp_json", "load_otlp_bytes", "parse_otlp_spans"],
+               extension_notes="Lightweight CLI exporter; protobuf path uses optional `log-otel-proto` extra.",
+               integration_items=["opentelemetry-proto optional", "protobuf optional", "log utils for I/O"]),
     ModuleSpec("tools-assistant", "AI Assistant Tools", "md_generator.tools.assistant", "tools/assistant", "mdengine ai assist", cli_alt="mdengine ai export", extra="skill-openai or skill-rag-chroma", api_title="(none)", service="tool-assistant",
                input_desc="Skill bundles and prompts", output_desc="Assembled context and assistant output", tier="medium", has_mcp=False, has_jobs=False,
                test_dir="tool-assistant/tests", readme_link="ai/README.md",
@@ -521,7 +533,7 @@ def build_context(spec: ModuleSpec) -> ModuleContext:
 def gen_overview(ctx: ModuleContext) -> str:
     s = ctx.spec
     rel = s.src_rel
-    alt = f"\n- Alternate entry: `{s.cli_alt}`" if s.cli_alt else ""
+    alt_row = f"| Alternate CLI | `{s.cli_alt}` |\n" if s.cli_alt else ""
     deep = "\n".join(f"- [{Path(d).name}]({repo_link(d)})" for d in s.deep_docs) if s.deep_docs else ""
     deep_block = f"\n## Deep documentation\n\n{deep}\n" if deep else ""
     return f"""# {s.title} Module Overview
@@ -554,8 +566,8 @@ The **{s.title}** module (`{s.package}`) converts **{s.input_desc}** into **{s.o
 |------|-------|
 | Import path | `{s.package}` |
 | Source tree | `src/md_generator/{rel}` |
-| CLI | `{s.cli}` |{alt}
-| PyPI extra | `{s.extra}` |
+| CLI | `{s.cli}` |
+{alt_row}| PyPI extra | `{s.extra}` |
 | Complexity tier | `{s.tier}` |
 | API service name | `{s.api_title or "N/A"}` |
 
@@ -1279,6 +1291,18 @@ def build_module_nav_yaml(spec: ModuleSpec) -> str:
     return "\n".join(lines)
 
 
+def update_mkdocs_reference_nav() -> None:
+    text = read_text(MKDOCS)
+    start = text.index("      - Python API:")
+    end = text.index("\ntheme:", start)
+    lines = ["      - Python API:", "          - engine-cli: reference/api/engine-cli.md"]
+    for spec in MODULES:
+        lines.append(f"          - {spec.key}: reference/api/{spec.key}.md")
+    new_ref = "\n".join(lines) + "\n"
+    updated = text[:start] + new_ref + text[end:]
+    MKDOCS.write_text(updated, encoding="utf-8")
+
+
 def update_mkdocs_nav() -> None:
     text = read_text(MKDOCS)
     start = text.index("  - Modules:")
@@ -1289,6 +1313,7 @@ def update_mkdocs_nav() -> None:
     new_nav = "\n".join(nav_blocks) + "\n"
     updated = text[:start] + new_nav + text[end:]
     MKDOCS.write_text(updated, encoding="utf-8")
+    update_mkdocs_reference_nav()
 
 
 def main() -> int:
@@ -1297,6 +1322,7 @@ def main() -> int:
     parser.add_argument("--skip-mkdocs", action="store_true", help="Do not rewrite mkdocs.yml nav")
     parser.add_argument("--skip-reference", action="store_true", help="Skip reference/api pages")
     parser.add_argument("--force", action="store_true", help="Overwrite existing pages")
+    parser.add_argument("--update-nav", action="store_true", help="Rewrite mkdocs.yml Modules nav (default on full run)")
     args = parser.parse_args()
     keys = {m.key for m in MODULES}
     selected = MODULES
@@ -1311,11 +1337,12 @@ def main() -> int:
         generate_module(spec, force=args.force)
         if not args.skip_reference:
             generate_reference_api(spec, ctx)
-    if not args.skip_mkdocs and not args.module:
+    update_nav = args.update_nav or not args.module
+    if not args.skip_mkdocs and update_nav:
         print("Updating mkdocs.yml navigation...")
         update_mkdocs_nav()
-    elif not args.skip_mkdocs and args.module:
-        print("Skipping mkdocs.yml update for partial run (use full run to refresh nav).")
+    elif not args.skip_mkdocs and args.module and not args.update_nav:
+        print("Skipping mkdocs.yml update (use --update-nav or run without --module).")
     print("Done.")
     return 0
 
