@@ -8,6 +8,7 @@ from md_generator.sap.markdown.semantic_types import (
     semantic_type_from_ddic,
     semantic_type_for_type_reference,
 )
+from md_generator.sap.models.metadata.ddic_canonical_io import resolve_ddic_meta
 
 
 @dataclass
@@ -262,4 +263,88 @@ def reference_type_view_from_raw(meta: dict) -> ReferenceTypeView:
         package=meta.get("package", ""),
         referenced_type=meta.get("referenced_type", ""),
         check_table=meta.get("check_table", ""),
+    )
+
+
+def data_element_view_from_metadata(
+    metadata: dict,
+    *,
+    name: str = "",
+    package: str = "",
+    description: str = "",
+) -> DataElementView:
+    return data_element_view_from_raw(
+        resolve_ddic_meta(metadata, "DATA_ELEMENT", name=name, package=package, description=description)
+    )
+
+
+def domain_view_from_metadata(
+    metadata: dict,
+    *,
+    name: str = "",
+    package: str = "",
+    description: str = "",
+) -> DomainView:
+    return domain_view_from_raw(
+        resolve_ddic_meta(metadata, "DOMAIN", name=name, package=package, description=description)
+    )
+
+
+def table_view_from_metadata(
+    metadata: dict,
+    *,
+    name: str = "",
+    package: str = "",
+    description: str = "",
+) -> TableView:
+    return table_view_from_raw(
+        resolve_ddic_meta(metadata, "TABLE", name=name, package=package, description=description)
+    )
+
+
+def structure_view_from_metadata(
+    metadata: dict,
+    *,
+    name: str = "",
+    package: str = "",
+    description: str = "",
+) -> StructureView:
+    return structure_view_from_ddic(
+        resolve_ddic_meta(metadata, "STRUCTURE", name=name, package=package, description=description)
+    )
+
+
+def table_type_view_from_metadata(
+    metadata: dict,
+    *,
+    name: str = "",
+    package: str = "",
+    description: str = "",
+) -> TableTypeView:
+    return table_type_view_from_raw(
+        resolve_ddic_meta(metadata, "TABLE_TYPE", name=name, package=package, description=description)
+    )
+
+
+def range_type_view_from_metadata(
+    metadata: dict,
+    *,
+    name: str = "",
+    package: str = "",
+    description: str = "",
+) -> RangeTypeView:
+    return range_type_view_from_raw(
+        resolve_ddic_meta(metadata, "RANGE_TYPE", name=name, package=package, description=description)
+    )
+
+
+def reference_type_view_from_metadata(
+    metadata: dict,
+    *,
+    name: str = "",
+    package: str = "",
+    description: str = "",
+) -> ReferenceTypeView:
+    return reference_type_view_from_raw(
+        resolve_ddic_meta(metadata, "REFERENCE_TYPE", name=name, package=package, description=description)
     )

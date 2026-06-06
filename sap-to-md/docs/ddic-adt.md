@@ -37,3 +37,26 @@ For full field lists on modern systems, use:
 Structures from ADT (`STRUCTURE`) and CDS (`define type`) both render to **`structures/{name}.md`**.
 
 Other DDIC kinds render under `ddic/data-elements/`, `ddic/domains/`, `ddic/tables/`, etc.
+
+## Canonical metadata (`ddic_canonical`)
+
+Normalized DDIC artifacts include a typed **`ddic_canonical`** block alongside legacy keys (`data_element`, `domain`, `structure`, `ddic`, etc.).
+
+```json
+{
+  "object_kind": "DATA_ELEMENT",
+  "definition_source": "adt_xml",
+  "payload": {
+    "kind": "DATA_ELEMENT",
+    "type_kind": "domain",
+    "type_name": "CHAR100",
+    "data_type": "CHAR",
+    "data_type_length": 100,
+    "data_type_decimals": 0
+  }
+}
+```
+
+The `payload` field is a **discriminated union** (`DataElementMetadata`, `StructureMetadata`, `TableMetadata`, …) keyed by `kind`.
+
+v2 markdown generators resolve views via `object_kind` using `ddic_canonical_io.resolve_ddic_meta()`. Legacy keys remain for one release for v1 entity docs and external tooling; prefer `ddic_canonical` for new integrations.

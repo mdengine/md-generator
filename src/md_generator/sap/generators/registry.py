@@ -7,14 +7,14 @@ from md_generator.sap.canonical.base import CanonicalArtifact
 from md_generator.sap.canonical.transformation.graph import TransformationGraph
 from md_generator.sap.markdown.builders.abap_sections import build_abap_program_markdown
 from md_generator.sap.markdown.builders.ddic_adapters import (
-    data_element_view_from_raw,
-    domain_view_from_raw,
-    range_type_view_from_raw,
-    reference_type_view_from_raw,
+    data_element_view_from_metadata,
+    domain_view_from_metadata,
+    range_type_view_from_metadata,
+    reference_type_view_from_metadata,
     structure_view_from_cds,
-    structure_view_from_ddic,
-    table_type_view_from_raw,
-    table_view_from_raw,
+    structure_view_from_metadata,
+    table_type_view_from_metadata,
+    table_view_from_metadata,
 )
 from md_generator.sap.markdown.builders.ddic_sections import (
     format_data_element,
@@ -400,9 +400,11 @@ def _generate_ddic(
     paths = [_write_canonical_json(artifact, output_dir)]
     md = output_dir / "ddic" / "tables" / f"{slug}.md"
     md.parent.mkdir(parents=True, exist_ok=True)
-    ddic = artifact.metadata.get("ddic", {})
-    view = table_view_from_raw(ddic)
-    view.name = view.name or artifact.name
+    view = table_view_from_metadata(
+        artifact.metadata,
+        name=artifact.name,
+        package=artifact.package or "",
+    )
     lines = [f"# DDIC Table: {artifact.name}", "", format_ddic_table(view, ctx)]
     md.write_text("\n".join(lines) + "\n", encoding="utf-8")
     paths.append(md)
@@ -421,8 +423,11 @@ def _generate_ddic_data_element(
     paths = [_write_canonical_json(artifact, output_dir)]
     md = output_dir / "ddic" / "data-elements" / f"{slug}.md"
     md.parent.mkdir(parents=True, exist_ok=True)
-    de = artifact.metadata.get("data_element", {})
-    view = data_element_view_from_raw(de)
+    view = data_element_view_from_metadata(
+        artifact.metadata,
+        name=artifact.name,
+        package=artifact.package or "",
+    )
     lines = [
         f"# DDIC Data Element: {artifact.name}",
         "",
@@ -451,8 +456,11 @@ def _generate_ddic_domain(
     paths = [_write_canonical_json(artifact, output_dir)]
     md = output_dir / "ddic" / "domains" / f"{slug}.md"
     md.parent.mkdir(parents=True, exist_ok=True)
-    dom = artifact.metadata.get("domain", {})
-    view = domain_view_from_raw(dom)
+    view = domain_view_from_metadata(
+        artifact.metadata,
+        name=artifact.name,
+        package=artifact.package or "",
+    )
     lines = [
         f"# DDIC Domain: {artifact.name}",
         "",
@@ -479,10 +487,11 @@ def _generate_ddic_structure(
 ) -> list[Path]:
     slug = _slug(artifact.name)
     paths = [_write_canonical_json(artifact, output_dir)]
-    st = artifact.metadata.get("structure", {})
-    view = structure_view_from_ddic(st)
-    view.name = view.name or artifact.name
-    view.description = view.description or (artifact.metadata.get("structure") or {}).get("description", "")
+    view = structure_view_from_metadata(
+        artifact.metadata,
+        name=artifact.name,
+        package=artifact.package or "",
+    )
     md = _write_unified_structure_md(
         artifact, output_dir, ctx, structure_sources, view, f"adt_xml: {artifact.name}"
     )
@@ -502,8 +511,11 @@ def _generate_ddic_table_type(
     paths = [_write_canonical_json(artifact, output_dir)]
     md = output_dir / "ddic" / "table-types" / f"{slug}.md"
     md.parent.mkdir(parents=True, exist_ok=True)
-    tt = artifact.metadata.get("table_type", {})
-    view = table_type_view_from_raw(tt)
+    view = table_type_view_from_metadata(
+        artifact.metadata,
+        name=artifact.name,
+        package=artifact.package or "",
+    )
     lines = [f"# DDIC Table Type: {artifact.name}", "", format_table_type(view, ctx), ""]
     md.write_text("\n".join(lines) + "\n", encoding="utf-8")
     paths.append(md)
@@ -522,8 +534,11 @@ def _generate_ddic_range_type(
     paths = [_write_canonical_json(artifact, output_dir)]
     md = output_dir / "ddic" / "range-types" / f"{slug}.md"
     md.parent.mkdir(parents=True, exist_ok=True)
-    rt = artifact.metadata.get("range_type", {})
-    view = range_type_view_from_raw(rt)
+    view = range_type_view_from_metadata(
+        artifact.metadata,
+        name=artifact.name,
+        package=artifact.package or "",
+    )
     lines = [f"# DDIC Range Type: {artifact.name}", "", format_range_type(view, ctx), ""]
     md.write_text("\n".join(lines) + "\n", encoding="utf-8")
     paths.append(md)
@@ -542,8 +557,11 @@ def _generate_ddic_reference_type(
     paths = [_write_canonical_json(artifact, output_dir)]
     md = output_dir / "ddic" / "reference-types" / f"{slug}.md"
     md.parent.mkdir(parents=True, exist_ok=True)
-    rt = artifact.metadata.get("reference_type", {})
-    view = reference_type_view_from_raw(rt)
+    view = reference_type_view_from_metadata(
+        artifact.metadata,
+        name=artifact.name,
+        package=artifact.package or "",
+    )
     lines = [f"# DDIC Reference Type: {artifact.name}", "", format_reference_type(view, ctx), ""]
     md.write_text("\n".join(lines) + "\n", encoding="utf-8")
     paths.append(md)

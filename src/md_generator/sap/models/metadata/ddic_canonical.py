@@ -1,10 +1,16 @@
 from __future__ import annotations
 
-from typing import Literal, Union
+from typing import Annotated, Any, Literal, Union
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Discriminator, Field, Tag
 
 from md_generator.sap.models.metadata.ddic_kinds import DdicObjectKind
+
+
+def _payload_discriminator(value: Any) -> str:
+    if isinstance(value, dict):
+        return str(value.get("kind", ""))
+    return str(getattr(value, "kind", ""))
 
 
 class DataElementMetadata(BaseModel):
@@ -31,6 +37,7 @@ class StructureComponentMetadata(BaseModel):
     type_name: str = ""
     data_type: str = ""
     length: int = 0
+    include_structure: str = ""
     children: list["StructureComponentMetadata"] = Field(default_factory=list)
     cycle_detected: bool = False
     cycle_path: list[str] = Field(default_factory=list)
@@ -76,21 +83,24 @@ class ReferenceTypeMetadata(BaseModel):
     check_table: str = ""
 
 
-DdicCanonicalPayload = Union[
-    DataElementMetadata,
-    DomainMetadata,
-    StructureMetadata,
-    TableMetadata,
-    TableTypeMetadata,
-    RangeTypeMetadata,
-    ReferenceTypeMetadata,
+DdicCanonicalPayload = Annotated[
+    Union[
+        Annotated[DataElementMetadata, Tag("DATA_ELEMENT")],
+        Annotated[DomainMetadata, Tag("DOMAIN")],
+        Annotated[StructureMetadata, Tag("STRUCTURE")],
+        Annotated[TableMetadata, Tag("TABLE")],
+        Annotated[TableTypeMetadata, Tag("TABLE_TYPE")],
+        Annotated[RangeTypeMetadata, Tag("RANGE_TYPE")],
+        Annotated[ReferenceTypeMetadata, Tag("REFERENCE_TYPE")],
+    ],
+    Discriminator(_payload_discriminator),
 ]
 
 
 class DdicCanonicalMetadata(BaseModel):
     object_kind: DdicObjectKind
     definition_source: str = "adt_xml"
-    payload: DdicCanonicalPayload | dict = Field(default_factory=dict)
+    payload: DdicCanonicalPayload
 
 
 StructureComponentMetadata.model_rebuild()
