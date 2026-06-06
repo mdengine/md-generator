@@ -1,7 +1,7 @@
 ---
 name: mdengine-ai-global
 description: "Teaches use of the mdengine PyPI package after pip install: optional extras, console scripts, FastAPI and MCP entry points, and imports under md_generator. For architecture between packages, see ../global-skill.md."
-version: 0.11.1
+version: 0.13.0
 ---
 # mdengine — global skill (pip-installed library)
 
@@ -33,7 +33,7 @@ Python **3.10+**. Distribution name on PyPI: **`mdengine`**. Import package: **`
 | `ppt` | PPTX → Markdown (`md-ppt`) |
 | `xlsx` | Excel/CSV → Markdown (`md-xlsx`) |
 | `image` / `image-ocr` | Raster OCR (`md-image`) |
-| `log` | Logs / stack traces → Markdown (`md-log`, `md-log-api`, `md-log-mcp`); optional `log-cluster`, `log-semantic`, `log-pretty` |
+| `log` | Logs / stack traces → Markdown (`md-log`, `md-log-api`, `md-log-mcp`); optional `log-cluster`, `log-semantic`, `log-pretty`, `log-stream-*`, `log-export-parquet`; search via `mdengine search` |
 | `sap` | SAP artifacts → Markdown (`md-sap`, `md-sap-api`, `md-sap-mcp`) |
 | `log-otel-proto` | OTLP protobuf ingest for `md-otel` (used with `mdengine[log-otel-proto]`) |
 | `text` | TXT / JSON / XML (`md-text`) |
@@ -44,6 +44,7 @@ Python **3.10+**. Distribution name on PyPI: **`mdengine`**. Import package: **`
 | `db` | DB metadata → Markdown (`md-db`, `md-db-api`, `md-db-mcp`) |
 | `graph` | Neo4j / NetworkX → Markdown (`md-graph`, …) |
 | `openapi` | OpenAPI → docs (`md-openapi`, …) |
+| `odata` | OData CSDL → Markdown (`md-odata`, `md-odata-api`, `md-odata-mcp`) |
 | `codeflow` | Code → architecture Markdown (`md-codeflow`, …); optional `codeflow-treesitter`, `codeflow-clang` |
 | `api` / `mcp` | Shared HTTP / MCP stacks where those entry points exist |
 | `all` | Large superset — avoid unless truly needed |
@@ -59,7 +60,7 @@ md-pdf input.pdf output.md
 md-url https://example.com/page ./out --artifact-layout
 ```
 
-Aggregated **`mdengine`** CLI routes subcommands (e.g. `mdengine db-to-md …`, `mdengine graph-to-md …`, `mdengine openapi-to-md generate …`). Prefer **`md-*`** aliases when documented for your scenario.
+Aggregated **`mdengine`** CLI routes subcommands (e.g. `mdengine db-to-md …`, `mdengine graph-to-md …`, `mdengine openapi-to-md generate …`, `mdengine odata-to-md generate …`, `mdengine search "…"`). Prefer **`md-*`** aliases when documented for your scenario.
 
 See [CLI reference](../mdengine-reference/SKILL.md) for CLI ↔ extra mapping. That skill also ships **[entrypoints.md](../mdengine-reference/references/entrypoints.md)** and **[http-api-mcp.md](../mdengine-reference/references/http-api-mcp.md)**.
 

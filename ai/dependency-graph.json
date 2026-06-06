@@ -14,6 +14,7 @@
     "image",
     "log",
     "media",
+    "odata",
     "openapi",
     "otel",
     "pdf",
@@ -48,6 +49,11 @@
       "source": "__root__",
       "target": "log",
       "weight": 2
+    },
+    {
+      "source": "__root__",
+      "target": "odata",
+      "weight": 1
     },
     {
       "source": "__root__",
@@ -173,6 +179,11 @@
       "source": "sap",
       "target": "log",
       "weight": 3
+    },
+    {
+      "source": "sap",
+      "target": "odata",
+      "weight": 26
     },
     {
       "source": "sdk",

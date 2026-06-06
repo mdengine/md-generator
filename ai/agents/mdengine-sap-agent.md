@@ -3,9 +3,9 @@ name: mdengine-sap-agent
 description: >-
   Assists with pip-installed mdengine SAP → Markdown: choosing the `sap` extra
   and using md-sap, md-sap-api, md-sap-mcp under md_generator.sap. Use when tasks
-  involve ABAP/CDS/DDIC export, sap-to-md, or SAP artifact documentation and do
-  not require editing mdengine source in a git checkout.
-version: 0.11.1
+  involve ABAP/CDS/DDIC, HANA/BW/Datasphere artifacts, sap-to-md, `--odata-url`,
+  or SAP documentation and do not require editing mdengine source in a git checkout.
+version: 0.13.0
 ---
 
 # mdengine agent — SAP → Markdown
@@ -26,7 +26,7 @@ Guide operators and integrators to the **published** commands and APIs for **sap
 ## Handoff
 
 - **Global agent:** [mdengine-global-agent.md](mdengine-global-agent.md) for cross-area installs and version pinning.
-- **OTel / logs:** [mdengine-otel-agent.md](mdengine-otel-agent.md) or [mdengine-log-agent.md](mdengine-log-agent.md) when traces or application logs are in scope.
+- **OData CSDL-only:** [mdengine-odata-agent.md](mdengine-odata-agent.md) when input is `$metadata` without broader SAP repo context.
 
 ## Primary skill
 

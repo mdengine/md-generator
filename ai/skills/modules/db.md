@@ -38,7 +38,7 @@ pip install "mdengine[db]"
 
 ## Edge cases (heuristic)
 
-- `db/core/erd/mermaid_render.py`: optional imports / ImportError handling
+- `db/adapters/elasticsearch_adapter.py`: optional imports / ImportError handling
 - Prefer **`--help`** on each CLI before guessing flags.
 
 ## Prompt templates

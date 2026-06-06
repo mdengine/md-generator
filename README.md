@@ -1,6 +1,6 @@
 # mdengine
 
-Single Python distribution for converting **PDF**, **Word (.docx)**, **PowerPoint (.pptx)**, **Excel (.xlsx/.xlsm)**, **images** (OCR), **plain text / JSON / XML**, **ZIP archives**, **audio / video** (Whisper transcription → Markdown), **database metadata** (SQL + Mongo), **graphs** (Neo4j / NetworkX → Markdown), **OpenAPI** specs, **Playwright**-captured web pages (including SPAs), **application logs** (plain, JSON, CSV, ZIP bundles → Markdown with optional clustering and semantic grouping), **OpenTelemetry** traces (**OTLP** JSON or protobuf → Markdown trace summaries; optional correlation with log exports via `otel_path`), **OData CSDL metadata** (V1–V4, XML/JSON → Markdown catalogs via **`md-odata`**), **SAP artifacts** (ABAP, CDS, DDIC, HANA views, BW, Datasphere, BAPI, IDoc, transport → AI-ready Markdown; OData catalogs via **`md-sap`**, standalone **`md-odata`**, or shared **`md_generator.odata`**), and **source code** (codeflow → architecture Markdown) into **Markdown** (and related assets). Install only the extras you need; everything imports under the **`md_generator`** package.
+Single Python distribution for converting **PDF**, **Word (.docx)**, **PowerPoint (.pptx)**, **Excel (.xlsx/.xlsm)**, **images** (OCR), **plain text / JSON / XML**, **ZIP archives**, **audio / video** (Whisper transcription → Markdown), **database metadata** (SQL + Mongo), **graphs** (Neo4j / NetworkX → Markdown), **OpenAPI** specs, **Playwright**-captured web pages (including SPAs), **application logs** (plain, JSON, CSV, ZIP bundles → Markdown with optional clustering and semantic grouping), **OpenTelemetry** traces (**OTLP** JSON or protobuf → Markdown trace summaries; optional correlation with log exports via `otel_path`), **OData CSDL metadata** (V1–V4, XML/JSON → Markdown catalogs via **`md-odata`**), **SAP artifacts** (ABAP, CDS, ADT DDIC XML, HANA views, BW, Datasphere, BAPI, IDoc, transport → AI-ready Markdown; OData catalogs via **`md-sap`**, standalone **`md-odata`**, or shared **`md_generator.odata`**), and **source code** (codeflow → architecture Markdown) into **Markdown** (and related assets). Install only the extras you need; everything imports under the **`md_generator`** package.
 
 - **PyPI name:** `mdengine` (import package: `md_generator`)
 - **Source:** [github.com/vishal7090/md-generator](https://github.com/vishal7090/md-generator)
@@ -91,7 +91,7 @@ pip install "mdengine[all]"
 | `log-semantic` | Log pipeline **semantic** helpers (SentenceTransformers + scikit-learn; large) |
 | `log-pretty` | Optional **loguru** for pretty console diagnostics during log conversion |
 | `log-otel-proto` | **OTLP protobuf** ingest for **`md-otel`** and log/OTEL tooling (`opentelemetry-proto`, `protobuf`) |
-| `sap` | **SAP artifacts → Markdown** (ABAP, CDS, DDIC, HANA, BW, Datasphere, OData, BAPI, IDoc, transport, optional external lineage): PyYAML, NetworkX, Pydantic |
+| `sap` | **SAP artifacts → Markdown** (ABAP, CDS, ADT DDIC XML, HANA, BW, Datasphere, OData, BAPI, IDoc, transport, optional external lineage): PyYAML, NetworkX, Pydantic, lxml |
 | `api` | FastAPI, uvicorn, httpx, pydantic-settings |
 | `mcp` | MCP servers (`mcp`, `fastmcp` where used) |
 | `graph` | **Graph → Markdown** (Neo4j Bolt + NetworkX GraphML/GML): `networkx`, `neo4j`, `pyyaml` |
@@ -199,15 +199,17 @@ If the shell reports “command not found”, ensure the Python **Scripts** dire
 
 **odata-to-md (`md-odata`):** parses **OData CSDL** metadata (**V1–V4**, XML or JSON) from **`--file`**, **`--folder`**, **`--zip`**, or **`--url`** (`$metadata`) into catalog Markdown under **`odata/`** (services, entity sets, types, actions, functions). Optional **`--graph`** (relationship JSON/Mermaid) and **`--chunk`** (semantic chunks for RAG). Works **standalone** with **`md-odata`**; when OData files sit beside ABAP/CDS in a SAP tree, use **`md-sap`** instead — see [odata-to-md/docs/dual-mode.md](odata-to-md/docs/dual-mode.md). Library: [`md_generator/odata/`](src/md_generator/odata/). Module README: [`odata-to-md/README.md`](odata-to-md/README.md); catalog layout: [odata-to-md/docs/output-layout.md](odata-to-md/docs/output-layout.md); SAP-integrated catalog notes: [sap-to-md/docs/odata-catalog.md](sap-to-md/docs/odata-catalog.md).
 
-**sap-to-md (`md-sap`):** parses **ABAP**, **CDS**, **DDIC** exports, **OData** metadata (via shared **`md_generator.odata`** when **`odata_catalog`** is enabled), **BAPI**, **IDoc**, and transport artifacts into chunked Markdown knowledge packs. Also supports **SAP HANA** (calculation, analytic, attribute, SQL, and HDI views), **SAP BW/4HANA** (ADSO, composite providers, DTP, InfoObjects, transformations), **SAP Datasphere** (`.dsview`, `.dataflow`, analytical model JSON exports), and optional **external lineage** parsers (dbt `manifest.json`, Snowflake DDL, Kafka `.avsc`, Informatica mapping XML) when **`parser.include_external: true`** in YAML.
+**sap-to-md (`md-sap`):** parses **ABAP**, **CDS** (views, **`define table`**, **`define type`** structures), **DDIC** (ADT dictionary XML, abapGit **`TABL`**, DD02/DD03 CSV), **OData** metadata (via shared **`md_generator.odata`** when **`odata_catalog`** is enabled), **BAPI**, **IDoc**, and transport artifacts into chunked Markdown knowledge packs. Also supports **SAP HANA** (calculation, analytic, attribute, SQL, and HDI views), **SAP BW/4HANA** (ADSO, composite providers, DTP, InfoObjects, transformations), **SAP Datasphere** (`.dsview`, `.dataflow`, analytical model JSON exports), and optional **external lineage** parsers (dbt `manifest.json`, Snowflake DDL, Kafka `.avsc`, Informatica mapping XML) when **`parser.include_external: true`** in YAML.
 
-**Pipeline v1 (default):** discover inputs → plugin registry → **`SapObject`** IR → NetworkX knowledge graph → analyzers (relationships, governance, validation, authorization, lineage) → split Markdown, optional chunks, graphs, and manifest.
+**DDIC / ADT:** Eclipse ADT exports under `wbobj/dictionary/` (data elements, domains, tables, structures, table types, range types, reference types) are parsed by **`ddic.adt`**. Modern **`TABL/DT`** objects with DDL references accept sidecar DDL source when present. Normalized **`ddic_canonical`** metadata powers v2 generators; legacy entity keys remain for v1 **`entities/`** output. Output layout: **`ddic/data-elements/`**, **`ddic/domains/`**, **`ddic/tables/`**, … and shared **`structures/{name}.md`** for ADT structures and CDS **`define type`**. See [sap-to-md/docs/ddic-adt.md](sap-to-md/docs/ddic-adt.md).
 
-**Pipeline v2** (`--pipeline-version 2` or `pipeline.version: 2`): adds canonical JSON under **`json/canonical/`**, **ArtifactGraph** merge, transformation graphs, and HANA/BW/Datasphere-specific outputs (for example **`hana/calculation-views/`**, **`hana/lineage/`**, **`datasphere/`**) while preserving v1 Markdown. See [sap-to-md/docs/architecture.md](sap-to-md/docs/architecture.md), [canonical-model.md](sap-to-md/docs/canonical-model.md), and [graph-model.md](sap-to-md/docs/graph-model.md).
+**Pipeline v1 (default):** discover inputs → plugin registry → **`SapObject`** IR → NetworkX knowledge graph → analyzers (relationships, governance, validation, authorization, lineage, semantics) → split Markdown (12-section entity docs per [markdown-generation.md](sap-to-md/docs/markdown-generation.md)), optional chunks, graphs, and manifest.
 
-**Feature flags** (YAML `features.include` or **`--include`** comma list): `entities`, `technical`, `functional`, `relationships`, `lineage`, `governance`, `authorization`, `validations`, `graphs`, `chunks`, `json_output`, `odata_catalog`. Convenience CLI flags: **`--include-lineage`**, **`--include-governance`**, **`--graph`**, **`--chunk`**, **`--json-output`**. Fetch live OData: **`--odata-url`** (repeatable) or `input.odata_urls` in YAML. For **OData-only** metadata trees, prefer standalone **`md-odata`** — [odata-to-md/docs/dual-mode.md](odata-to-md/docs/dual-mode.md). SAP-integrated catalog layout: [sap-to-md/docs/odata-catalog.md](sap-to-md/docs/odata-catalog.md).
+**Pipeline v2** (`--pipeline-version 2` or `pipeline.version: 2`): runs v1 first, then adds **`json/canonical/`**, **`graph/artifacts.json`**, typed v2 Markdown via **`generators/`** (DDIC, HANA, CDS, BW, Datasphere), optional **`pipeline.semantic_narrative`** (relationship summaries and DDIC resolution chains), **`navigation/index.json`** ([navigation-index.md](sap-to-md/docs/navigation-index.md)), cross-link refresh on v1 entity pages, deterministic rule findings, and HANA/BW/Datasphere sidecars (for example **`hana/calculation-views/`**, **`hana/lineage/`**, **`datasphere/`**). Optional: **`pipeline.openlineage_export`**, **`pipeline.cross_lineage`**, **`pipeline.semantic_chunks_jsonl`**. See [architecture.md](sap-to-md/docs/architecture.md), [canonical-model.md](sap-to-md/docs/canonical-model.md), [graph-model.md](sap-to-md/docs/graph-model.md).
 
-**Further reading:** [sap-to-md/README.md](sap-to-md/README.md) · [parser-design](sap-to-md/docs/parser-design.md) · [hana-calculation-views](sap-to-md/docs/hana-calculation-views.md) · [datasphere](sap-to-md/docs/datasphere.md) · [external-plugins](sap-to-md/docs/external-plugins.md) · [chunking-strategy](sap-to-md/docs/chunking-strategy.md) · [governance-design](sap-to-md/docs/governance-design.md). Library: [`md_generator/sap/`](src/md_generator/sap/).
+**Feature flags** (YAML `features.include` or **`--include`** comma list): `entities`, `technical`, `functional`, `relationships`, `lineage`, `governance`, `authorization`, `validations`, `graphs`, `chunks`, `json_output`, `odata_catalog`. Convenience CLI flags: **`--include-cds`**, **`--include-ddic`**, **`--include-lineage`**, **`--include-governance`**, **`--graph`**, **`--chunk`**, **`--json-output`**, **`--workers`**, **`--async`**. Fetch live OData: **`--odata-url`** (repeatable) or `input.odata_urls` in YAML. For **OData-only** metadata trees, prefer standalone **`md-odata`** — [odata-to-md/docs/dual-mode.md](odata-to-md/docs/dual-mode.md). SAP-integrated catalog layout: [sap-to-md/docs/odata-catalog.md](sap-to-md/docs/odata-catalog.md).
+
+**Further reading:** [sap-to-md/README.md](sap-to-md/README.md) · [parser-design](sap-to-md/docs/parser-design.md) · [ddic-adt](sap-to-md/docs/ddic-adt.md) · [markdown-generation](sap-to-md/docs/markdown-generation.md) · [navigation-index](sap-to-md/docs/navigation-index.md) · [hana-calculation-views](sap-to-md/docs/hana-calculation-views.md) · [datasphere](sap-to-md/docs/datasphere.md) · [external-plugins](sap-to-md/docs/external-plugins.md) · [chunking-strategy](sap-to-md/docs/chunking-strategy.md) · [governance-design](sap-to-md/docs/governance-design.md) · [relationship-engine](sap-to-md/docs/relationship-engine.md). Library: [`md_generator/sap/`](src/md_generator/sap/).
 
 **otel-to-md (`md-otel`):** reads **OTLP** trace exports (**JSON** or **protobuf** with **`log-otel-proto`**) and writes **`trace.md`** (span list). No separate HTTP API entry point; use **`md-otel`** or correlate traces with log exports via **`input.otel_path`** in log YAML. Library: [`md_generator/otel/`](src/md_generator/otel/).
 
@@ -239,6 +241,7 @@ pip install "mdengine[log]" && md-log --config log.yaml
 pip install "mdengine[log-otel-proto]" && md-otel --input otlp-traces.json --output ./otel-docs
 pip install "mdengine[sap]" && md-sap ./sap-source --output ./sap-out --graph --chunk
 pip install "mdengine[sap]" && md-sap --pipeline-version 2 ./hana-fixtures --output ./sap-v2-out --graph --chunk
+pip install "mdengine[sap]" && md-sap ./sap-to-md/tests/fixtures/ddic --output ./ddic-out --pipeline-version 2
 pip install "mdengine[sap]" && md-sap ./sap-source --odata-url "https://host/sap/opu/odata/sap/API_PRODUCT/$metadata" --output ./sap-out
 md-codeflow scan ./src --output ./cf-out --lang python
 ```
@@ -579,23 +582,30 @@ Or pass paths on the CLI:
 
 ```bash
 pip install "mdengine[sap]"
-md-sap ./abap ./cds --output ./sap-out --include-lineage --include-governance --graph --chunk
-md-sap --pipeline-version 2 ./fixtures/hana --output ./sap-v2-out
+md-sap ./abap ./cds ./ddic-xml --output ./sap-out --include-lineage --include-governance --graph --chunk
+md-sap --pipeline-version 2 ./fixtures/hana --output ./sap-v2-out --workers 4
+md-sap ./sap-to-md/tests/fixtures/ddic --output ./ddic-out --pipeline-version 2
 md-sap ./exports --odata-url "https://host/sap/opu/odata/sap/API_PRODUCT/$metadata" --output ./sap-out
 mdengine sap-to-md ./sap-source --include entities,lineage,odata_catalog --json-output
 ```
 
-Example YAML (pipeline v2 + Datasphere + live OData):
+Example YAML (pipeline v2 + ADT DDIC + Datasphere + semantic narrative):
 
 ```yaml
 input:
-  paths: ["./sap-exports", "./datasphere-exports"]
+  paths: ["./sap-exports", "./wbobj/dictionary", "./datasphere-exports"]
   odata_urls:
     - https://example.com/sap/opu/odata/sap/API_PRODUCT/$metadata
 output:
   path: ./sap-out
+  split_files: true
+  markdown_cross_links: true
 pipeline:
   version: 2
+  semantic_narrative: true
+  canonical_json: true
+  artifact_graph: true
+  rule_engine: true
 parser:
   include_hana: true
   include_bw: true
@@ -603,9 +613,11 @@ parser:
   include_external: false
 features:
   include: [entities, lineage, governance, odata_catalog, graphs, chunks]
+performance:
+  workers: 4
 ```
 
-For **OData-only** metadata exports, prefer **`md-odata`** (above). Design and output layouts: [`sap-to-md/README.md`](sap-to-md/README.md), [architecture](sap-to-md/docs/architecture.md), [hana-calculation-views](sap-to-md/docs/hana-calculation-views.md), [datasphere](sap-to-md/docs/datasphere.md).
+For **OData-only** metadata exports, prefer **`md-odata`** (above). Design and output layouts: [`sap-to-md/README.md`](sap-to-md/README.md), [architecture](sap-to-md/docs/architecture.md), [ddic-adt](sap-to-md/docs/ddic-adt.md), [markdown-generation](sap-to-md/docs/markdown-generation.md), [navigation-index](sap-to-md/docs/navigation-index.md), [hana-calculation-views](sap-to-md/docs/hana-calculation-views.md), [datasphere](sap-to-md/docs/datasphere.md).
 
 ### Codeflow (static call graphs)
 
@@ -625,19 +637,28 @@ More flags and language notes: [Development](#development) (section **Codeflow**
 
 ## SAP metadata (`md_generator.sap`)
 
-Library code lives under [`src/md_generator/sap/`](src/md_generator/sap/). The pipeline discovers file-based SAP inputs (ABAP, CDS, DDIC, OData EDMX/JSON, BAPI, IDoc, transport, HANA view XML, BW artifacts, Datasphere exports) and optionally fetches live **`$metadata`** URLs.
+Library code lives under [`src/md_generator/sap/`](src/md_generator/sap/). The pipeline discovers file-based SAP inputs (ABAP, CDS DDL, ADT DDIC XML, OData EDMX/JSON, BAPI, IDoc, transport, HANA view XML, BW artifacts, Datasphere exports) and optionally fetches live **`$metadata`** URLs.
 
-- **Parsers:** plugin registry under `parser/` — core SAP (`abap`, `cds`, `ddic`, `odata`, `bapi`, `idoc`, `transport`); **HANA** (`parser/hana/`); **BW** (`parser/bw/`); **Datasphere** (`parser/datasphere/`); **external** lineage stubs (`parser/external/`: dbt, Snowflake, Kafka, Informatica) when `parser.include_external: true`.
-- **Pipeline v1:** `SapObject` IR → NetworkX graph → Markdown bundles, optional semantic chunks and Mermaid/JSON graphs.
-- **Pipeline v2:** canonical **`CanonicalArtifact`** JSON, **`ArtifactGraph`** merge, transformation graphs, HANA lineage/impact/SQL sidecars — enable with **`--pipeline-version 2`** or `pipeline.version: 2` in YAML.
+| Package area | Role |
+|--------------|------|
+| `parser/` | Plugin registry — ABAP, CDS (view / **`define table`** / **`define type`**), DDIC (ADT XML, abapGit TABL, CSV), OData, BAPI, IDoc, transport, HANA, BW, Datasphere, external lineage |
+| `normalizer/` + `canonical/` | **`SapObject` → `CanonicalArtifact`**, typed **`ddic_canonical`** metadata, transformation graphs |
+| `analyzer/` | Relationships, governance, validation, authorization, lineage, semantics |
+| `generators/` + `markdown/` | v1 entity docs (12 sections) and v2 typed Markdown (DDIC, HANA, CDS, BW, Datasphere); optional **semantic narrative** blocks |
+| `graph/` + `orchestration/` | NetworkX v1 graph, v2 **`ArtifactGraph`**, **`pipeline_v2`** orchestration |
+| `chunking/` + `rules/` | Semantic chunks (JSONL) and deterministic rule findings |
+| `core/` + `api/` | **`extract_to_markdown`**, YAML config, CLI, FastAPI jobs |
+
+- **Pipeline v1:** `SapObject` IR → NetworkX graph → split Markdown under **`entities/`**, **`technical/`**, **`functional/`**, plus feature folders; optional chunks and Mermaid/JSON graphs.
+- **Pipeline v2:** v1 output preserved, then canonical JSON, artifact graph export, typed generators, **`navigation/index.json`**, and cross-link refresh on DDIC entity pages. Enable with **`--pipeline-version 2`** or `pipeline.version: 2`; tune with `pipeline.semantic_narrative`, `pipeline.openlineage_export`, `pipeline.cross_lineage`.
 - **OData:** catalog rendering delegates to shared [`md_generator.odata`](src/md_generator/odata/); use **`md-odata`** for standalone CSDL exports ([dual-mode](odata-to-md/docs/dual-mode.md)).
-- **Docs:** [`sap-to-md/docs/`](sap-to-md/docs/) (architecture, canonical model, graph model, HANA, Datasphere, OData catalog, chunking, governance). Tests: [`sap-to-md/tests/`](sap-to-md/tests/).
+- **Docs:** [`sap-to-md/docs/`](sap-to-md/docs/) — start with [architecture](sap-to-md/docs/architecture.md), [ddic-adt](sap-to-md/docs/ddic-adt.md), [markdown-generation](sap-to-md/docs/markdown-generation.md), [navigation-index](sap-to-md/docs/navigation-index.md). Tests and fixtures: [`sap-to-md/tests/`](sap-to-md/tests/) (including `fixtures/ddic/`, `fixtures/hana/`, `fixtures/cds/`).
 
 ```bash
 pip install "mdengine[sap]"
 md-sap ./sap-source --output ./sap-out --graph --chunk
-md-sap --pipeline-version 2 ./fixtures/hana --output ./sap-v2-out
-md-sap-api   # POST /sap-to-md/run, /sap-to-md/job
+md-sap --pipeline-version 2 ./sap-to-md/tests/fixtures/ddic --output ./ddic-out
+md-sap-api   # POST /sap-to-md/run, /sap-to-md/job, GET /sap-to-md/job/{id}/download
 ```
 
 ---

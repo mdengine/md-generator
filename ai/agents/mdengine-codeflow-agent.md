@@ -1,10 +1,12 @@
 ---
 name: mdengine-codeflow-agent
 description: >-
-  Assists with pip-installed mdengine Code → Markdown (codeflow): choosing extras and using public
-  CLIs/APIs under md_generator.codeflow. Use when tasks involve codeflow, md-codeflow, code to markdown, architecture from code, md_generator.codeflow and do not
-  require editing mdengine source in a git checkout.
-version: 0.7.0
+  Assists with pip-installed mdengine Code → Markdown (codeflow): choosing extras
+  (codeflow, codeflow-treesitter, codeflow-clang, codeflow-semantic) and using
+  md-codeflow, md-codeflow-api, md-codeflow-mcp under md_generator.codeflow.
+  Use when tasks involve architecture-from-code, tree-sitter parsers, or codeflow
+  scans and do not require editing mdengine source in a git checkout.
+version: 0.13.0
 ---
 
 # mdengine agent — Code → Markdown (codeflow)

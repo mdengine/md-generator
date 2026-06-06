@@ -1,6 +1,6 @@
 {
   "schemaVersion": "1.1.0",
-  "bundleVersion": "0.11.1",
+  "bundleVersion": "0.13.0",
   "description": "Maps mdengine distributable skill folders and agent files. Paths are relative to the directory containing this file (ai/).",
   "distribution": {
     "pypi": "mdengine",
@@ -74,6 +74,13 @@
       "directory": "skills/mdengine-ai-openapi",
       "skillFile": "skills/mdengine-ai-openapi/SKILL.md",
       "exampleFile": "skills/mdengine-ai-openapi/references/example.md"
+    },
+    "mdengine-ai-odata": {
+      "type": "area",
+      "area": "odata",
+      "directory": "skills/mdengine-ai-odata",
+      "skillFile": "skills/mdengine-ai-odata/SKILL.md",
+      "exampleFile": "skills/mdengine-ai-odata/references/example.md"
     },
     "mdengine-ai-pdf": {
       "type": "area",
@@ -179,6 +186,10 @@
       "file": "agents/mdengine-openapi-agent.md",
       "pairedSkill": "mdengine-ai-openapi"
     },
+    "mdengine-odata-agent": {
+      "file": "agents/mdengine-odata-agent.md",
+      "pairedSkill": "mdengine-ai-odata"
+    },
     "mdengine-pdf-agent": {
       "file": "agents/mdengine-pdf-agent.md",
       "pairedSkill": "mdengine-ai-pdf"
@@ -235,6 +246,7 @@
     "mdengine-ai-log",
     "mdengine-ai-media",
     "mdengine-ai-openapi",
+    "mdengine-ai-odata",
     "mdengine-ai-otel",
     "mdengine-ai-pdf",
     "mdengine-ai-playwright",
@@ -261,6 +273,7 @@
       "sap": "mdengine-ai-sap",
       "media": "mdengine-ai-media",
       "openapi": "mdengine-ai-openapi",
+      "odata": "mdengine-ai-odata",
       "pdf": "mdengine-ai-pdf",
       "playwright": "mdengine-ai-playwright",
       "ppt": "mdengine-ai-ppt",
@@ -311,6 +324,48 @@
           "codeflow"
         ],
         "priority": 40
+      },
+      {
+        "keyword": "treesitter",
+        "areas": [
+          "codeflow"
+        ],
+        "priority": 70
+      },
+      {
+        "keyword": "tree-sitter",
+        "areas": [
+          "codeflow"
+        ],
+        "priority": 70
+      },
+      {
+        "keyword": "kotlin",
+        "areas": [
+          "codeflow"
+        ],
+        "priority": 55
+      },
+      {
+        "keyword": "swift",
+        "areas": [
+          "codeflow"
+        ],
+        "priority": 55
+      },
+      {
+        "keyword": "ruby",
+        "areas": [
+          "codeflow"
+        ],
+        "priority": 55
+      },
+      {
+        "keyword": "lua",
+        "areas": [
+          "codeflow"
+        ],
+        "priority": 55
       },
       {
         "keyword": "db",
@@ -432,6 +487,13 @@
         "priority": 75
       },
       {
+        "keyword": "mdengine search",
+        "areas": [
+          "log"
+        ],
+        "priority": 85
+      },
+      {
         "keyword": "sap",
         "areas": [
           "sap"
@@ -472,6 +534,27 @@
           "sap"
         ],
         "priority": 95
+      },
+      {
+        "keyword": "hana",
+        "areas": [
+          "sap"
+        ],
+        "priority": 80
+      },
+      {
+        "keyword": "bw",
+        "areas": [
+          "sap"
+        ],
+        "priority": 75
+      },
+      {
+        "keyword": "datasphere",
+        "areas": [
+          "sap"
+        ],
+        "priority": 75
       },
       {
         "keyword": "otel",
@@ -576,6 +659,41 @@
         "keyword": "md-openapi",
         "areas": [
           "openapi"
+        ],
+        "priority": 95
+      },
+      {
+        "keyword": "odata",
+        "areas": [
+          "odata"
+        ],
+        "priority": 100
+      },
+      {
+        "keyword": "csdl",
+        "areas": [
+          "odata"
+        ],
+        "priority": 90
+      },
+      {
+        "keyword": "edmx",
+        "areas": [
+          "odata"
+        ],
+        "priority": 85
+      },
+      {
+        "keyword": "md-odata",
+        "areas": [
+          "odata"
+        ],
+        "priority": 95
+      },
+      {
+        "keyword": "odata-to-md",
+        "areas": [
+          "odata"
         ],
         "priority": 95
       },
@@ -774,6 +892,7 @@
           "db",
           "graph",
           "openapi",
+          "odata",
           "media",
           "playwright",
           "log",
@@ -787,6 +906,7 @@
           "db",
           "graph",
           "openapi",
+          "odata",
           "media",
           "playwright",
           "codeflow",

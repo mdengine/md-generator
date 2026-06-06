@@ -2,10 +2,11 @@
 name: mdengine-log-agent
 description: >-
   Assists with pip-installed mdengine Log → Markdown: choosing extras (log,
-  log-cluster, log-semantic, log-pretty) and using md-log, md-log-api, md-log-mcp
-  under md_generator.log. Use when tasks involve log normalization, log-to-md,
-  stack traces, or md-log and do not require editing mdengine source in a git checkout.
-version: 0.8.0
+  log-cluster, log-semantic, log-pretty, log-stream-*, log-export-parquet) and
+  using md-log, md-log-api, md-log-mcp, mdengine search under md_generator.log.
+  Use when tasks involve log normalization, log-to-md, stack traces, or md-log
+  and do not require editing mdengine source in a git checkout.
+version: 0.13.0
 ---
 
 # mdengine agent — Log → Markdown

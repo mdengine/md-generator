@@ -24,6 +24,7 @@ _AREA_TITLES: dict[str, str] = {
     "sap": "SAP artifacts → Markdown",
     "media": "Audio, video, YouTube → Markdown",
     "openapi": "OpenAPI → Markdown / docs bundle",
+    "odata": "OData CSDL → Markdown",
     "pdf": "PDF → Markdown",
     "playwright": "Playwright URL → Markdown",
     "ppt": "PowerPoint (.pptx) → Markdown",
@@ -44,6 +45,7 @@ _EXTRA_BY_AREA: dict[str, str] = {
     "sap": "sap",
     "media": "audio,video,youtube",
     "openapi": "openapi",
+    "odata": "odata",
     "pdf": "pdf",
     "playwright": "playwright",
     "ppt": "ppt",
@@ -55,7 +57,7 @@ _EXTRA_BY_AREA: dict[str, str] = {
 
 _SKILL_NAME = "mdengine-ai-{area}"
 # Areas whose `SKILL.md` is maintained manually (rich install/API/MCP docs); skip auto overwrite.
-_HAND_CURATED_AREA_SKILLS: frozenset[str] = frozenset({"log", "sap", "otel"})
+_HAND_CURATED_AREA_SKILLS: frozenset[str] = frozenset({"log", "sap", "otel", "odata", "codeflow"})
 _DESCRIPTION_SEEDS: dict[str, str] = {
     "pdf": "Documents pip-installed mdengine features for PDF → Markdown: extras, CLIs, and public imports under md_generator.pdf.",
     "word": "Documents pip-installed mdengine features for Word (DOCX) → Markdown: extras, CLIs, and public imports under md_generator.word.",
@@ -72,6 +74,7 @@ _DESCRIPTION_SEEDS: dict[str, str] = {
     "db": "Documents pip-installed mdengine features for Database → Markdown: extras, CLIs, and public imports under md_generator.db.",
     "graph": "Documents pip-installed mdengine features for Graph → Markdown: extras, CLIs, and public imports under md_generator.graph.",
     "openapi": "Documents pip-installed mdengine features for OpenAPI → Markdown: extras, CLIs, and public imports under md_generator.openapi.",
+    "odata": "Documents pip-installed mdengine features for OData CSDL metadata → Markdown: extras, CLIs, and public imports under md_generator.odata.",
     "codeflow": "Documents pip-installed mdengine features for Codeflow (code → Markdown): extras, CLIs, and public imports under md_generator.codeflow.",
     "media": "Documents pip-installed mdengine features for media (audio/video/YouTube) → Markdown: extras, CLIs, and public imports under md_generator.media.",
 }
@@ -374,7 +377,7 @@ def build_global_consumer_skill_md(version: str) -> str:
         | `ppt` | PPTX → Markdown (`md-ppt`) |
         | `xlsx` | Excel/CSV → Markdown (`md-xlsx`) |
         | `image` / `image-ocr` | Raster OCR (`md-image`) |
-        | `log` | Logs / stack traces → Markdown (`md-log`, `md-log-api`, `md-log-mcp`); optional `log-cluster`, `log-semantic`, `log-pretty` |
+        | `log` | Logs / stack traces → Markdown (`md-log`, `md-log-api`, `md-log-mcp`); optional `log-cluster`, `log-semantic`, `log-pretty`, `log-stream-*`, `log-export-parquet`; search via `mdengine search` |
         | `sap` | SAP artifacts → Markdown (`md-sap`, `md-sap-api`, `md-sap-mcp`) |
         | `log-otel-proto` | OTLP protobuf ingest for `md-otel` (used with `mdengine[log-otel-proto]`) |
         | `text` | TXT / JSON / XML (`md-text`) |
@@ -385,6 +388,7 @@ def build_global_consumer_skill_md(version: str) -> str:
         | `db` | DB metadata → Markdown (`md-db`, `md-db-api`, `md-db-mcp`) |
         | `graph` | Neo4j / NetworkX → Markdown (`md-graph`, …) |
         | `openapi` | OpenAPI → docs (`md-openapi`, …) |
+        | `odata` | OData CSDL → Markdown (`md-odata`, `md-odata-api`, `md-odata-mcp`) |
         | `codeflow` | Code → architecture Markdown (`md-codeflow`, …); optional `codeflow-treesitter`, `codeflow-clang` |
         | `api` / `mcp` | Shared HTTP / MCP stacks where those entry points exist |
         | `all` | Large superset — avoid unless truly needed |
@@ -400,7 +404,7 @@ def build_global_consumer_skill_md(version: str) -> str:
         md-url https://example.com/page ./out --artifact-layout
         ```
 
-        Aggregated **`mdengine`** CLI routes subcommands (e.g. `mdengine db-to-md …`, `mdengine graph-to-md …`, `mdengine openapi-to-md generate …`). Prefer **`md-*`** aliases when documented for your scenario.
+        Aggregated **`mdengine`** CLI routes subcommands (e.g. `mdengine db-to-md …`, `mdengine graph-to-md …`, `mdengine openapi-to-md generate …`, `mdengine odata-to-md generate …`, `mdengine search "…"`). Prefer **`md-*`** aliases when documented for your scenario.
 
         See [CLI reference](../mdengine-reference/SKILL.md) for CLI ↔ extra mapping. That skill also ships **[entrypoints.md](../mdengine-reference/references/entrypoints.md)** and **[http-api-mcp.md](../mdengine-reference/references/http-api-mcp.md)**.
 

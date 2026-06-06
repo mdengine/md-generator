@@ -33,6 +33,7 @@ Supplements [mdengine-ai-global/SKILL.md](../mdengine-ai-global/SKILL.md). Conso
 | `md-db` / `md-db-api` / `md-db-mcp` | `mdengine[db]` (+ `api` / `mcp` as needed) |
 | `md-graph` / `*-api` / `*-mcp` | `mdengine[graph]` |
 | `md-openapi` / `*-api` / `*-mcp` | `mdengine[openapi]` |
+| `md-odata` / `md-odata-api` / `md-odata-mcp` | `mdengine[odata]` (+ `api`, `mcp` as needed) |
 | `md-codeflow` / `codeflow` / `*-api` / `*-mcp` | `mdengine[codeflow]` (+ optional treesitter/clang extras) |
 | `md-log` / `md-log-api` / `md-log-mcp` | `mdengine[log]` (+ `log-cluster`, `log-semantic`, `log-pretty`, `api`, `mcp` as needed) |
 | `md-sap` / `md-sap-api` / `md-sap-mcp` | `mdengine[sap]` (+ `api`, `mcp` as needed) |
