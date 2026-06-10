@@ -1,7 +1,7 @@
 ---
 name: mdengine-ai-db
 description: "Documents pip-installed mdengine features for Database → Markdown: extras, CLIs, and public imports under md_generator.db. Use when the user mentions `md-db`, `md-db-api`, `md-db-mcp` or needs this capability after installing mdengine from PyPI. Package summary: Database metadata to Markdown (LLM-ready, deterministic)."
-version: 0.11.1
+version: 0.13.0
 ---
 # mdengine — Database metadata → Markdown
 
@@ -41,7 +41,7 @@ pip install "mdengine[db]"
 
 ## Edge cases (heuristic)
 
-- `db/core/erd/mermaid_render.py`: optional imports / ImportError handling
+- `db/adapters/elasticsearch_adapter.py`: optional imports / ImportError handling
 - Prefer **`--help`** on each CLI before guessing flags.
 
 ## Prompt templates

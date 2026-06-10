@@ -2,7 +2,41 @@ from __future__ import annotations
 
 from typing import Any
 
+from md_generator.sap.core.link_graph import SapLinkGraph
+from md_generator.sap.markdown.builders.abap_sections import (
+    format_dynamic_sql_warnings,
+    format_joins,
+    format_native_sql,
+    format_open_sql,
+    format_view_refs,
+)
+from md_generator.sap.markdown.builders.ddic_adapters import (
+    data_element_view_from_raw,
+    domain_view_from_raw,
+    range_type_view_from_raw,
+    reference_type_view_from_raw,
+    structure_view_from_cds,
+    structure_view_from_ddic,
+    table_type_view_from_raw,
+    table_view_from_raw,
+)
+from md_generator.sap.markdown.builders.ddic_sections import (
+    format_data_element,
+    format_ddic_table,
+    format_domain,
+    format_range_type,
+    format_reference_type,
+    format_table_type,
+)
+from md_generator.sap.markdown.builders.renderer_context import RendererContext
+from md_generator.sap.markdown.builders.structure_sections import format_structure, format_structure_title
+from md_generator.sap.models.entities.kinds import SapObjectKind
 from md_generator.sap.models.entities.sap_object import SapObject
+
+_DDIC_META_KEYS = frozenset({
+    "data_element", "domain", "ddic", "structure", "cds_structure",
+    "table_type", "range_type", "reference_type", "adt_ddic",
+})
 
 
 def build_entity_markdown(
@@ -14,6 +48,8 @@ def build_entity_markdown(
     lineage: dict[str, Any] | None = None,
     governance: list[dict[str, Any]] | None = None,
     related_links: list[tuple[str, str]] | None = None,
+    link_graph: SapLinkGraph | None = None,
+    renderer_ctx: RendererContext | None = None,
     cap: int = 80,
 ) -> str:
     rels = (relationships or [])[:cap]
@@ -21,6 +57,9 @@ def build_entity_markdown(
     auths = (auth_checks or [])[:cap]
     gov = (governance or [])[:cap]
     lin = lineage or {}
+    meta = obj.raw_metadata or {}
+    abap = meta.get("abap") if isinstance(meta.get("abap"), dict) else None
+    ctx = renderer_ctx or RendererContext(link_graph=link_graph)
 
     sections = [
         _h1(f"{obj.semantic_entity or obj.name}"),
@@ -33,11 +72,83 @@ def build_entity_markdown(
         _section("Lineage", _format_lineage(lin)),
         _section("Dependencies", _format_dependencies(obj, rels)),
         _section("APIs", _format_apis(obj)),
-        _section("Related Tables", _related_tables(obj, rels)),
-        _section("Related CDS Views", _related_cds(obj, rels)),
-        _section("AI Semantic Tags", _semantic_tags(obj)),
     ]
+    sections.extend(_ddic_sections(obj, ctx))
+    if abap:
+        warn = format_dynamic_sql_warnings(abap)
+        if warn:
+            sections.append(_section("SQL Warnings", warn))
+        sections.append(_section("Open SQL", format_open_sql(abap)))
+        native = format_native_sql(abap)
+        if native:
+            sections.append(_section("Native SQL", native))
+        sections.append(_section("Joins", format_joins(abap)))
+    sections.extend([
+        _section("Related Tables", _related_tables(obj, rels)),
+        _section("Related CDS Views", _related_cds(obj, rels, abap)),
+    ])
+    if abap:
+        sections.append(_section("Views / CDS / HANA References", format_view_refs(abap)))
+    sections.append(_section("AI Semantic Tags", _semantic_tags(obj)))
     return "\n\n".join(s for s in sections if s)
+
+
+def _ddic_sections(obj: SapObject, ctx: RendererContext) -> list[str]:
+    meta = obj.raw_metadata or {}
+    sections: list[str] = []
+    kind = obj.kind
+
+    if kind == SapObjectKind.DATA_ELEMENT and isinstance(meta.get("data_element"), dict):
+        view = data_element_view_from_raw(meta["data_element"])
+        body = format_data_element(view, ctx)
+        if body.strip():
+            sections.append(_section("DDIC Data Element", body))
+
+    elif kind == SapObjectKind.DOMAIN and isinstance(meta.get("domain"), dict):
+        view = domain_view_from_raw(meta["domain"])
+        body = format_domain(view, ctx)
+        if body.strip():
+            sections.append(_section("DDIC Domain", body))
+
+    elif kind == SapObjectKind.TABLE and isinstance(meta.get("ddic"), dict):
+        view = table_view_from_raw(meta["ddic"])
+        body = format_ddic_table(view, ctx)
+        if body.strip():
+            sections.append(_section("DDIC Table Fields", body))
+
+    elif kind == SapObjectKind.STRUCTURE and isinstance(meta.get("structure"), dict):
+        view = structure_view_from_ddic(meta["structure"])
+        view.name = view.name or obj.name
+        view.description = view.description or obj.description or ""
+        body = format_structure_title(view) + format_structure(view, ctx)
+        sections.append(_section("Structure", body))
+
+    elif kind == SapObjectKind.CDS_STRUCTURE and isinstance(meta.get("cds_structure"), dict):
+        view = structure_view_from_cds(meta["cds_structure"])
+        view.name = view.name or obj.name
+        view.description = view.description or obj.description or ""
+        body = format_structure_title(view) + format_structure(view, ctx)
+        sections.append(_section("Structure", body))
+
+    elif kind == SapObjectKind.TABLE_TYPE and isinstance(meta.get("table_type"), dict):
+        view = table_type_view_from_raw(meta["table_type"])
+        body = format_table_type(view, ctx)
+        if body.strip():
+            sections.append(_section("DDIC Table Type", body))
+
+    elif kind == SapObjectKind.RANGE_TYPE and isinstance(meta.get("range_type"), dict):
+        view = range_type_view_from_raw(meta["range_type"])
+        body = format_range_type(view, ctx)
+        if body.strip():
+            sections.append(_section("DDIC Range Type", body))
+
+    elif kind == SapObjectKind.REFERENCE_TYPE and isinstance(meta.get("reference_type"), dict):
+        view = reference_type_view_from_raw(meta["reference_type"])
+        body = format_reference_type(view, ctx)
+        if body.strip():
+            sections.append(_section("DDIC Reference Type", body))
+
+    return sections
 
 
 def _h1(title: str) -> str:
@@ -71,8 +182,23 @@ def _business_meaning(obj: SapObject) -> str:
 def _technical_metadata(obj: SapObject) -> str:
     lines = [f"- **Source:** `{obj.source_path}`" if obj.source_path else "- **Source:** _export_"]
     meta = obj.raw_metadata or {}
+    adt = meta.get("adt_ddic") if isinstance(meta.get("adt_ddic"), dict) else {}
+    if adt.get("ddic_object_kind"):
+        lines.append(f"- **DDIC object kind:** `{adt['ddic_object_kind']}`")
+    if adt.get("source"):
+        lines.append(f"- **ADT source:** `{adt['source']}`")
     for key in sorted(meta.keys()):
-        lines.append(f"- **{key}:** metadata block present")
+        if key in _DDIC_META_KEYS:
+            block = meta[key]
+            if isinstance(block, dict):
+                src = block.get("definition_source", "")
+                if src:
+                    lines.append(f"- **{key}:** `{src}` definition")
+                else:
+                    lines.append(f"- **{key}:** structured metadata")
+            continue
+        if key != "adt_ddic":
+            lines.append(f"- **{key}:** metadata block present")
     return "\n".join(lines)
 
 
@@ -137,7 +263,16 @@ def _format_apis(obj: SapObject) -> str:
     if "bapi" in meta:
         return f"- BAPI: `{obj.name}`"
     if "odata" in meta:
-        return f"- OData entity with {len(meta['odata'].get('properties', []))} properties"
+        lines = [f"- OData entity `{obj.name}` with {len(meta['odata'].get('properties', []))} properties"]
+        analysis = meta.get("odata_analysis") or {}
+        for es in analysis.get("entity_sets", [])[:10]:
+            lines.append(f"- Entity set: `{es.get('name')}` → `{es.get('entity_type')}`")
+        for nav in meta["odata"].get("navigation", [])[:10]:
+            lines.append(f"- Nav: `{nav.get('name')}` → `{nav.get('target')}` ({nav.get('multiplicity', '?')})")
+        return "\n".join(lines)
+    if "odata_entity_set" in meta:
+        cap = meta.get("capabilities", {})
+        return f"- OData entity set `{obj.name}` → `{meta.get('entity_type')}` CRUD: {cap}"
     return ""
 
 
@@ -154,8 +289,17 @@ def _related_tables(obj: SapObject, rels: list[dict[str, Any]]) -> str:
     return "\n".join(dict.fromkeys(lines))
 
 
-def _related_cds(obj: SapObject, rels: list[dict[str, Any]]) -> str:
+def _related_cds(obj: SapObject, rels: list[dict[str, Any]], abap: dict[str, Any] | None = None) -> str:
     lines = []
+    if abap:
+        for r in abap.get("view_references", []) or []:
+            if r.get("kind") == "cds":
+                name = r.get("name", "?")
+                path = r.get("resolved_path") or (r.get("resolution") or {}).get("resolved_path")
+                if path:
+                    lines.append(f"- [{name}]({path})")
+                else:
+                    lines.append(f"- `{name}`")
     for r in rels:
         if r.get("relation") in ("ASSOCIATION", "COMPOSITION"):
             lines.append(f"- `{r.get('target_name', r.get('target_id'))}`")

@@ -3,26 +3,18 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
+from md_generator.sap.framework.capabilities import ParserCapability
 from md_generator.sap.models.entities.kinds import SapObjectKind
 from md_generator.sap.models.entities.sap_object import SapObject
-from md_generator.sap.models.metadata.abap import AbapAnalysis, AbapAuthCheck, AbapJoin, AbapValidation
-from md_generator.sap.parser.abap.lexer import iter_statements, strip_comments_and_strings
+from md_generator.sap.models.metadata.abap import AbapAnalysis, AbapAuthCheck, AbapValidation
+from md_generator.sap.parser.abap.lexer import iter_statements
+from md_generator.sap.parser.abap.native_sql import detect_dynamic_sql, extract_native_sql
+from md_generator.sap.parser.abap.sql_extractor import extract_open_sql_statements
+from md_generator.sap.parser.abap.view_classifier import build_view_references
 from md_generator.sap.parser.base import ParseContext, SapParseResult
 
 _ABAP_SUFFIXES = {".abap", ".prog", ".asprog", ".inc"}
 
-_RE_SELECT_FROM = re.compile(
-    r"\bFROM\s+([\w/]+)",
-    re.I,
-)
-_RE_JOIN = re.compile(
-    r"\b(?:INNER|LEFT|RIGHT|FULL)?\s*JOIN\s+([\w/]+)",
-    re.I,
-)
-_RE_TABLE_OPS = re.compile(
-    r"\b(?:UPDATE|MODIFY|DELETE FROM|INSERT INTO)\s+([\w/]+)",
-    re.I,
-)
 _RE_INTO_TABLE = re.compile(r"\bINTO\s+TABLE\s+@?(\w+)", re.I)
 _RE_LOOP_TABLE = re.compile(r"\bLOOP AT\s+([\w/]+)", re.I)
 _RE_READ_TABLE = re.compile(r"\bREAD TABLE\s+([\w/]+)", re.I)
@@ -49,9 +41,26 @@ def _program_name(path: Path) -> str:
 
 def parse_abap_source(source: str, program: str) -> AbapAnalysis:
     analysis = AbapAnalysis(program=program)
-    tables: set[str] = set()
+    stmts = iter_statements(source)
 
-    for line_no, stmt in iter_statements(source):
+    sql_stmts, joins, sql_tables = extract_open_sql_statements(stmts, program)
+    native_stmts, native_objects = extract_native_sql(source, program)
+    analysis.sql_statements = sql_stmts + native_stmts
+    analysis.joins = joins
+    tables: set[str] = set(sql_tables)
+
+    analysis.dynamic_sql_signals = detect_dynamic_sql(source)
+    if analysis.dynamic_sql_signals:
+        analysis.lineage_completeness = "partial"
+
+    object_lines: list[tuple[str, int]] = []
+    for s in analysis.sql_statements:
+        for obj in s.objects:
+            object_lines.append((obj, s.line))
+    object_lines.extend(native_objects)
+    analysis.view_references = build_view_references(object_lines)
+
+    for line_no, stmt in stmts:
         upper = stmt.upper()
 
         for m in _RE_CALL_FM.finditer(stmt):
@@ -77,18 +86,6 @@ def parse_abap_source(source: str, program: str) -> AbapAnalysis:
                     AbapAuthCheck(object=am.group(1).upper(), fields=fields, line=line_no)
                 )
 
-        if upper.startswith("SELECT"):
-            for m in _RE_SELECT_FROM.finditer(stmt):
-                t = m.group(1).split("/")[-1].upper()
-                tables.add(t)
-            for m in _RE_JOIN.finditer(stmt):
-                t = m.group(1).split("/")[-1].upper()
-                tables.add(t)
-                analysis.joins.append(AbapJoin(table=t, join_type="JOIN"))
-        for m in _RE_TABLE_OPS.finditer(stmt):
-            t = m.group(1).split("/")[-1].upper()
-            if t not in ("TABLE", "DATA"):
-                tables.add(t)
         for m in _RE_INTO_TABLE.finditer(stmt):
             t = m.group(1).split("/")[-1].upper()
             if t not in ("DATA", "TABLE"):
@@ -120,6 +117,9 @@ def parse_abap_source(source: str, program: str) -> AbapAnalysis:
                 AbapValidation(rule_type="message", expression=msg.group(1)[:200], line=line_no)
             )
 
+    for ref in analysis.view_references:
+        tables.add(ref.name)
+
     analysis.tables = sorted(tables)
     analysis.functions = sorted(set(analysis.functions))
     analysis.includes = sorted(set(analysis.includes))
@@ -142,6 +142,9 @@ def parse_abap_file(path: Path, *, stream_threshold_mb: int = 5) -> AbapAnalysis
 
 class AbapParserPlugin:
     name = "abap"
+
+    def capabilities(self) -> ParserCapability:
+        return ParserCapability(lineage=True, sql_generation="partial", impact_analysis=True)
 
     def can_parse(self, path: Path) -> bool:
         return path.suffix.lower() in _ABAP_SUFFIXES

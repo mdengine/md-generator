@@ -1,0 +1,45 @@
+<?xml version="1.0" ?>
+<blue:wbobj xmlns:blue="http://www.sap.com/wbobj/dictionary/dtel"
+            xmlns:adtcore="http://www.sap.com/adt/core"
+            adtcore:responsible="SAP"
+            adtcore:masterLanguage="DE"
+            adtcore:masterSystem="SAP"
+            adtcore:name="CHAR100"
+            adtcore:type="DTEL/DE"
+            adtcore:changedAt="2019-11-29T11:15:39Z"
+            adtcore:version="active"
+            adtcore:changedBy="SAP"
+            adtcore:createdBy="SAP"
+            adtcore:description="Charakter 100"
+            adtcore:language="EN">
+  <adtcore:packageRef adtcore:uri="/sap/bc/adt/vit/wb/object_type/devck/object_name/SZS"
+                      adtcore:type="DEVC/K"
+                      adtcore:name="SZS"/>
+  <dtel:dataElement xmlns:dtel="http://www.sap.com/adt/dictionary/dataelements">
+    <dtel:typeKind>domain</dtel:typeKind>
+    <dtel:typeName>CHAR100</dtel:typeName>
+    <dtel:dataType>CHAR</dtel:dataType>
+    <dtel:dataTypeLength>000100</dtel:dataTypeLength>
+    <dtel:dataTypeDecimals>000000</dtel:dataTypeDecimals>
+    <dtel:shortFieldLabel/>
+    <dtel:shortFieldLength>00</dtel:shortFieldLength>
+    <dtel:shortFieldMaxLength>10</dtel:shortFieldMaxLength>
+    <dtel:mediumFieldLabel/>
+    <dtel:mediumFieldLength>00</dtel:mediumFieldLength>
+    <dtel:mediumFieldMaxLength>20</dtel:mediumFieldMaxLength>
+    <dtel:longFieldLabel/>
+    <dtel:longFieldLength>00</dtel:longFieldLength>
+    <dtel:longFieldMaxLength>40</dtel:longFieldMaxLength>
+    <dtel:headingFieldLabel/>
+    <dtel:headingFieldLength>00</dtel:headingFieldLength>
+    <dtel:headingFieldMaxLength>55</dtel:headingFieldMaxLength>
+    <dtel:searchHelp/>
+    <dtel:searchHelpParameter/>
+    <dtel:setGetParameter/>
+    <dtel:defaultComponentName/>
+    <dtel:deactivateInputHistory>false</dtel:deactivateInputHistory>
+    <dtel:changeDocument>false</dtel:changeDocument>
+    <dtel:leftToRightDirection>false</dtel:leftToRightDirection>
+    <dtel:deactivateBIDIFiltering>false</dtel:deactivateBIDIFiltering>
+  </dtel:dataElement>
+</blue:wbobj>

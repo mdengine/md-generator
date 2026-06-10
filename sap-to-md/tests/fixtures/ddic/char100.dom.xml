@@ -1,0 +1,19 @@
+<?xml version="1.0" ?>
+<blue:wbobj xmlns:blue="http://www.sap.com/wbobj/dictionary/dom"
+            xmlns:adtcore="http://www.sap.com/adt/core"
+            adtcore:name="CHAR100"
+            adtcore:type="DOMA/DD"
+            adtcore:description="Charakter 100"
+            adtcore:language="EN">
+  <adtcore:packageRef adtcore:name="SZS"/>
+  <doma:domain xmlns:doma="http://www.sap.com/adt/dictionary/domains">
+    <doma:dataType>CHAR</doma:dataType>
+    <doma:length>000100</doma:length>
+    <doma:decimals>000000</doma:decimals>
+    <doma:outputLength>000100</doma:outputLength>
+    <doma:valueTable/>
+    <doma:conversionRoutine/>
+    <doma:lowerCase>false</doma:lowerCase>
+    <doma:signFlag>false</doma:signFlag>
+  </doma:domain>
+</blue:wbobj>

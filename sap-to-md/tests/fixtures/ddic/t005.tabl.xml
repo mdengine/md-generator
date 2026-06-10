@@ -1,0 +1,35 @@
+<?xml version="1.0" ?>
+<blue:wbobj xmlns:blue="http://www.sap.com/wbobj/dictionary/tabl"
+            xmlns:adtcore="http://www.sap.com/adt/core"
+            adtcore:responsible="SAP"
+            adtcore:masterLanguage="EN"
+            adtcore:name="T005"
+            adtcore:type="TABL/DT"
+            adtcore:description="Country table"
+            adtcore:language="EN">
+  <adtcore:packageRef adtcore:name="SZS"/>
+  <tabl:table xmlns:tabl="http://www.sap.com/adt/dictionary/tables">
+    <tabl:fields>
+      <tabl:field>
+        <tabl:fieldName>MANDT</tabl:fieldName>
+        <tabl:rollName>MANDT</tabl:rollName>
+        <tabl:dataType>CLNT</tabl:dataType>
+        <tabl:length>3</tabl:length>
+        <tabl:keyFlag>X</tabl:keyFlag>
+      </tabl:field>
+      <tabl:field>
+        <tabl:fieldName>LAND1</tabl:fieldName>
+        <tabl:rollName>LAND1</tabl:rollName>
+        <tabl:dataType>CHAR</tabl:dataType>
+        <tabl:length>3</tabl:length>
+        <tabl:keyFlag>X</tabl:keyFlag>
+      </tabl:field>
+      <tabl:field>
+        <tabl:fieldName>LANDX</tabl:fieldName>
+        <tabl:rollName>LANDX</tabl:rollName>
+        <tabl:dataType>CHAR</tabl:dataType>
+        <tabl:length>15</tabl:length>
+      </tabl:field>
+    </tabl:fields>
+  </tabl:table>
+</blue:wbobj>

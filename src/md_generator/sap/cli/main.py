@@ -30,8 +30,10 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--graph", action="store_true", help="Export relationship graphs")
     p.add_argument("--chunk", action="store_true", help="Write semantic chunks")
     p.add_argument("--json-output", action="store_true", help="Include json_output feature")
-    p.add_argument("--workers", type=int, default=None)
+    p.add_argument("--odata-url", action="append", default=[], help="Fetch OData $metadata from URL (repeatable)")
     p.add_argument("--async", dest="async_job", action="store_true", help="Run as background job")
+    p.add_argument("--pipeline-version", type=int, default=None, help="Pipeline version (1=legacy, 2=canonical+graph)")
+    p.add_argument("--workers", type=int, default=None, help="Parallel parser workers")
     return p
 
 
@@ -74,11 +76,15 @@ def _apply_cli_overrides(cfg: SapRunConfig, ns: argparse.Namespace) -> SapRunCon
     if ns.workers is not None:
         perf = replace(perf, workers=ns.workers)
 
+    odata_urls = list(cfg.odata_urls)
+    if getattr(ns, "odata_url", None):
+        odata_urls.extend(ns.odata_url)
+
     include = cfg.include
     if ns.json_output:
         include = frozenset(set(include) | {"json_output"})
 
-    cfg = replace(cfg, parser=parser, analyzer=analyzer, chunking=chunking, graph=graph, performance=perf, **kw)
+    cfg = replace(cfg, parser=parser, analyzer=analyzer, chunking=chunking, graph=graph, performance=perf, odata_urls=odata_urls, **kw)
     if ns.json_output:
         cfg = replace(cfg, include=include)
     return cfg
@@ -102,12 +108,16 @@ def main(argv: list[str] | None = None) -> int:
         overrides.setdefault("graph", {})["enabled"] = True
     if ns.workers is not None:
         overrides.setdefault("performance", {})["workers"] = ns.workers
+    if ns.odata_url:
+        overrides.setdefault("input", {})["odata_urls"] = ns.odata_url
+    if ns.pipeline_version is not None:
+        overrides.setdefault("pipeline", {})["version"] = ns.pipeline_version
 
     cfg = load_run_config(ns.config, overrides if overrides else None)
     cfg = _apply_cli_overrides(cfg, ns).normalized()
 
-    if not cfg.input_paths:
-        print("error: provide at least one input path", file=sys.stderr)
+    if not cfg.input_paths and not cfg.odata_urls:
+        print("error: provide at least one input path or --odata-url", file=sys.stderr)
         return 2
 
     if ns.async_job:

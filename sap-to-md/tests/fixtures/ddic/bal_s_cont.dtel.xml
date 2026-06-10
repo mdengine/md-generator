@@ -1,0 +1,17 @@
+<?xml version="1.0" ?>
+<blue:wbobj xmlns:blue="http://www.sap.com/wbobj/dictionary/dtel"
+            xmlns:adtcore="http://www.sap.com/adt/core"
+            adtcore:responsible="SAP"
+            adtcore:name="BAL_S_CONT_DE"
+            adtcore:type="DTEL/DE"
+            adtcore:description="DE referencing structure"
+            adtcore:language="EN">
+  <adtcore:packageRef adtcore:name="SZS"/>
+  <dtel:dataElement xmlns:dtel="http://www.sap.com/adt/dictionary/dataelements">
+    <dtel:typeKind>structure</dtel:typeKind>
+    <dtel:typeName>BAL_S_CONT</dtel:typeName>
+    <dtel:dataType>STRU</dtel:dataType>
+    <dtel:dataTypeLength>000000</dtel:dataTypeLength>
+    <dtel:changeDocument>false</dtel:changeDocument>
+  </dtel:dataElement>
+</blue:wbobj>

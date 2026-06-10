@@ -75,8 +75,44 @@ def _starts_new_statement(line: str) -> bool:
     upper = line.upper()
     keys = (
         "SELECT ", "UPDATE ", "INSERT ", "DELETE ", "MODIFY ",
+        "EXEC SQL", "ENDEXEC",
         "LOOP ", "READ TABLE", "AUTHORITY-CHECK", "CALL FUNCTION",
         "CALL METHOD", "PERFORM ", "INCLUDE ", "TYPES ", "DATA ",
         "CHECK ", "IF ", "MESSAGE ",
     )
     return any(upper.startswith(k) for k in keys)
+
+
+def extract_exec_sql_blocks(source: str) -> list[tuple[int, str]]:
+    """Extract EXEC SQL ... ENDEXEC blocks as (start_line, inner_sql).
+
+    Uses comment stripping only (preserves quoted schema/object names).
+    """
+    lines = source.splitlines()
+    blocks: list[tuple[int, str]] = []
+    in_block = False
+    start_line = 0
+    buf: list[str] = []
+    for i, raw in enumerate(lines, start=1):
+        if _COMMENT_LINE.match(raw):
+            continue
+        stripped = raw.strip()
+        if not stripped:
+            continue
+        upper = stripped.upper()
+        if upper.startswith("EXEC SQL"):
+            in_block = True
+            start_line = i
+            buf = [stripped]
+            if "ENDEXEC" in upper:
+                blocks.append((start_line, " ".join(buf)))
+                in_block = False
+                buf = []
+            continue
+        if in_block:
+            buf.append(stripped)
+            if "ENDEXEC" in upper:
+                blocks.append((start_line, " ".join(buf)))
+                in_block = False
+                buf = []
+    return blocks

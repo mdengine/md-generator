@@ -1,0 +1,25 @@
+{
+  "@odata.context": "https://example.com/$metadata",
+  "$Version": "4.0",
+  "$EntityType": [
+    {
+      "@Namespace": "com.example",
+      "Name": "Product",
+      "Property": [{"Name": "ID", "Type": "Edm.String"}]
+    }
+  ],
+  "$EntityContainer": [
+    {
+      "Name": "Container",
+      "EntitySet": [
+        {
+          "Name": "Products",
+          "EntityType": "com.example.Product",
+          "Annotations": [
+            {"term": "Org.OData.Capabilities.V1.InsertRestrictions", "Insertable": true}
+          ]
+        }
+      ]
+    }
+  ]
+}

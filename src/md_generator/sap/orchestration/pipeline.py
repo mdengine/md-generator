@@ -16,6 +16,8 @@ from md_generator.sap.core.cache import ParseCache
 from md_generator.sap.core.export_manifest import ExportManifestBuilder
 from md_generator.sap.core.run_context import RunContext
 from md_generator.sap.graph.builder import build_sap_graph
+from md_generator.sap.parser.abap.view_resolver import enrich_abap_objects_in_run
+from md_generator.sap.parser.ddic.ddic_resolver import enrich_ddic_objects_in_run
 from md_generator.sap.graph.exporters.json_export import export_graph_json
 from md_generator.sap.graph.exporters.mermaid_export import export_er_mermaid
 from md_generator.sap.markdown.builders.writer import render_all
@@ -23,6 +25,9 @@ from md_generator.sap.markdown.chunking.writer import write_semantic_chunks
 from md_generator.sap.models.entities.sap_object import SapObject
 from md_generator.sap.parser.base import ParseContext
 from md_generator.sap.parser.discovery import discover_files
+from md_generator.odata.fetch import fetch_metadata, infer_service_root
+from md_generator.odata.parser.registry import parse_document
+from md_generator.sap.parser.odata.parser import _is_odata_metadata
 from md_generator.sap.parser.registry import default_registry
 
 logger = logging.getLogger(__name__)
@@ -61,11 +66,15 @@ def _object_to_dict(obj: SapObject) -> dict:
         "raw_metadata": obj.raw_metadata,
         "semantic_entity": obj.semantic_entity,
         "tags": obj.tags,
+        "category": obj.category.value,
+        "is_catalog_object": obj.is_catalog_object,
     }
 
 
 def _object_from_dict(d: dict) -> SapObject:
     from md_generator.sap.models.entities.kinds import SapObjectKind
+
+    from md_generator.sap.models.metadata.odata import SapObjectCategory
 
     return SapObject(
         kind=SapObjectKind(d["kind"]),
@@ -76,10 +85,24 @@ def _object_from_dict(d: dict) -> SapObject:
         raw_metadata=d.get("raw_metadata", {}),
         semantic_entity=d.get("semantic_entity", ""),
         tags=d.get("tags", []),
+        category=SapObjectCategory(d.get("category", SapObjectCategory.PHYSICAL.value)),
+        is_catalog_object=bool(d.get("is_catalog_object", False)),
     )
 
 
 def run_pipeline(
+    ctx: RunContext,
+    on_progress: Callable[[int, str], None] | None = None,
+) -> None:
+    if ctx.config.pipeline.version >= 2:
+        from md_generator.sap.orchestration.pipeline_v2 import run_pipeline_v2
+
+        run_pipeline_v2(ctx)
+        return
+    run_pipeline_legacy(ctx, on_progress)
+
+
+def run_pipeline_legacy(
     ctx: RunContext,
     on_progress: Callable[[int, str], None] | None = None,
 ) -> None:
@@ -93,7 +116,18 @@ def run_pipeline(
             on_progress(pct, msg)
 
     emit(5, "discover")
-    files = discover_files(ctx.input_paths)
+    fetch_cache = root / ".odata-fetch"
+    extra_files: list[Path] = []
+    url_map: dict[Path, str] = {}
+    for url in cfg.odata_urls:
+        try:
+            p = fetch_metadata(url, fetch_cache, timeout=cfg.odata.fetch_timeout_sec)
+            extra_files.append(p)
+            url_map[p] = url
+        except Exception as e:
+            logger.warning("OData fetch failed for %s: %s", url, e)
+    search_paths = list(cfg.input_paths) + extra_files
+    files = discover_files(search_paths)
     ctx.metrics["files_discovered"] = len(files)
 
     registry = default_registry(cfg.parser)
@@ -118,6 +152,16 @@ def run_pipeline(
 
     ctx.objects = _merge_objects(all_objects)
     ctx.metrics["objects_parsed"] = len(ctx.objects)
+    enrich_abap_objects_in_run(ctx.objects)
+    enrich_ddic_objects_in_run(ctx.objects)
+
+    for path in files:
+        if _is_odata_metadata(path):
+            doc = parse_document(path)
+            if path in url_map:
+                doc.metadata_url = url_map[path]
+                doc.service_root = infer_service_root(url_map[path])
+            ctx.odata_documents.append(doc)
 
     emit(55, "graph")
     graph = None
@@ -140,7 +184,7 @@ def run_pipeline(
             lineage = build_lineage_metadata(ctx.objects, graph)
 
     emit(70, "markdown")
-    render_all(
+    ctx.link_graph = render_all(
         root,
         ctx.objects,
         cfg,
@@ -150,19 +194,24 @@ def run_pipeline(
         lineage=lineage,
         governance=governance,
         manifest=manifest,
+        odata_documents=ctx.odata_documents,
     )
 
     if cfg.chunking.enabled and "chunks" in cfg.effective_features():
+        chunk_types = list(cfg.chunking.types)
+        if ctx.odata_documents and "odata_service" not in chunk_types:
+            chunk_types.extend(["odata_service", "odata_entity_set", "odata_index"])
         cfg_hash = hashlib.sha256(json.dumps({"v": 1}, sort_keys=True).encode()).hexdigest()[:16]
         for p in write_semantic_chunks(
             root,
             ctx.objects,
-            cfg.chunking.types,
+            chunk_types,
             config_hash=cfg_hash,
             relationships=relationships,
             validations=validations,
             auth_checks=auth_checks,
             lineage=lineage,
+            odata_documents=ctx.odata_documents,
         ):
             manifest.add_file(p, root)
         manifest.bump("chunks")

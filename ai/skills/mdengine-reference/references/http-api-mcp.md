@@ -37,8 +37,9 @@ Install **`mdengine[api]`** plus the format extra(s), then run the **`app`** (or
 | Video (Whisper) | `md_generator.media.video.api.main:create_app` (**`--factory`**) or `…main:app` | `video`, `api`, `mcp` |
 | YouTube | `md_generator.media.youtube.api.main:create_app` (**`--factory`**) or `…main:app` | `youtube`, `api`, `mcp` |
 | Log → Markdown | `md_generator.log.api.main:app` | `log`, `api`, `mcp` |
+| OData → Markdown | `md_generator.odata.api.main:app` | `odata`, `api`, `mcp` |
 
-**Port note:** **`md-graph-api`** and **`md-video-api`** both default to **8012**; set **`GRAPH_TO_MD_PORT`** or **`MD_VIDEO_API_PORT`** when both run on one machine. **`md-log-api`** also defaults to **8012** (`LOG_TO_MD_PORT` in `md_generator.log.api.run`); set **`LOG_TO_MD_PORT`** when colocating with graph or video. **`md-sap-api`** defaults to **8020** (`SAP_TO_MD_PORT`). **`md-openapi-api`** defaults to **8015** (`OPENAPI_TO_MD_PORT`) to avoid **`md-youtube-api`** (**8013**) and **`md-playwright-api`** (**8014**).
+**Port note:** **`md-graph-api`** and **`md-video-api`** both default to **8012**; set **`GRAPH_TO_MD_PORT`** or **`MD_VIDEO_API_PORT`** when both run on one machine. **`md-log-api`** also defaults to **8012** (`LOG_TO_MD_PORT` in `md_generator.log.api.run`); set **`LOG_TO_MD_PORT`** when colocating with graph or video. **`md-sap-api`** defaults to **8020** (`SAP_TO_MD_PORT`). **`md-openapi-api`** defaults to **8015** (`OPENAPI_TO_MD_PORT`) to avoid **`md-youtube-api`** (**8013**) and **`md-playwright-api`** (**8014**). **`md-odata-api`** defaults to **8017** (`ODATA_TO_MD_PORT`).
 
 ---
 
@@ -73,6 +74,21 @@ Port **8012** (`GRAPH_TO_MD_PORT`): `POST /graph-to-md/run`, `/graph-to-md/job`,
 Port **8015** (`OPENAPI_TO_MD_PORT`): `POST /openapi-to-md/generate` (OpenAPI upload → ZIP), `/health`, MCP at **`/mcp`**.
 
 **Standalone `md-openapi-mcp` tools:** `api_validate_openapi_yaml`, `api_generate_readme_markdown`, `api_run_sync_zip_base64`.
+
+---
+
+## `md-odata-api` (odata-to-md)
+
+Runner: **`md-odata-api`** → `md_generator.odata.api.run:main` (Uvicorn **`md_generator.odata.api.main:app`**). Env prefix **`ODATA_TO_MD_`**: `ODATA_TO_MD_HOST`, `ODATA_TO_MD_PORT` (default **8017**), `ODATA_TO_MD_MAX_SYNC_ZIP_MB` (default **80**), `ODATA_TO_MD_CORS_ORIGINS`.
+
+Routes:
+
+- `GET /health`
+- `POST /odata-to-md/generate` — multipart **`file`** (`.xml`, `.json`, `.edmx`) + optional **`options_json`** (form field) → synchronous ZIP (`application/zip`)
+
+MCP is mounted at **`/mcp`** on the same app. Standalone: **`md-odata-mcp`** (`md_generator.odata.api.mcp_server:main`).
+
+**Standalone `md-odata-mcp` tools:** `odata_validate_metadata`, `odata_generate_readme_markdown`, `odata_run_sync_zip_base64`.
 
 ---
 
@@ -176,6 +192,7 @@ Swagger: **`/docs`** when running.
 | Database | `md-db-mcp` or `python -m md_generator.db.api.mcp_server` |
 | Graph | `md-graph-mcp` or `python -m md_generator.graph.api.mcp_server` |
 | OpenAPI | `md-openapi-mcp` or `python -m md_generator.openapi.api.mcp_server` |
+| OData | `md-odata-mcp` or `python -m md_generator.odata.api.mcp_server` |
 | Log | `md-log-mcp` or `python -m md_generator.log.api.mcp_server` |
 | SAP | `md-sap-mcp` or `python -m md_generator.sap.api.mcp_server` |
 
@@ -198,6 +215,7 @@ Install **`mdengine[mcp]`** (and usually **`[api]`** for HTTP) so MCP imports re
 | Database | `DB_TO_MD_` | default **8010** |
 | Graph | `GRAPH_TO_MD_` | default **8012** |
 | OpenAPI | `OPENAPI_TO_MD_` | default **8015** |
+| OData → Markdown | `ODATA_TO_MD_` | `ODATA_TO_MD_PORT` (default **8017**), `ODATA_TO_MD_MAX_SYNC_ZIP_MB`, `ODATA_TO_MD_CORS_ORIGINS`, `ODATA_TO_MD_HOST` |
 | Audio | `MD_AUDIO_` | … port **8011** |
 | Video | `MD_VIDEO_` | … port **8012** |
 | YouTube | `MD_YOUTUBE_` | … port **8013** |

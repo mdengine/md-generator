@@ -33,6 +33,9 @@ Source: **`mdengine`** `pyproject.toml` — every script installed on `PATH` aft
 | `md-openapi` | `md_generator.openapi.cli.main:main` |
 | `md-openapi-api` | `md_generator.openapi.api.run:main` |
 | `md-openapi-mcp` | `md_generator.openapi.api.mcp_server:main` |
+| `md-odata` | `md_generator.odata.cli.main:main` |
+| `md-odata-api` | `md_generator.odata.api.run:main` |
+| `md-odata-mcp` | `md_generator.odata.api.mcp_server:main` |
 | `md-codeflow` | `md_generator.codeflow.cli.main:main` |
 | `codeflow` | `md_generator.codeflow.cli.main:main` |
 | `md-codeflow-api` | `md_generator.codeflow.api.run:main` |
@@ -45,6 +48,8 @@ Source: **`mdengine`** `pyproject.toml` — every script installed on `PATH` aft
 | `md-sap-mcp` | `md_generator.sap.api.mcp_server:main` |
 | `md-otel` | `md_generator.otel.cli.main:main` |
 | `mdengine` | `md_generator.engine_cli:main` |
+
+**`mdengine` subcommands (not separate scripts):** `ai assist`, `ai export`, `skill build`, `db-to-md`, `log-to-md`, `sap-to-md`, `odata-to-md`, `otel-to-md`, `graph-to-md`, `openapi-to-md`, `codeflow-to-md`, `search "query" [--index PATH]`.
 
 **Note:** Format converters also expose **Uvicorn `app`** targets and **`python -m …mcp_server`** runners that are not separate `project.scripts` rows — see [http-api-mcp.md](http-api-mcp.md).
 

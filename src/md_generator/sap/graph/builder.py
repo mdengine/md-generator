@@ -5,9 +5,7 @@ import networkx as nx
 from md_generator.sap.graph import relations as rel
 from md_generator.sap.models.entities.kinds import SapObjectKind
 from md_generator.sap.models.entities.sap_object import SapObject
-from md_generator.sap.models.metadata.abap import AbapAnalysis
-from md_generator.sap.models.metadata.cds import CdsAnalysis
-from md_generator.sap.models.metadata.ddic import DdicTable
+from md_generator.sap.parser.abap.view_resolver import _resolve_object
 
 
 def _node_id(obj: SapObject) -> str:
@@ -45,6 +43,27 @@ def build_sap_graph(objects: list[SapObject]) -> nx.MultiDiGraph:
                         g.add_node(f"FM:{fn}", kind="FUNCTION_MODULE", name=fn)
                 for inc in abap.get("includes", []):
                     g.add_edge(src, f"INC:{inc}", relation=rel.INCLUDES, target=inc)
+                seen_targets: set[str] = set()
+                for vr in abap.get("view_references", []) or []:
+                    if not isinstance(vr, dict):
+                        continue
+                    name = vr.get("name", "")
+                    schema = vr.get("schema", "")
+                    tgt_obj = _resolve_object(by_name, name, schema)
+                    if tgt_obj:
+                        tid = _node_id(tgt_obj)
+                        if tid in seen_targets:
+                            continue
+                        seen_targets.add(tid)
+                        res = vr.get("resolution") or {}
+                        g.add_edge(
+                            src,
+                            tid,
+                            relation=rel.READS_TABLE,
+                            view_kind=vr.get("kind"),
+                            confidence=res.get("confidence", vr.get("confidence")),
+                            resolution_strategy=res.get("resolution_strategy"),
+                        )
 
         if obj.kind == SapObjectKind.CDS_VIEW and "cds" in meta:
             cds = meta["cds"]
@@ -56,6 +75,16 @@ def build_sap_graph(objects: list[SapObject]) -> nx.MultiDiGraph:
                     if tgt:
                         g.add_edge(src, _node_id(tgt), relation=edge_rel, name=a.get("name"))
 
+        if obj.kind == SapObjectKind.CDS_STRUCTURE and "cds_structure" in meta:
+            st = meta["cds_structure"]
+            if isinstance(st, dict):
+                for comp in st.get("components", []):
+                    ctype = (comp.get("type_name") or "").upper()
+                    tgt = by_name.get(ctype)
+                    if tgt:
+                        edge_rel = rel.COMPOSITION if comp.get("type_kind") == "structure" else rel.ASSOCIATION
+                        g.add_edge(src, _node_id(tgt), relation=edge_rel, component=comp.get("name"))
+
         if obj.kind == SapObjectKind.TABLE and "ddic" in meta:
             ddic = meta["ddic"]
             if isinstance(ddic, dict):
@@ -66,6 +95,61 @@ def build_sap_graph(objects: list[SapObject]) -> nx.MultiDiGraph:
                         if tgt:
                             g.add_edge(src, _node_id(tgt), relation=rel.FK, field=f.get("name"))
 
+        if obj.kind == SapObjectKind.DATA_ELEMENT and "data_element" in meta:
+            de = meta["data_element"]
+            if isinstance(de, dict):
+                type_kind = de.get("type_kind", "")
+                type_name = (de.get("type_name") or "").upper()
+                resolved = de.get("resolved_type") or {}
+                tgt = by_name.get(type_name)
+                if tgt and type_kind:
+                    g.add_edge(src, _node_id(tgt), relation=rel.FK, reference=type_kind)
+
+        if obj.kind == SapObjectKind.STRUCTURE and "structure" in meta:
+            st = meta["structure"]
+            if isinstance(st, dict):
+                for comp in st.get("components", []):
+                    de = (comp.get("data_element") or "").upper()
+                    tgt = by_name.get(de)
+                    if tgt:
+                        g.add_edge(src, _node_id(tgt), relation=rel.ASSOCIATION, component=comp.get("name"))
+
+        if obj.kind == SapObjectKind.TABLE_TYPE and "table_type" in meta:
+            tt = meta["table_type"]
+            if isinstance(tt, dict):
+                for key in ("row_type", "line_type"):
+                    tname = (tt.get(key) or "").upper()
+                    tgt = by_name.get(tname)
+                    if tgt:
+                        g.add_edge(src, _node_id(tgt), relation=rel.ASSOCIATION, ref=key)
+
+        if obj.kind == SapObjectKind.RANGE_TYPE and "range_type" in meta:
+            rt = meta["range_type"]
+            if isinstance(rt, dict):
+                for key in ("data_element", "domain"):
+                    tname = (rt.get(key) or "").upper()
+                    tgt = by_name.get(tname)
+                    if tgt:
+                        g.add_edge(src, _node_id(tgt), relation=rel.FK, ref=key)
+
+        if obj.kind == SapObjectKind.REFERENCE_TYPE and "reference_type" in meta:
+            rt = meta["reference_type"]
+            if isinstance(rt, dict):
+                for key in ("referenced_type", "check_table"):
+                    tname = (rt.get(key) or "").upper()
+                    tgt = by_name.get(tname)
+                    if tgt:
+                        g.add_edge(src, _node_id(tgt), relation=rel.FK, ref=key)
+
+        if obj.kind == SapObjectKind.DOMAIN and "domain" in meta:
+            dom = meta["domain"]
+            if isinstance(dom, dict):
+                vt = (dom.get("value_table") or "").upper()
+                if vt:
+                    tgt = by_name.get(vt)
+                    if tgt:
+                        g.add_edge(src, _node_id(tgt), relation=rel.FK, reference="value_table")
+
         if obj.kind == SapObjectKind.BAPI and "bapi" in meta:
             bapi = meta["bapi"]
             if isinstance(bapi, dict):
@@ -75,6 +159,37 @@ def build_sap_graph(objects: list[SapObject]) -> nx.MultiDiGraph:
                         tgt = by_name.get(pname.replace("_TAB", ""))
                         if tgt:
                             g.add_edge(src, _node_id(tgt), relation=rel.MASTER_TX)
+
+        if obj.kind == SapObjectKind.ODATA_SERVICE:
+            svc = obj.name
+            for other in objects:
+                if other.package.upper() == svc or other.package == obj.package:
+                    if other.kind == SapObjectKind.ODATA_ENTITY_SET:
+                        g.add_edge(src, _node_id(other), relation=rel.ODATA_ENTITY_SET)
+                    elif other.kind == SapObjectKind.ODATA_ACTION:
+                        g.add_edge(src, _node_id(other), relation=rel.ODATA_ACTION)
+
+        if obj.kind == SapObjectKind.ODATA_ENTITY_SET:
+            et_name = (meta.get("entity_type") or "").upper()
+            tgt = by_name.get(et_name)
+            if tgt:
+                g.add_edge(src, _node_id(tgt), relation=rel.ODATA_ENTITY_SET)
+
+        if obj.kind == SapObjectKind.ODATA_ENTITY and "odata" in meta:
+            odata = meta["odata"]
+            if isinstance(odata, dict):
+                for nav in odata.get("navigation", []):
+                    target = (nav.get("target") or "").upper()
+                    mult = nav.get("multiplicity", "n")
+                    tgt = by_name.get(target)
+                    if tgt:
+                        g.add_edge(
+                            src,
+                            _node_id(tgt),
+                            relation=rel.NAV_PROP,
+                            name=nav.get("name"),
+                            multiplicity=mult,
+                        )
 
     return g
 

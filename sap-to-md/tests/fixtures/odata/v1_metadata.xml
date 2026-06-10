@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<edmx:Edmx Version="1.0" xmlns:edmx="http://schemas.microsoft.com/ado/2007/06/edmx">
+  <edmx:DataServices xmlns:m="http://schemas.microsoft.com/ado/2007/08/dataservices/metadata" m:DataServiceVersion="1.0">
+    <Schema Namespace="Legacy" xmlns="http://schemas.microsoft.com/ado/2008/09/edm">
+      <EntityType Name="Account">
+        <Key><PropertyRef Name="ID"/></Key>
+        <Property Name="ID" Type="Edm.String"/>
+      </EntityType>
+      <EntityType Name="Ledger">
+        <Property Name="Amount" Type="Edm.Decimal"/>
+      </EntityType>
+      <Association Name="Account_Ledger">
+        <End Type="Legacy.Account" Role="Account" Multiplicity="1"/>
+        <End Type="Legacy.Ledger" Role="Ledger" Multiplicity="*"/>
+      </Association>
+    </Schema>
+  </edmx:DataServices>
+</edmx:Edmx>

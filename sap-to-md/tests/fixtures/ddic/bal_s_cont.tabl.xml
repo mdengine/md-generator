@@ -1,0 +1,32 @@
+<?xml version="1.0" ?>
+<blue:wbobj xmlns:blue="http://www.sap.com/wbobj/dictionary/tabl"
+            xmlns:adtcore="http://www.sap.com/adt/core"
+            adtcore:responsible="SAP"
+            adtcore:masterLanguage="EN"
+            adtcore:masterSystem="SAP"
+            adtcore:name="BAL_S_CONT"
+            adtcore:type="TABL/DS"
+            adtcore:changedAt="2019-11-29T11:15:39Z"
+            adtcore:version="active"
+            adtcore:description="Application Log: Context"
+            adtcore:language="EN">
+  <adtcore:packageRef adtcore:uri="/sap/bc/adt/vit/wb/object_type/devck/object_name/SZS"
+                      adtcore:type="DEVC/K"
+                      adtcore:name="SZS"/>
+  <tabl:structure xmlns:tabl="http://www.sap.com/adt/dictionary/structures">
+    <tabl:components>
+      <tabl:component>
+        <tabl:fieldName>MSG</tabl:fieldName>
+        <tabl:rollName>SYCHAR100</tabl:rollName>
+        <tabl:dataType>CHAR</tabl:dataType>
+        <tabl:length>100</tabl:length>
+      </tabl:component>
+      <tabl:component>
+        <tabl:fieldName>CONTEXT</tabl:fieldName>
+        <tabl:rollName>CHAR100</tabl:rollName>
+        <tabl:dataType>CHAR</tabl:dataType>
+        <tabl:length>100</tabl:length>
+      </tabl:component>
+    </tabl:components>
+  </tabl:structure>
+</blue:wbobj>

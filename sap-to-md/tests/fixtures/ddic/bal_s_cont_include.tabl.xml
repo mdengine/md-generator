@@ -1,0 +1,22 @@
+<?xml version="1.0" ?>
+<blue:wbobj xmlns:blue="http://www.sap.com/wbobj/dictionary/tabl"
+            xmlns:adtcore="http://www.sap.com/adt/core"
+            adtcore:name="BAL_S_HDR"
+            adtcore:type="TABL/DS"
+            adtcore:description="Header with include">
+  <tabl:structure xmlns:tabl="http://www.sap.com/adt/dictionary/structures">
+    <tabl:components>
+      <tabl:component>
+        <tabl:fieldName>HEADER_ID</tabl:fieldName>
+        <tabl:rollName>CHAR10</tabl:rollName>
+        <tabl:dataType>CHAR</tabl:dataType>
+        <tabl:length>10</tabl:length>
+      </tabl:component>
+      <tabl:component>
+        <tabl:fieldName>CONT</tabl:fieldName>
+        <tabl:includeStructure>BAL_S_CONT</tabl:includeStructure>
+        <tabl:comptype>STRUCTURE</tabl:comptype>
+      </tabl:component>
+    </tabl:components>
+  </tabl:structure>
+</blue:wbobj>

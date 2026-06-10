@@ -13,7 +13,7 @@ def test_extract_to_markdown_mini_repo(tmp_path: Path):
     cfg = SapRunConfig(
         input_paths=[FIXTURES],
         output_path=out,
-        include=frozenset({"entities", "graphs", "json_output", "governance", "chunks"}),
+        include=frozenset({"entities", "graphs", "json_output", "governance", "chunks", "odata_catalog"}),
     )
     cfg = cfg.normalized()
     from dataclasses import replace
@@ -28,5 +28,13 @@ def test_extract_to_markdown_mini_repo(tmp_path: Path):
     assert (out / "README.md").is_file()
     assert (out / "export_manifest.json").is_file()
     assert (out / "entities").is_dir()
+    assert (out / "odata" / "index.md").is_file()
     assert (out / "graph-full.json").is_file()
     assert (out / "chunks" / "index.json").is_file()
+    entity_md = "\n".join(p.read_text(encoding="utf-8") for p in (out / "entities").glob("*.md"))
+    assert (
+        "## Structure" in entity_md
+        or "## DDIC Data Element" in entity_md
+        or "## DDIC Domain" in entity_md
+        or "## DDIC Table Fields" in entity_md
+    )

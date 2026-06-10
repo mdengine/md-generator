@@ -1,7 +1,7 @@
 ---
 name: mdengine-ai-archive
 description: "Documents pip-installed mdengine features for ZIP archive → Markdown: extras, CLIs, and public imports under md_generator.archive. Use when the user mentions `md-zip` or needs this capability after installing mdengine from PyPI. Package summary: zip-to-md: ZIP archive to Markdown + assets."
-version: 0.11.1
+version: 0.13.0
 ---
 # mdengine — ZIP archive → Markdown
 

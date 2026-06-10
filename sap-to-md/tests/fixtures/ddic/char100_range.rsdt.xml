@@ -1,0 +1,16 @@
+<?xml version="1.0" ?>
+<blue:wbobj xmlns:blue="http://www.sap.com/wbobj/dictionary/rsdt"
+            xmlns:adtcore="http://www.sap.com/adt/core"
+            adtcore:responsible="SAP"
+            adtcore:name="CHAR100_RANGE"
+            adtcore:type="RSDT/RS"
+            adtcore:description="Char100 Range Type"
+            adtcore:language="EN">
+  <adtcore:packageRef adtcore:name="SZS"/>
+  <rsdt:rangesType xmlns:rsdt="http://www.sap.com/adt/dictionary/rangetypes">
+    <rsdt:dataElement>CHAR100</rsdt:dataElement>
+    <rsdt:domain>CHAR100</rsdt:domain>
+    <rsdt:length>100</rsdt:length>
+    <rsdt:decimals>0</rsdt:decimals>
+  </rsdt:rangesType>
+</blue:wbobj>

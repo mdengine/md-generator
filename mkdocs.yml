@@ -621,6 +621,111 @@ nav:
               - Developer Guide: modules/log/developer-guide.md
               - Best Practices: modules/log/best-practices.md
               - Database: modules/log/database.md
+      - SAP Intelligence:
+          - Overview:
+              - Overview: modules/sap/overview.md
+              - Responsibilities: modules/sap/responsibilities.md
+          - Setup:
+              - Installation: modules/sap/installation.md
+              - Configuration: modules/sap/configuration.md
+              - Compatibility: modules/sap/compatibility.md
+          - Usage:
+              - Workflows: modules/sap/workflows.md
+              - Usecases: modules/sap/usecases.md
+              - Examples: modules/sap/examples.md
+              - Cli Reference: modules/sap/cli-reference.md
+          - Technical:
+              - Architecture: modules/sap/architecture.md
+              - Lifecycle: modules/sap/lifecycle.md
+              - Sequence Diagrams: modules/sap/sequence-diagrams.md
+              - Lld: modules/sap/lld.md
+              - Extension Points: modules/sap/extension-points.md
+          - Reference:
+              - Parameters: modules/sap/parameters.md
+              - Api: modules/sap/api.md
+              - Integration: modules/sap/integration.md
+          - Operations:
+              - Performance: modules/sap/performance.md
+              - Security: modules/sap/security.md
+              - Troubleshooting: modules/sap/troubleshooting.md
+              - Deployment: modules/sap/deployment.md
+              - Logging: modules/sap/logging.md
+              - Exceptions: modules/sap/exceptions.md
+              - Testing: modules/sap/testing.md
+          - Development:
+              - Developer Guide: modules/sap/developer-guide.md
+              - Best Practices: modules/sap/best-practices.md
+              - Database: modules/sap/database.md
+      - OData Metadata:
+          - Overview:
+              - Overview: modules/odata/overview.md
+              - Responsibilities: modules/odata/responsibilities.md
+          - Setup:
+              - Installation: modules/odata/installation.md
+              - Configuration: modules/odata/configuration.md
+              - Compatibility: modules/odata/compatibility.md
+          - Usage:
+              - Workflows: modules/odata/workflows.md
+              - Usecases: modules/odata/usecases.md
+              - Examples: modules/odata/examples.md
+              - Cli Reference: modules/odata/cli-reference.md
+          - Technical:
+              - Architecture: modules/odata/architecture.md
+              - Lifecycle: modules/odata/lifecycle.md
+              - Sequence Diagrams: modules/odata/sequence-diagrams.md
+              - Lld: modules/odata/lld.md
+              - Extension Points: modules/odata/extension-points.md
+          - Reference:
+              - Parameters: modules/odata/parameters.md
+              - Api: modules/odata/api.md
+              - Integration: modules/odata/integration.md
+          - Operations:
+              - Performance: modules/odata/performance.md
+              - Security: modules/odata/security.md
+              - Troubleshooting: modules/odata/troubleshooting.md
+              - Deployment: modules/odata/deployment.md
+              - Logging: modules/odata/logging.md
+              - Exceptions: modules/odata/exceptions.md
+              - Testing: modules/odata/testing.md
+          - Development:
+              - Developer Guide: modules/odata/developer-guide.md
+              - Best Practices: modules/odata/best-practices.md
+              - Database: modules/odata/database.md
+      - OpenTelemetry Traces:
+          - Overview:
+              - Overview: modules/otel/overview.md
+              - Responsibilities: modules/otel/responsibilities.md
+          - Setup:
+              - Installation: modules/otel/installation.md
+              - Configuration: modules/otel/configuration.md
+              - Compatibility: modules/otel/compatibility.md
+          - Usage:
+              - Workflows: modules/otel/workflows.md
+              - Usecases: modules/otel/usecases.md
+              - Examples: modules/otel/examples.md
+              - Cli Reference: modules/otel/cli-reference.md
+          - Technical:
+              - Architecture: modules/otel/architecture.md
+              - Lifecycle: modules/otel/lifecycle.md
+              - Sequence Diagrams: modules/otel/sequence-diagrams.md
+              - Lld: modules/otel/lld.md
+              - Extension Points: modules/otel/extension-points.md
+          - Reference:
+              - Parameters: modules/otel/parameters.md
+              - Api: modules/otel/api.md
+              - Integration: modules/otel/integration.md
+          - Operations:
+              - Performance: modules/otel/performance.md
+              - Security: modules/otel/security.md
+              - Troubleshooting: modules/otel/troubleshooting.md
+              - Deployment: modules/otel/deployment.md
+              - Logging: modules/otel/logging.md
+              - Exceptions: modules/otel/exceptions.md
+              - Testing: modules/otel/testing.md
+          - Development:
+              - Developer Guide: modules/otel/developer-guide.md
+              - Best Practices: modules/otel/best-practices.md
+              - Database: modules/otel/database.md
       - AI Assistant Tools:
           - Overview:
               - Overview: modules/tools-assistant/overview.md
@@ -768,6 +873,9 @@ nav:
           - openapi: reference/api/openapi.md
           - codeflow: reference/api/codeflow.md
           - log: reference/api/log.md
+          - sap: reference/api/sap.md
+          - odata: reference/api/odata.md
+          - otel: reference/api/otel.md
           - tools-assistant: reference/api/tools-assistant.md
           - tools-skill-builder: reference/api/tools-skill-builder.md
 

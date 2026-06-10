@@ -1,13 +1,13 @@
 # mdengine
 
-Single Python distribution for converting **PDF**, **Word (.docx)**, **PowerPoint (.pptx)**, **Excel (.xlsx/.xlsm)**, **images** (OCR), **plain text / JSON / XML**, **ZIP archives**, **audio / video** (Whisper transcription → Markdown), **database metadata** (SQL + Mongo), **graphs** (Neo4j / NetworkX → Markdown), **OpenAPI** specs, **Playwright**-captured web pages (including SPAs), **application logs** (plain, JSON, CSV, ZIP bundles → Markdown with optional clustering and semantic grouping), **OpenTelemetry** traces (**OTLP** JSON or protobuf → Markdown trace summaries; optional correlation with log exports via `otel_path`), **SAP artifacts** (ABAP, CDS, DDIC, OData, BAPI, IDoc, transport → AI-ready Markdown knowledge packs), and **source code** (codeflow → architecture Markdown) into **Markdown** (and related assets). Install only the extras you need; everything imports under the **`md_generator`** package.
+Single Python distribution for converting **PDF**, **Word (.docx)**, **PowerPoint (.pptx)**, **Excel (.xlsx/.xlsm)**, **images** (OCR), **plain text / JSON / XML**, **ZIP archives**, **audio / video** (Whisper transcription → Markdown), **database metadata** (SQL + Mongo), **graphs** (Neo4j / NetworkX → Markdown), **OpenAPI** specs, **Playwright**-captured web pages (including SPAs), **application logs** (plain, JSON, CSV, ZIP bundles → Markdown with optional clustering and semantic grouping), **OpenTelemetry** traces (**OTLP** JSON or protobuf → Markdown trace summaries; optional correlation with log exports via `otel_path`), **OData CSDL metadata** (V1–V4, XML/JSON → Markdown catalogs via **`md-odata`**), **SAP artifacts** (ABAP, CDS, ADT DDIC XML, HANA views, BW, Datasphere, BAPI, IDoc, transport → AI-ready Markdown; OData catalogs via **`md-sap`**, standalone **`md-odata`**, or shared **`md_generator.odata`**), and **source code** (codeflow → architecture Markdown) into **Markdown** (and related assets). Install only the extras you need; everything imports under the **`md_generator`** package.
 
 - **PyPI name:** `mdengine` (import package: `md_generator`)
 - **Source:** [github.com/vishal7090/md-generator](https://github.com/vishal7090/md-generator)
 - **Python:** 3.10+
 - **License:** [MIT](LICENSE)
 
-**Quick links:** [On a new computer](#on-a-new-computer) · [Command-line execution](#command-line-execution) · [Python library](#python-library) · [Audio and video](#audio-and-video-to-markdown) · [HTTP API](#http-api-fastapi) · [MCP](#mcp-model-context-protocol) · [AI assistant CLI](#ai-assistant-cli) · [Development](#development) · [Published documentation](https://vishal7090.github.io/md-generator/) · [Code of Conduct](CODE_OF_CONDUCT.md)
+**Quick links:** [On a new computer](#on-a-new-computer) · [Command-line execution](#command-line-execution) · [Python library](#python-library) · [SAP metadata](#sap-metadata-md_generatorsap) · [Audio and video](#audio-and-video-to-markdown) · [HTTP API](#http-api-fastapi) · [MCP](#mcp-model-context-protocol) · [AI assistant CLI](#ai-assistant-cli) · [Development](#development) · [Published documentation](https://vishal7090.github.io/md-generator/) · [Code of Conduct](CODE_OF_CONDUCT.md)
 
 ---
 
@@ -80,6 +80,7 @@ pip install "mdengine[all]"
 | `playwright` | **Playwright-rendered SPA → Markdown** (`playwright` + same HTML stack as `url`; run `playwright install chromium` after install) |
 | `db` | **Database metadata → Markdown** (SQLAlchemy, drivers, `mermaid-py` for ERD helpers) |
 | `openapi` | **OpenAPI / Swagger → Markdown** (`prance`, `openapi-spec-validator`, PyYAML) |
+| `odata` | **OData CSDL → Markdown** (V1–V4 metadata catalogs; `httpx`, PyYAML, NetworkX, Pydantic settings) |
 | `codeflow` | **Static codeflow / call graphs → Markdown** (`networkx`, `javalang`; core scanners) |
 | `codeflow-worker` | Optional **Celery + Redis** workers for the codeflow API async path |
 | `codeflow-treesitter` | **Tree-sitter** parsers (JS/TS/TSX, C++, Java, Python, Go, PHP); use `--parser-mode treesitter` — see [codeflow-to-md/docs/parser-backends.md](codeflow-to-md/docs/parser-backends.md) |
@@ -90,7 +91,7 @@ pip install "mdengine[all]"
 | `log-semantic` | Log pipeline **semantic** helpers (SentenceTransformers + scikit-learn; large) |
 | `log-pretty` | Optional **loguru** for pretty console diagnostics during log conversion |
 | `log-otel-proto` | **OTLP protobuf** ingest for **`md-otel`** and log/OTEL tooling (`opentelemetry-proto`, `protobuf`) |
-| `sap` | **SAP artifacts → Markdown** (ABAP, CDS, DDIC, OData, BAPI, IDoc, transport): PyYAML, NetworkX, Pydantic |
+| `sap` | **SAP artifacts → Markdown** (ABAP, CDS, ADT DDIC XML, HANA, BW, Datasphere, OData, BAPI, IDoc, transport, optional external lineage): PyYAML, NetworkX, Pydantic, lxml |
 | `api` | FastAPI, uvicorn, httpx, pydantic-settings |
 | `mcp` | MCP servers (`mcp`, `fastmcp` where used) |
 | `graph` | **Graph → Markdown** (Neo4j Bolt + NetworkX GraphML/GML): `networkx`, `neo4j`, `pyyaml` |
@@ -155,6 +156,9 @@ If the shell reports “command not found”, ensure the Python **Scripts** dire
 | `md-openapi` | `md_generator.openapi.cli.main:main` | `pip install "mdengine[openapi]"` then `md-openapi generate --file openapi.yaml --output ./docs` (or `mdengine openapi-to-md generate …`) |
 | `md-openapi-api` | `md_generator.openapi.api.run:main` | FastAPI on port **8015** (`OPENAPI_TO_MD_PORT`): `POST /openapi-to-md/generate` (OpenAPI upload → ZIP), `/health`, MCP at **`/mcp`** |
 | `md-openapi-mcp` | `md_generator.openapi.api.mcp_server:main` | Standalone MCP: `api_validate_openapi_yaml`, `api_generate_readme_markdown`, `api_run_sync_zip_base64` |
+| `md-odata` | `md_generator.odata.cli.main:main` | `pip install "mdengine[odata]"` then `md-odata generate --folder ./odata --output ./out` (or `mdengine odata-to-md generate …`) |
+| `md-odata-api` | `md_generator.odata.api.run:main` | FastAPI on port **8017** (`ODATA_TO_MD_PORT`): `POST /odata-to-md/generate` (metadata upload → ZIP), `/health`, MCP at **`/mcp`** |
+| `md-odata-mcp` | `md_generator.odata.api.mcp_server:main` | Standalone MCP: `odata_validate_metadata`, `odata_generate_readme_markdown`, `odata_run_sync_zip_base64` |
 | `md-playwright` | `md_generator.playwright.cli:main` | `pip install "mdengine[playwright]"` then `md-playwright https://spa.example/app ./spa-out` (after `playwright install chromium`) |
 | `md-playwright-api` | `md_generator.playwright.api.run:main` | FastAPI + MCP on port **8014** (`PLAYWRIGHT_TO_MD_API_PORT` / settings); see [HTTP API](#http-api-fastapi) |
 | `md-playwright-mcp` | `md_generator.playwright.api.mcp_server:main` | Standalone MCP for Playwright capture tools |
@@ -169,7 +173,7 @@ If the shell reports “command not found”, ensure the Python **Scripts** dire
 | `md-sap` | `md_generator.sap.cli.main:main` | `pip install "mdengine[sap]"` then `md-sap ./sap-source --output ./sap-out --graph --chunk` (or `mdengine sap-to-md …`) |
 | `md-sap-api` | `md_generator.sap.api.run:main` | FastAPI on port **8020** (`SAP_TO_MD_PORT`): `POST /sap-to-md/run`, `POST /sap-to-md/job`, `GET /sap-to-md/job/{id}/download` |
 | `md-sap-mcp` | `md_generator.sap.api.mcp_server:main` | Runs the same FastAPI app as **`md-sap-api`** (MCP mount when enabled in app) |
-| `mdengine` | `md_generator.engine_cli:main` | `mdengine ai assist …`, `mdengine ai export …`, `mdengine skill build …`, `mdengine db-to-md …`, `mdengine log-to-md …`, `mdengine otel-to-md …`, `mdengine sap-to-md …`, `mdengine graph-to-md …`, `mdengine openapi-to-md generate …`, `mdengine codeflow-to-md scan …` |
+| `mdengine` | `md_generator.engine_cli:main` | `mdengine ai assist …`, `mdengine ai export …`, `mdengine skill build …`, `mdengine db-to-md …`, `mdengine log-to-md …`, `mdengine otel-to-md …`, `mdengine sap-to-md …`, `mdengine odata-to-md generate …`, `mdengine graph-to-md …`, `mdengine openapi-to-md generate …`, `mdengine codeflow-to-md scan …` |
 
 **openapi-to-md (`md-openapi`):** OpenAPI **3.x** is parsed directly; **Swagger 2.0** (`swagger: "2.0"`) documents are **converted in-process** to OpenAPI 3.0.3 (deterministic, in-repo converter) before `$ref` resolution. Edge-heavy specs (unusual OAuth2 flows, vendor extensions) may still need fixes after conversion.
 
@@ -193,7 +197,19 @@ If the shell reports “command not found”, ensure the Python **Scripts** dire
 
 **db-to-md API Elasticsearch upload:** **`POST /db-to-md/run/elasticsearch`** — `multipart/form-data` with **`file`** (ZIP of JSON metadata: **`mappings/`**, **`settings/`**, optional **`pipelines/`**, **`templates/`**, **`ilm/`**, etc.) and optional **`config`** JSON (`output`, `features`, `limits`). **`POST /db-to-md/job/elasticsearch`** for async jobs. Cap: **`DB_TO_MD_MAX_ELASTICSEARCH_UPLOAD_MB`** (default **64**).
 
-**sap-to-md (`md-sap`):** parses **ABAP**, **CDS**, **DDIC** exports, **OData** metadata, **BAPI**, **IDoc**, and transport artifacts into chunked Markdown knowledge packs. Optional **`--include-lineage`**, **`--include-governance`**, **`--graph`**, **`--chunk`**. Library: [`md_generator/sap/`](src/md_generator/sap/). Deeper design: [`sap-to-md/README.md`](sap-to-md/README.md).
+**odata-to-md (`md-odata`):** parses **OData CSDL** metadata (**V1–V4**, XML or JSON) from **`--file`**, **`--folder`**, **`--zip`**, or **`--url`** (`$metadata`) into catalog Markdown under **`odata/`** (services, entity sets, types, actions, functions). Optional **`--graph`** (relationship JSON/Mermaid) and **`--chunk`** (semantic chunks for RAG). Works **standalone** with **`md-odata`**; when OData files sit beside ABAP/CDS in a SAP tree, use **`md-sap`** instead — see [odata-to-md/docs/dual-mode.md](odata-to-md/docs/dual-mode.md). Library: [`md_generator/odata/`](src/md_generator/odata/). Module README: [`odata-to-md/README.md`](odata-to-md/README.md); catalog layout: [odata-to-md/docs/output-layout.md](odata-to-md/docs/output-layout.md); SAP-integrated catalog notes: [sap-to-md/docs/odata-catalog.md](sap-to-md/docs/odata-catalog.md).
+
+**sap-to-md (`md-sap`):** parses **ABAP**, **CDS** (views, **`define table`**, **`define type`** structures), **DDIC** (ADT dictionary XML, abapGit **`TABL`**, DD02/DD03 CSV), **OData** metadata (via shared **`md_generator.odata`** when **`odata_catalog`** is enabled), **BAPI**, **IDoc**, and transport artifacts into chunked Markdown knowledge packs. Also supports **SAP HANA** (calculation, analytic, attribute, SQL, and HDI views), **SAP BW/4HANA** (ADSO, composite providers, DTP, InfoObjects, transformations), **SAP Datasphere** (`.dsview`, `.dataflow`, analytical model JSON exports), and optional **external lineage** parsers (dbt `manifest.json`, Snowflake DDL, Kafka `.avsc`, Informatica mapping XML) when **`parser.include_external: true`** in YAML.
+
+**DDIC / ADT:** Eclipse ADT exports under `wbobj/dictionary/` (data elements, domains, tables, structures, table types, range types, reference types) are parsed by **`ddic.adt`**. Modern **`TABL/DT`** objects with DDL references accept sidecar DDL source when present. Normalized **`ddic_canonical`** metadata powers v2 generators; legacy entity keys remain for v1 **`entities/`** output. Output layout: **`ddic/data-elements/`**, **`ddic/domains/`**, **`ddic/tables/`**, … and shared **`structures/{name}.md`** for ADT structures and CDS **`define type`**. See [sap-to-md/docs/ddic-adt.md](sap-to-md/docs/ddic-adt.md).
+
+**Pipeline v1 (default):** discover inputs → plugin registry → **`SapObject`** IR → NetworkX knowledge graph → analyzers (relationships, governance, validation, authorization, lineage, semantics) → split Markdown (12-section entity docs per [markdown-generation.md](sap-to-md/docs/markdown-generation.md)), optional chunks, graphs, and manifest.
+
+**Pipeline v2** (`--pipeline-version 2` or `pipeline.version: 2`): runs v1 first, then adds **`json/canonical/`**, **`graph/artifacts.json`**, typed v2 Markdown via **`generators/`** (DDIC, HANA, CDS, BW, Datasphere), optional **`pipeline.semantic_narrative`** (relationship summaries and DDIC resolution chains), **`navigation/index.json`** ([navigation-index.md](sap-to-md/docs/navigation-index.md)), cross-link refresh on v1 entity pages, deterministic rule findings, and HANA/BW/Datasphere sidecars (for example **`hana/calculation-views/`**, **`hana/lineage/`**, **`datasphere/`**). Optional: **`pipeline.openlineage_export`**, **`pipeline.cross_lineage`**, **`pipeline.semantic_chunks_jsonl`**. See [architecture.md](sap-to-md/docs/architecture.md), [canonical-model.md](sap-to-md/docs/canonical-model.md), [graph-model.md](sap-to-md/docs/graph-model.md).
+
+**Feature flags** (YAML `features.include` or **`--include`** comma list): `entities`, `technical`, `functional`, `relationships`, `lineage`, `governance`, `authorization`, `validations`, `graphs`, `chunks`, `json_output`, `odata_catalog`. Convenience CLI flags: **`--include-cds`**, **`--include-ddic`**, **`--include-lineage`**, **`--include-governance`**, **`--graph`**, **`--chunk`**, **`--json-output`**, **`--workers`**, **`--async`**. Fetch live OData: **`--odata-url`** (repeatable) or `input.odata_urls` in YAML. For **OData-only** metadata trees, prefer standalone **`md-odata`** — [odata-to-md/docs/dual-mode.md](odata-to-md/docs/dual-mode.md). SAP-integrated catalog layout: [sap-to-md/docs/odata-catalog.md](sap-to-md/docs/odata-catalog.md).
+
+**Further reading:** [sap-to-md/README.md](sap-to-md/README.md) · [parser-design](sap-to-md/docs/parser-design.md) · [ddic-adt](sap-to-md/docs/ddic-adt.md) · [markdown-generation](sap-to-md/docs/markdown-generation.md) · [navigation-index](sap-to-md/docs/navigation-index.md) · [hana-calculation-views](sap-to-md/docs/hana-calculation-views.md) · [datasphere](sap-to-md/docs/datasphere.md) · [external-plugins](sap-to-md/docs/external-plugins.md) · [chunking-strategy](sap-to-md/docs/chunking-strategy.md) · [governance-design](sap-to-md/docs/governance-design.md) · [relationship-engine](sap-to-md/docs/relationship-engine.md). Library: [`md_generator/sap/`](src/md_generator/sap/).
 
 **otel-to-md (`md-otel`):** reads **OTLP** trace exports (**JSON** or **protobuf** with **`log-otel-proto`**) and writes **`trace.md`** (span list). No separate HTTP API entry point; use **`md-otel`** or correlate traces with log exports via **`input.otel_path`** in log YAML. Library: [`md_generator/otel/`](src/md_generator/otel/).
 
@@ -220,9 +236,13 @@ md-video ./screen.mp4 ./screen.md --model base
 pip install "mdengine[graph]" && md-graph --source neo4j --uri neo4j://localhost:7687 --user neo4j --password secret --database neo4j --output ./graph-out --viz
 pip install "mdengine[playwright]" && playwright install chromium && md-playwright https://example.com/app ./spa-out
 pip install "mdengine[openapi]" && md-openapi generate --file openapi.yaml --output ./openapi-md
+pip install "mdengine[odata]" && md-odata generate --folder ./odata --output ./odata-md
 pip install "mdengine[log]" && md-log --config log.yaml
 pip install "mdengine[log-otel-proto]" && md-otel --input otlp-traces.json --output ./otel-docs
 pip install "mdengine[sap]" && md-sap ./sap-source --output ./sap-out --graph --chunk
+pip install "mdengine[sap]" && md-sap --pipeline-version 2 ./hana-fixtures --output ./sap-v2-out --graph --chunk
+pip install "mdengine[sap]" && md-sap ./sap-to-md/tests/fixtures/ddic --output ./ddic-out --pipeline-version 2
+pip install "mdengine[sap]" && md-sap ./sap-source --odata-url "https://host/sap/opu/odata/sap/API_PRODUCT/$metadata" --output ./sap-out
 md-codeflow scan ./src --output ./cf-out --lang python
 ```
 
@@ -523,6 +543,29 @@ md-otel --input export.pb --output ./otel-docs --protobuf
 
 Shim: [`otel-to-md/converter.py`](otel-to-md/converter.py) delegates to **`md-otel`**.
 
+### OData metadata (odata-to-md)
+
+```python
+from pathlib import Path
+
+from md_generator.odata.core.extractor import extract_to_markdown
+from md_generator.odata.core.run_config import load_odata_run_config
+
+cfg = load_odata_run_config(None, {"input": {"folder": "metadata-exports"}, "output": {"path": "odata-out"}})
+extract_to_markdown(cfg)
+```
+
+Or use the CLI:
+
+```bash
+pip install "mdengine[odata]"
+md-odata generate --file metadata.xml --output ./odata-out
+md-odata generate --url "https://host/service/$metadata" --output ./odata-out --graph --chunk
+mdengine odata-to-md generate --folder ./metadata-exports --output ./out
+```
+
+Shim: [`odata-to-md/converter.py`](odata-to-md/converter.py) delegates to **`md-odata`**. See [`odata-to-md/README.md`](odata-to-md/README.md) for HTTP API, MCP, and dual-mode with **`md-sap`**.
+
 ### SAP artifacts (sap-to-md)
 
 ```python
@@ -535,7 +578,46 @@ cfg = load_run_config(Path("sap-export.yaml"))
 extract_to_markdown(cfg)
 ```
 
-Or pass paths on the CLI: **`md-sap ./abap ./cds --output ./sap-out --include-lineage --include-governance`**. See [`sap-to-md/README.md`](sap-to-md/README.md) for API routes and architecture notes.
+Or pass paths on the CLI:
+
+```bash
+pip install "mdengine[sap]"
+md-sap ./abap ./cds ./ddic-xml --output ./sap-out --include-lineage --include-governance --graph --chunk
+md-sap --pipeline-version 2 ./fixtures/hana --output ./sap-v2-out --workers 4
+md-sap ./sap-to-md/tests/fixtures/ddic --output ./ddic-out --pipeline-version 2
+md-sap ./exports --odata-url "https://host/sap/opu/odata/sap/API_PRODUCT/$metadata" --output ./sap-out
+mdengine sap-to-md ./sap-source --include entities,lineage,odata_catalog --json-output
+```
+
+Example YAML (pipeline v2 + ADT DDIC + Datasphere + semantic narrative):
+
+```yaml
+input:
+  paths: ["./sap-exports", "./wbobj/dictionary", "./datasphere-exports"]
+  odata_urls:
+    - https://example.com/sap/opu/odata/sap/API_PRODUCT/$metadata
+output:
+  path: ./sap-out
+  split_files: true
+  markdown_cross_links: true
+pipeline:
+  version: 2
+  semantic_narrative: true
+  canonical_json: true
+  artifact_graph: true
+  rule_engine: true
+parser:
+  include_hana: true
+  include_bw: true
+  include_datasphere: true
+  include_external: false
+features:
+  include: [entities, lineage, governance, odata_catalog, graphs, chunks]
+performance:
+  workers: 4
+```
+
+For **OData-only** metadata exports, prefer **`md-odata`** (above). Design and output layouts: [`sap-to-md/README.md`](sap-to-md/README.md), [architecture](sap-to-md/docs/architecture.md), [ddic-adt](sap-to-md/docs/ddic-adt.md), [markdown-generation](sap-to-md/docs/markdown-generation.md), [navigation-index](sap-to-md/docs/navigation-index.md), [hana-calculation-views](sap-to-md/docs/hana-calculation-views.md), [datasphere](sap-to-md/docs/datasphere.md).
 
 ### Codeflow (static call graphs)
 
@@ -550,6 +632,34 @@ run_scan(cfg)
 ```
 
 More flags and language notes: [Development](#development) (section **Codeflow**) and [`codeflow-to-md/docs/graph-and-outputs.md`](codeflow-to-md/docs/graph-and-outputs.md).
+
+---
+
+## SAP metadata (`md_generator.sap`)
+
+Library code lives under [`src/md_generator/sap/`](src/md_generator/sap/). The pipeline discovers file-based SAP inputs (ABAP, CDS DDL, ADT DDIC XML, OData EDMX/JSON, BAPI, IDoc, transport, HANA view XML, BW artifacts, Datasphere exports) and optionally fetches live **`$metadata`** URLs.
+
+| Package area | Role |
+|--------------|------|
+| `parser/` | Plugin registry — ABAP, CDS (view / **`define table`** / **`define type`**), DDIC (ADT XML, abapGit TABL, CSV), OData, BAPI, IDoc, transport, HANA, BW, Datasphere, external lineage |
+| `normalizer/` + `canonical/` | **`SapObject` → `CanonicalArtifact`**, typed **`ddic_canonical`** metadata, transformation graphs |
+| `analyzer/` | Relationships, governance, validation, authorization, lineage, semantics |
+| `generators/` + `markdown/` | v1 entity docs (12 sections) and v2 typed Markdown (DDIC, HANA, CDS, BW, Datasphere); optional **semantic narrative** blocks |
+| `graph/` + `orchestration/` | NetworkX v1 graph, v2 **`ArtifactGraph`**, **`pipeline_v2`** orchestration |
+| `chunking/` + `rules/` | Semantic chunks (JSONL) and deterministic rule findings |
+| `core/` + `api/` | **`extract_to_markdown`**, YAML config, CLI, FastAPI jobs |
+
+- **Pipeline v1:** `SapObject` IR → NetworkX graph → split Markdown under **`entities/`**, **`technical/`**, **`functional/`**, plus feature folders; optional chunks and Mermaid/JSON graphs.
+- **Pipeline v2:** v1 output preserved, then canonical JSON, artifact graph export, typed generators, **`navigation/index.json`**, and cross-link refresh on DDIC entity pages. Enable with **`--pipeline-version 2`** or `pipeline.version: 2`; tune with `pipeline.semantic_narrative`, `pipeline.openlineage_export`, `pipeline.cross_lineage`.
+- **OData:** catalog rendering delegates to shared [`md_generator.odata`](src/md_generator/odata/); use **`md-odata`** for standalone CSDL exports ([dual-mode](odata-to-md/docs/dual-mode.md)).
+- **Docs:** [`sap-to-md/docs/`](sap-to-md/docs/) — start with [architecture](sap-to-md/docs/architecture.md), [ddic-adt](sap-to-md/docs/ddic-adt.md), [markdown-generation](sap-to-md/docs/markdown-generation.md), [navigation-index](sap-to-md/docs/navigation-index.md). Tests and fixtures: [`sap-to-md/tests/`](sap-to-md/tests/) (including `fixtures/ddic/`, `fixtures/hana/`, `fixtures/cds/`).
+
+```bash
+pip install "mdengine[sap]"
+md-sap ./sap-source --output ./sap-out --graph --chunk
+md-sap --pipeline-version 2 ./sap-to-md/tests/fixtures/ddic --output ./ddic-out
+md-sap-api   # POST /sap-to-md/run, /sap-to-md/job, GET /sap-to-md/job/{id}/download
+```
 
 ---
 
@@ -667,7 +777,7 @@ Equivalent modules: `python -m md_generator.media.audio.api.mcp_server`, `python
 
 ### Thin shims (repo clone)
 
-[`audio-to-md/converter.py`](audio-to-md/converter.py), [`video-to-md/converter.py`](video-to-md/converter.py), and [`youtube-to-md/converter.py`](youtube-to-md/converter.py) delegate to the same `main` as `md-audio` / `md-video` / `md-youtube`. Tests and `pytest.ini` live under `audio-to-md/tests/`, `video-to-md/tests/`, and `youtube-to-md/tests/`. [`db-to-md/converter.py`](db-to-md/converter.py) delegates to `md-db`; tests live under `db-to-md/tests/`. **graph-to-md** uses `md-graph` / `mdengine graph-to-md` directly (no thin `converter.py` shim); tests live under [`graph-to-md/tests/`](graph-to-md/tests/). [`openapi-to-md/converter.py`](openapi-to-md/converter.py) delegates to `md-openapi`; tests live under [`openapi-to-md/tests/`](openapi-to-md/tests/); example OpenAPI and output notes: [`openapi-to-md/examples/`](openapi-to-md/examples/). [`log-to-md/converter.py`](log-to-md/converter.py) delegates to `md-log`; tests under [`log-to-md/tests/`](log-to-md/tests/) (including OTLP fixtures under `log-to-md/tests/fixtures/otel/`). [`otel-to-md/converter.py`](otel-to-md/converter.py) delegates to `md-otel`. [`sap-to-md/converter.py`](sap-to-md/converter.py) delegates to `md-sap`; tests under [`sap-to-md/tests/`](sap-to-md/tests/); module README: [`sap-to-md/README.md`](sap-to-md/README.md). [`codeflow-to-md/converter.py`](codeflow-to-md/converter.py) invokes the same CLI entrypoint as `md-codeflow` / `codeflow`; tests under [`codeflow-to-md/tests/`](codeflow-to-md/tests/). [`url-to-md/converter.py`](url-to-md/converter.py) matches `md-url`; tests under [`url-to-md/tests/`](url-to-md/tests/). [`playwright-to-md/tests/`](playwright-to-md/tests/) cover the Playwright pipeline (no root `converter.py` shim required).
+[`audio-to-md/converter.py`](audio-to-md/converter.py), [`video-to-md/converter.py`](video-to-md/converter.py), and [`youtube-to-md/converter.py`](youtube-to-md/converter.py) delegate to the same `main` as `md-audio` / `md-video` / `md-youtube`. Tests and `pytest.ini` live under `audio-to-md/tests/`, `video-to-md/tests/`, and `youtube-to-md/tests/`. [`db-to-md/converter.py`](db-to-md/converter.py) delegates to `md-db`; tests live under `db-to-md/tests/`. **graph-to-md** uses `md-graph` / `mdengine graph-to-md` directly (no thin `converter.py` shim); tests live under [`graph-to-md/tests/`](graph-to-md/tests/). [`openapi-to-md/converter.py`](openapi-to-md/converter.py) delegates to `md-openapi`; tests live under [`openapi-to-md/tests/`](openapi-to-md/tests/); example OpenAPI and output notes: [`openapi-to-md/examples/`](openapi-to-md/examples/). [`log-to-md/converter.py`](log-to-md/converter.py) delegates to `md-log`; tests under [`log-to-md/tests/`](log-to-md/tests/) (including OTLP fixtures under `log-to-md/tests/fixtures/otel/`). [`otel-to-md/converter.py`](otel-to-md/converter.py) delegates to `md-otel`. [`odata-to-md/converter.py`](odata-to-md/converter.py) delegates to `md-odata`; tests under [`odata-to-md/tests/`](odata-to-md/tests/); module README: [`odata-to-md/README.md`](odata-to-md/README.md). [`sap-to-md/converter.py`](sap-to-md/converter.py) delegates to `md-sap`; tests under [`sap-to-md/tests/`](sap-to-md/tests/); module README: [`sap-to-md/README.md`](sap-to-md/README.md). [`codeflow-to-md/converter.py`](codeflow-to-md/converter.py) invokes the same CLI entrypoint as `md-codeflow` / `codeflow`; tests under [`codeflow-to-md/tests/`](codeflow-to-md/tests/). [`url-to-md/converter.py`](url-to-md/converter.py) matches `md-url`; tests under [`url-to-md/tests/`](url-to-md/tests/). [`playwright-to-md/tests/`](playwright-to-md/tests/) cover the Playwright pipeline (no root `converter.py` shim required).
 
 ---
 
@@ -700,6 +810,7 @@ Install `mdengine[api]` plus the format extra(s), then run the **`app`** object 
 | Database metadata | `md_generator.db.api.main:app` | `db`, `api`, `mcp` |
 | Graph metadata (Neo4j / NetworkX) | `md_generator.graph.api.main:app` | `graph`, `api`, `mcp` |
 | OpenAPI → Markdown | `md_generator.openapi.api.main:app` | `openapi`, `api`, `mcp` |
+| OData CSDL metadata | `md_generator.odata.api.main:app` | `odata`, `api`, `mcp` |
 | Audio (Whisper) | `md_generator.media.audio.api.main:create_app` (use **`--factory`**) or `…main:app` | `audio`, `api`, `mcp` |
 | Video (Whisper) | `md_generator.media.video.api.main:create_app` (use **`--factory`**) or `…main:app` | `video`, `api`, `mcp` |
 | YouTube | `md_generator.media.youtube.api.main:create_app` (use **`--factory`**) or `…main:app` | `youtube`, `api`, `mcp` |
@@ -714,6 +825,7 @@ uvicorn md_generator.pdf.api.main:app --host 127.0.0.1 --port 8001
 uvicorn md_generator.word.api.main:app --host 127.0.0.1 --port 8002
 uvicorn md_generator.archive.api.main:app --host 127.0.0.1 --port 8008
 uvicorn md_generator.url.api.main:app --host 127.0.0.1 --port 8017
+uvicorn md_generator.odata.api.main:app --host 127.0.0.1 --port 8019
 uvicorn md_generator.db.api.main:app --host 127.0.0.1 --port 8010
 uvicorn md_generator.playwright.api.main:app --host 127.0.0.1 --port 8014
 uvicorn md_generator.graph.api.main:app --host 127.0.0.1 --port 8020
@@ -726,7 +838,7 @@ uvicorn md_generator.media.video.api.main:create_app --factory --host 127.0.0.1 
 uvicorn md_generator.media.youtube.api.main:create_app --factory --host 127.0.0.1 --port 8013
 ```
 
-**Port note:** **`md-graph-api`**, **`md-video-api`**, and **`md-log-api`** all default to **8012** in their respective `run.py` modules. Run only one on that port, or set **`GRAPH_TO_MD_PORT`**, **`MD_VIDEO_API_PORT`**, and **`LOG_TO_MD_PORT`** so each process listens on a unique port. **`md-db-api`** defaults to **8010**. **`md-sap-api`** defaults to **8020** (`SAP_TO_MD_PORT`) — the graph Uvicorn example above uses **8020** on purpose as an illustration; use **8021** (or another port) when running **both** graph and SAP APIs locally. **`md-openapi-api`** defaults to **8015** (`OPENAPI_TO_MD_PORT`). **`md-youtube-api`** defaults to **8013**; **`md-playwright-api`** / **`PLAYWRIGHT_TO_MD_API_PORT`** default to **8014**. **`md-codeflow-api`** defaults to **8016** (`CODEFLOW_TO_MD_PORT`). **`md-otel`** has **no** bundled HTTP server (CLI only).
+**Port note:** **`md-graph-api`**, **`md-video-api`**, and **`md-log-api`** all default to **8012** in their respective `run.py` modules. Run only one on that port, or set **`GRAPH_TO_MD_PORT`**, **`MD_VIDEO_API_PORT`**, and **`LOG_TO_MD_PORT`** so each process listens on a unique port. **`md-db-api`** defaults to **8010**. **`md-odata-api`** defaults to **8017** (`ODATA_TO_MD_PORT`) — the URL Uvicorn example above also uses **8017** as an illustration; run only one service on that port or assign **`ODATA_TO_MD_PORT`** / a custom **`--port`** for the other. **`md-sap-api`** defaults to **8020** (`SAP_TO_MD_PORT`). **`md-openapi-api`** defaults to **8015** (`OPENAPI_TO_MD_PORT`). **`md-youtube-api`** defaults to **8013**; **`md-playwright-api`** / **`PLAYWRIGHT_TO_MD_API_PORT`** default to **8014**. **`md-codeflow-api`** defaults to **8016** (`CODEFLOW_TO_MD_PORT`). **`md-otel`** has **no** bundled HTTP server (CLI only).
 
 ### MCP over HTTP on the same server
 
@@ -749,6 +861,7 @@ Prefixes differ per service (often read from a `.env` file next to the process):
 | Database metadata | `DB_TO_MD_` | `DB_TO_MD_JOB_SQLITE_PATH`, `DB_TO_MD_JOB_WORKSPACE_ROOT`, `DB_TO_MD_CORS_ORIGINS`, `DB_TO_MD_MAX_SYNC_ZIP_MB`, `DB_TO_MD_HOST`, `DB_TO_MD_PORT` (default **8010**) |
 | Graph metadata | `GRAPH_TO_MD_` | `GRAPH_TO_MD_JOB_SQLITE_PATH`, `GRAPH_TO_MD_JOB_WORKSPACE_ROOT`, `GRAPH_TO_MD_CORS_ORIGINS`, `GRAPH_TO_MD_MAX_SYNC_ZIP_MB`, `GRAPH_TO_MD_HOST`, `GRAPH_TO_MD_PORT` (default **8012**) |
 | OpenAPI → Markdown | `OPENAPI_TO_MD_` | `OPENAPI_TO_MD_CORS_ORIGINS`, `OPENAPI_TO_MD_MAX_SYNC_ZIP_MB`, `OPENAPI_TO_MD_HOST`, `OPENAPI_TO_MD_PORT` (default **8015**) |
+| OData CSDL metadata | `ODATA_TO_MD_` | `ODATA_TO_MD_HOST`, `ODATA_TO_MD_PORT` (default **8017**), `ODATA_TO_MD_CORS_ORIGINS`, `ODATA_TO_MD_MAX_SYNC_ZIP_MB` |
 | Codeflow API | `CODEFLOW_TO_MD_` / `CODEFLOW_` | `CODEFLOW_TO_MD_HOST`, `CODEFLOW_TO_MD_PORT` (default **8016**); in-app limits: `CODEFLOW_MAX_UPLOAD_ZIP_MB`, `CODEFLOW_MAX_SYNC_ZIP_MB`, `CODEFLOW_JOB_WORKSPACE_ROOT`, `CODEFLOW_SQLITE_PATH`, CORS via `CODEFLOW_CORS` |
 | Log API | `LOG_TO_MD_` | `LOG_TO_MD_HOST`, `LOG_TO_MD_PORT` (default **8012** — change if **graph** or **video** API uses that port), `LOG_TO_MD_CORS_ORIGINS`, `LOG_TO_MD_MAX_SYNC_ZIP_MB`, `LOG_TO_MD_MAX_LOG_UPLOAD_MB`, workspace / SQLite paths |
 | SAP API | `SAP_TO_MD_` | `SAP_TO_MD_HOST`, `SAP_TO_MD_PORT` (default **8020**), `SAP_TO_MD_CORS_ORIGINS`, `SAP_TO_MD_MAX_SYNC_ZIP_MB`, `SAP_TO_MD_JOB_SQLITE_PATH`, `SAP_TO_MD_JOB_WORKSPACE_ROOT` |
@@ -785,6 +898,7 @@ Two usage patterns:
 | Database metadata | `md-db-mcp` or `python -m md_generator.db.api.mcp_server` — `--transport stdio` (default), `sse`, `streamable-http` |
 | Graph (Neo4j / NetworkX) | `md-graph-mcp` or `python -m md_generator.graph.api.mcp_server` — `--transport stdio` (default), `sse`, `streamable-http` |
 | OpenAPI → Markdown | `md-openapi-mcp` or `python -m md_generator.openapi.api.mcp_server` — `--transport stdio` (default), `sse`, `streamable-http` |
+| OData CSDL metadata | `md-odata-mcp` or `python -m md_generator.odata.api.mcp_server` — `--transport stdio` (default), `sse`, `streamable-http` |
 | Codeflow | `md-codeflow-mcp` or `python -m md_generator.codeflow.api.mcp_server` — **stdio** MCP (see module for details) |
 | Log files | `md-log-mcp` or `python -m md_generator.log.api.mcp_server` — `--transport stdio` (default), `sse`, `streamable-http` |
 | SAP | `md-sap-mcp` or `md-sap-api` — FastAPI app (same as HTTP API; dedicated MCP tools when mounted in app) |
@@ -916,7 +1030,7 @@ pip install -e ".[dev,all]"   # or a smaller subset of extras
 python -m pytest
 ```
 
-Tests live under each legacy folder’s `tests/` directory (e.g. `pdf-to-md/tests/`), plus **`url-to-md/tests/`**, **`playwright-to-md/tests/`**, **`youtube-to-md/tests/`**, **`graph-to-md/tests/`**, **`openapi-to-md/tests/`**, **`codeflow-to-md/tests/`**, **`log-to-md/tests/`**, **`sap-to-md/tests/`**, and **[`tool-assistant/tests/`](tool-assistant/tests/)** for the skill SDK; `pyproject.toml` sets `pythonpath = ["src"]` so **`md_generator`** (including **`md_generator.tools.assistant`**) resolves without a manual `PYTHONPATH` when you use `pytest` from the config.
+Tests live under each legacy folder’s `tests/` directory (e.g. `pdf-to-md/tests/`), plus **`url-to-md/tests/`**, **`playwright-to-md/tests/`**, **`youtube-to-md/tests/`**, **`graph-to-md/tests/`**, **`openapi-to-md/tests/`**, **`odata-to-md/tests/`**, **`codeflow-to-md/tests/`**, **`log-to-md/tests/`**, **`sap-to-md/tests/`**, and **[`tool-assistant/tests/`](tool-assistant/tests/)** for the skill SDK; `pyproject.toml` sets `pythonpath = ["src"]` so **`md_generator`** (including **`md_generator.tools.assistant`**) resolves without a manual `PYTHONPATH` when you use `pytest` from the config.
 
 **Docs site (maintainers):** install **`mdengine[docs]`**, then build or serve the MkDocs project from the repo root (`mkdocs.yml`). The published site URL is listed under **Documentation** in `[project.urls]` on PyPI ([GitHub Pages build](https://vishal7090.github.io/md-generator/)).
 
@@ -953,13 +1067,13 @@ python -m md_generator.codeflow.cli.main scan path/to/src --output ./codeflow-ou
 | `docs/` | **MkDocs** source (module guides, `index.md`); build with **`mdengine[docs]`** |
 | `mkdocs.yml` | MkDocs configuration |
 | `CODE_OF_CONDUCT.md` | [Contributor Covenant](https://www.contributor-covenant.org/) 2.1 |
-| `src/md_generator/` | **Library source** (all formats + `api` subpackages); **audio/video** under [`media/`](src/md_generator/media/); **logs** [`log/`](src/md_generator/log/), **OTEL** [`otel/`](src/md_generator/otel/), **SAP** [`sap/`](src/md_generator/sap/), **graphs** [`graph/`](src/md_generator/graph/) |
+| `src/md_generator/` | **Library source** (all formats + `api` subpackages); **audio/video** [`media/`](src/md_generator/media/); **logs** [`log/`](src/md_generator/log/), **OTEL** [`otel/`](src/md_generator/otel/), **OData** [`odata/`](src/md_generator/odata/), **SAP** [`sap/`](src/md_generator/sap/), **graphs** [`graph/`](src/md_generator/graph/) |
 | `pyproject.toml` | Packaging, extras, CLI entry points, pytest |
 | `ai/` | **Distributable AI skills** (`SKILL.md` trees, `registry.json`, `dependency-graph.json`); regenerate with `PYTHONPATH=src python -m md_generator.tools.skill_builder` or **`mdengine skill build`** (after `pip install -e .`) |
 | `src/md_generator/tools/skill_builder/` | **Skill generator** — scans `src/md_generator` and `pyproject.toml` |
 | `src/md_generator/tools/assistant/` | **Skill SDK** (`md_generator.tools.assistant`): `MasterAgent`, `Registry`, bundled `data/` copy of `ai/` |
 | `tool-assistant/tests/` | **Pytests** for the assistant SDK (`md_generator.tools.assistant`) |
-| `*-to-md/` | **Docs, tests, fixtures**, thin `converter.py` shims, some `run.py` helpers |
+| `*-to-md/` | **Docs, tests, fixtures**, thin `converter.py` shims, some `run.py` helpers; SAP deep docs under [`sap-to-md/docs/`](sap-to-md/docs/) |
 | `README.md` | This document |
 
 For deeper behavior per format, see the original README files under each `*-to-md/` folder where they still exist.

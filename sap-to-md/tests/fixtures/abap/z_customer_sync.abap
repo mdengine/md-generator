@@ -8,6 +8,11 @@ SELECT k~kunnr v~vbeln
   INTO TABLE @DATA(lt_data)
   WHERE k~land1 = 'US'.
 
+SELECT kunnr name1
+  FROM zi_customer
+  INTO TABLE @DATA(lt_cust)
+  WHERE land1 = 'US'.
+
   IF lv_email IS INITIAL.
     MESSAGE 'Email required' TYPE 'E'.
   ENDIF.

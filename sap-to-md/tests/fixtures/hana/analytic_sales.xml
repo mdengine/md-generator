@@ -1,0 +1,4 @@
+<?xml version="1.0"?>
+<AnalyticView xmlns="http://www.sap.com/ndb/BiModelAnalyticView.ecore">
+  <analyticView schema="SALES" name="AV_SALES"/>
+</AnalyticView>

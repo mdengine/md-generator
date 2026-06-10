@@ -8,6 +8,7 @@ from md_generator.core.artifacts.models import ArtifactMetadata, MarkdownArtifac
 from md_generator.governance.lineage import apply_lineage
 from md_generator.log.chunking.artifact_adapter import semantic_chunk_to_artifact
 from md_generator.log.chunking.chunk_models import SemanticChunk
+from md_generator.sap.framework.paths import safe_filename
 from md_generator.sap.markdown.chunking.registry import get_strategies
 from md_generator.sap.models.entities.sap_object import SapObject
 
@@ -32,7 +33,7 @@ def write_semantic_chunks(
             if config_hash:
                 apply_lineage([art], config_hash=config_hash, source_file=ch.source_refs[0] if ch.source_refs else None)
             artifacts.append(art)
-            p = out_dir / f"{ch.chunk_id.replace(':', '_')}.md"
+            p = out_dir / safe_filename(ch.chunk_id, ".md")
             fm = art.to_frontmatter_dict()
             body = f"---\n{json.dumps(fm, indent=2)}\n---\n\n{ch.content}\n"
             p.write_text(body, encoding="utf-8")

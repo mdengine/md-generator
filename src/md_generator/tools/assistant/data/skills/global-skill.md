@@ -1,7 +1,7 @@
 ---
 name: mdengine-global-architecture
 description: "Code-derived system view of mdengine: package boundaries, import relationships between md_generator top-level modules, and how CLIs/APIs/MCP routes relate. Use for cross-area questions; defer per-area details to mdengine-ai-<area> skills."
-version: 0.11.1
+version: 0.13.0
 ---
 # mdengine — global architecture (generated)
 
@@ -16,7 +16,7 @@ version: 0.11.1
 
 ## Module set
 
-Top-level installable feature packages discovered on disk: `archive`, `codeflow`, `core`, `db`, `distributed`, `governance`, `graph`, `image`, `log`, `media`, `openapi`, `otel`, `pdf`, `playwright`, `ppt`, `runtime`, `sap`, `sdk`, `text`, `tools`, `url`, `word`, `xlsx`.
+Top-level installable feature packages discovered on disk: `archive`, `codeflow`, `core`, `db`, `distributed`, `governance`, `graph`, `image`, `log`, `media`, `odata`, `openapi`, `otel`, `pdf`, `playwright`, `ppt`, `runtime`, `sap`, `sdk`, `text`, `tools`, `url`, `word`, `xlsx`.
 
 ## Data flow
 
@@ -39,6 +39,7 @@ flowchart LR
   image["image"]
   log["log"]
   media["media"]
+  odata["odata"]
   openapi["openapi"]
   otel["otel"]
   pdf["pdf"]
@@ -50,7 +51,6 @@ flowchart LR
   text["text"]
   tools["tools"]
   url["url"]
-  word["word"]
   archive --> image
   archive --> pdf
   archive --> ppt
@@ -72,6 +72,7 @@ flowchart LR
   sap --> core
   sap --> governance
   sap --> log
+  sap --> odata
   sdk --> core
   sdk --> log
   url --> archive

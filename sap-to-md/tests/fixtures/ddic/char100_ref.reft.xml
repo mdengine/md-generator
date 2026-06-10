@@ -1,0 +1,14 @@
+<?xml version="1.0" ?>
+<blue:wbobj xmlns:blue="http://www.sap.com/wbobj/dictionary/reft"
+            xmlns:adtcore="http://www.sap.com/adt/core"
+            adtcore:responsible="SAP"
+            adtcore:name="CHAR100_REF"
+            adtcore:type="REFT/RT"
+            adtcore:description="Char100 Reference Type"
+            adtcore:language="EN">
+  <adtcore:packageRef adtcore:name="SZS"/>
+  <reft:referenceType xmlns:reft="http://www.sap.com/adt/dictionary/referencetypes">
+    <reft:referencedType>CHAR100</reft:referencedType>
+    <reft:checkTable>T005</reft:checkTable>
+  </reft:referenceType>
+</blue:wbobj>

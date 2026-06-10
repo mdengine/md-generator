@@ -9,8 +9,9 @@ from typing import Any
 class ParseCache:
     """Incremental parse cache keyed by path, mtime, and size."""
 
-    def __init__(self, cache_dir: Path | None, *, enabled: bool = True) -> None:
+    def __init__(self, cache_dir: Path | None, *, enabled: bool = True, use_content_hash: bool = False) -> None:
         self.enabled = enabled and cache_dir is not None
+        self.use_content_hash = use_content_hash
         self.cache_dir = Path(cache_dir) if cache_dir else None
         if self.cache_dir and self.enabled:
             self.cache_dir.mkdir(parents=True, exist_ok=True)
@@ -21,7 +22,16 @@ class ParseCache:
         h = hashlib.sha256(str(path.resolve()).encode()).hexdigest()[:16]
         return self.cache_dir / f"{h}.json"
 
-    def _fingerprint(self, path: Path) -> str:
+    def _content_hash(self, path: Path) -> str:
+        h = hashlib.sha256()
+        with path.open("rb") as fh:
+            for chunk in iter(lambda: fh.read(65536), b""):
+                h.update(chunk)
+        return h.hexdigest()
+
+    def _fingerprint(self, path: Path, *, use_content_hash: bool = False) -> str:
+        if use_content_hash:
+            return self._content_hash(path)
         st = path.stat()
         return f"{st.st_mtime_ns}:{st.st_size}"
 
@@ -33,7 +43,7 @@ class ParseCache:
             return None
         try:
             data = json.loads(cp.read_text(encoding="utf-8"))
-            if data.get("fingerprint") == self._fingerprint(path):
+            if data.get("fingerprint") == self._fingerprint(path, use_content_hash=self.use_content_hash):
                 return data.get("payload")
         except (json.JSONDecodeError, OSError):
             pass
@@ -46,6 +56,6 @@ class ParseCache:
         if not cp:
             return
         cp.write_text(
-            json.dumps({"fingerprint": self._fingerprint(path), "payload": payload}, default=str),
+            json.dumps({"fingerprint": self._fingerprint(path, use_content_hash=self.use_content_hash), "payload": payload}, default=str),
             encoding="utf-8",
         )

@@ -1,0 +1,21 @@
+<?xml version="1.0" ?>
+<blue:wbobj xmlns:blue="http://www.sap.com/wbobj/dictionary/ttyp"
+            xmlns:adtcore="http://www.sap.com/adt/core"
+            adtcore:responsible="SAP"
+            adtcore:masterLanguage="EN"
+            adtcore:name="BAL_T_CONT"
+            adtcore:type="TTYP/DA"
+            adtcore:changedAt="2019-11-29T11:15:39Z"
+            adtcore:version="active"
+            adtcore:description="Application Log: Context Table Type"
+            adtcore:language="EN">
+  <adtcore:packageRef adtcore:name="SZS"/>
+  <ttyp:tableType xmlns:ttyp="http://www.sap.com/adt/dictionary/tabletypes">
+    <ttyp:rowType>BAL_S_CONT</ttyp:rowType>
+    <ttyp:lineType>BAL_S_CONT</ttyp:lineType>
+    <ttyp:accessMode>STANDARD</ttyp:accessMode>
+    <ttyp:keyComponent>
+      <ttyp:name>MSG</ttyp:name>
+    </ttyp:keyComponent>
+  </ttyp:tableType>
+</blue:wbobj>

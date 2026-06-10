@@ -1,5 +1,6 @@
 input:
   paths: []
+  odata_urls: []
 
 output:
   path: output/sap-md
@@ -20,6 +21,7 @@ features:
     - graphs
     - chunks
     - json_output
+    - odata_catalog
   exclude: []
 
 parser:
@@ -31,6 +33,15 @@ parser:
   include_bapi: true
   include_idoc: true
   include_transport: true
+  include_hana: true
+  include_bw: true
+  include_datasphere: true
+  include_external: false
+
+odata:
+  fetch_timeout_sec: 30
+  verify_tls: true
+  cache_fetched: true
 
 analyzer:
   lineage: true
@@ -60,3 +71,12 @@ performance:
   incremental: true
   stream_threshold_mb: 5
   intelligence_list_cap: 80
+
+pipeline:
+  version: 1
+  canonical_json: true
+  artifact_graph: true
+  rule_engine: true
+  openlineage_export: false
+  cross_lineage: false
+  semantic_chunks_jsonl: false

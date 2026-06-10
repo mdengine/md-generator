@@ -1,7 +1,7 @@
 ---
 name: mdengine-ai-image
 description: "Documents pip-installed mdengine features for Image OCR → Markdown: extras, CLIs, and public imports under md_generator.image. Use when the user mentions `md-image` or needs this capability after installing mdengine from PyPI. Package summary: image-to-md: multi-engine OCR to Markdown."
-version: 0.11.1
+version: 0.13.0
 ---
 # mdengine — Image OCR → Markdown
 

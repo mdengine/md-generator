@@ -1,0 +1,36 @@
+# OData-only SAP config example (use with md-sap)
+
+input:
+  paths:
+    - ./odata-metadata
+
+parser:
+  include_abap: false
+  include_cds: false
+  include_ddic: false
+  include_bapi: false
+  include_idoc: false
+  include_transport: false
+  include_odata: true
+
+features:
+  include:
+    - odata_catalog
+    - entities
+    - graphs
+    - chunks
+    - json_output
+  exclude:
+    - governance
+    - authorization
+    - lineage
+    - validations
+
+output:
+  path: output/sap-odata-md
+
+chunking:
+  enabled: true
+
+graph:
+  enabled: true
