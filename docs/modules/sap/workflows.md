@@ -4,7 +4,7 @@
 
 1. Install `mdengine[sap]`.
 2. Run `md-sap --help` to list flags.
-3. Provide input (ABAP, CDS, DDIC exports, OData, BAPI, IDoc, transport files) and output path.
+3. Provide input (ABAP, CDS/DDL, DDIC (ADT XML, abapGit `.tabl.xml`), HANA CV exports, BW, Datasphere, OData $metadata, BAPI, IDoc, transport files) and output path.
 4. Inspect generated Markdown and sidecar assets.
 
 ## API workflow
@@ -44,3 +44,25 @@ sequenceDiagram
     Client->>API: GET status/download
     API-->>Client: ZIP or Markdown
 ```
+
+## SAP pipeline (v1 vs v2)
+
+- **Pipeline v1** — legacy entity builder path.
+- **Pipeline v2** — canonical JSON + artifact graph + registered generators (`--pipeline-version 2` or `pipeline.version: 2` in YAML).
+- Enable **semantic narrative** (deterministic, no LLM) with `pipeline.semantic_narrative: true`.
+
+```mermaid
+flowchart TD
+    Inputs[SAP_source_files] --> Discovery[Parser_registry]
+    Discovery --> Canonical[CanonicalArtifact_JSON]
+    Canonical --> Graph[Artifact_graph_store]
+    Graph --> Generators[Generator_registry]
+    Generators --> Markdown[Cross_linked_Markdown]
+    Generators --> Sidecars[lineage_impact_mermaid]
+    Markdown --> Chunks[Optional_semantic_chunks]
+```
+
+## Feature flags (`--include` / `--exclude`)
+
+Supported values: `authorization`, `chunks`, `entities`, `functional`, `governance`, `graphs`, `json_output`, `lineage`, `odata_catalog`, `relationships`, `technical`, `validations`.
+

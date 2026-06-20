@@ -9,7 +9,7 @@ All parameters below are extracted from source where possible. Validate against 
 | `path` | str | required | None | — | Local directory, source file, .zip, or https/git remote URL (omit when using --clean-git-cache only) |
 | `--output` | Path | optional | None | — | Output directory |
 | `--entry` | str | optional | None | — | Comma-separated symbol ids (Class.method style) |
-| `--lang` | str | optional | 'mixed' | — | mixed \| python \| java \| javascript \| typescript \| tsx \| cpp \| go \| php \| comma-separated (e.g. python,javascript). Aliases: js→javascript, ts→typescript. |
+| `--lang` | str | optional | 'mixed' | — | mixed \| python \| java \| javascript \| typescript \| tsx \| cpp \| go \| php \| rust \| kotlin \| csharp \| swift \| ruby \| lua \| scala \| zig \| comma-separated (e.g. python,javascript). Aliases: js→javascript, ts→typescript. |
 | `--formats` | str | optional | None | — | Comma-separated: md,html,mermaid,json |
 | `--depth` | int | optional | 5 | — | — |
 | `--include` | str | optional | None | — | Filter entry kinds: api,event,main,... |
@@ -66,7 +66,7 @@ All parameters below are extracted from source where possible. Validate against 
 | `--graph-include-structural` | str | optional | False | — | Merge parser structural edges (IMPORTS / INHERITS / …; Java) into the graph (default: off) |
 | `--enable-dependency-graph` | str | optional | False | — | Alias: enable structural IMPORTS/dependency edges (same merge as --graph-include-structural) |
 | `--graph-include-contains-reachability` | str | optional | False | — | Include CONTAINS in dependency reachability (PR impact, Called by, Impact lists) |
-| `--parser-mode` | str | optional | 'auto' | ('auto', 'treesitter', 'external') | C++: treesitter=Tree-sitter only; external=clang only; auto=current fallback |
+| `--parser-mode` | str | optional | 'auto' | ('auto', 'treesitter', 'external') | auto=native parsers; treesitter=Tree-sitter for java/python/go/php/cpp (+ JS/TS when installed); external=clang only for C++ |
 | `--ui-cfg-max-methods` | int | optional | 25 | — | Max methods in flow slice to embed CFG Mermaid in index.unified.html (default: 25) |
 | `--ui` | str | optional | 'default' | ('default', 'unified') | unified: write index.unified.html (same as --emit-html-unified) |
 | `--intelligence-transitive-callers` | str | optional | False | — | List transitive callers in Called By sections (default: direct only) |
@@ -118,9 +118,100 @@ All parameters below are extracted from source where possible. Validate against 
 | CODEFLOW_CORS | string/int | optional | — | — | From `src\md_generator\codeflow\api\settings.py` |
 
 
-## Config file parameters
+## Config files
 
 _No entries detected._
+
+
+## YAML config keys (from packaged defaults)
+
+_No entries detected._
+
+
+## Run config dataclass fields
+
+| Class | Field | Type | Required | Default | Description |
+| --- | --- | --- | --- | --- | --- |
+| ScanConfig | project_root | Path | varies | — | Run config dataclass field |
+| ScanConfig | output_path | Path | varies | — | Run config dataclass field |
+| ScanConfig | paths_override | list[Path] \| None | varies | None | Run config dataclass field |
+| ScanConfig | formats | tuple[str, ...] | varies | ('md', 'mermaid', 'json') | Run config dataclass field |
+| ScanConfig | depth | int | varies | 5 | Run config dataclass field |
+| ScanConfig | languages | str | varies | 'mixed' | Run config dataclass field |
+| ScanConfig | entry | list[str] \| None | varies | None | Run config dataclass field |
+| ScanConfig | include | str \| None | varies | None | Run config dataclass field |
+| ScanConfig | exclude | str \| None | varies | None | Run config dataclass field |
+| ScanConfig | include_internal | bool | varies | True | Run config dataclass field |
+| ScanConfig | async_mode | bool | varies | True | Run config dataclass field |
+| ScanConfig | jobs | bool | varies | False | Run config dataclass field |
+| ScanConfig | runtime | bool | varies | False | Run config dataclass field |
+| ScanConfig | business_rules | bool | varies | True | Run config dataclass field |
+| ScanConfig | business_rules_sql | bool | varies | False | Run config dataclass field |
+| ScanConfig | business_rules_combined | bool | varies | True | Run config dataclass field |
+| ScanConfig | entry_fallback | Literal['none', 'roots', 'first_n'] | varies | 'roots' | Run config dataclass field |
+| ScanConfig | entry_fallback_max | int | varies | 20 | Run config dataclass field |
+| ScanConfig | emit_entry_per_method | bool | varies | False | Run config dataclass field |
+| ScanConfig | emit_entry_max | int \| None | varies | None | Run config dataclass field |
+| ScanConfig | emit_entry_filter | str \| None | varies | None | Run config dataclass field |
+| ScanConfig | entries_file | Path \| None | varies | None | Run config dataclass field |
+| ScanConfig | write_scan_summary | bool | varies | True | Run config dataclass field |
+| ScanConfig | liferay_portlet_base_classes | tuple[str, ...] | varies | () | Run config dataclass field |
+| ScanConfig | codeflow_config_path | Path \| None | varies | None | Run config dataclass field |
+| ScanConfig | emit_flow_tree_json | bool | varies | False | Run config dataclass field |
+| ScanConfig | verbose | bool | varies | False | Run config dataclass field |
+| ScanConfig | emit_graph_schema | bool | varies | False | Run config dataclass field |
+| ScanConfig | intelligence_list_cap | int | varies | 80 | Run config dataclass field |
+| ScanConfig | emit_cfg | bool | varies | False | Run config dataclass field |
+| ScanConfig | cfg_max_nodes | int | varies | 500 | Run config dataclass field |
+| ScanConfig | cfg_inline_calls | bool | varies | False | Run config dataclass field |
+| ScanConfig | cfg_call_depth | int | varies | 3 | Run config dataclass field |
+| ScanConfig | cfg_max_paths | int | varies | 100 | Run config dataclass field |
+| ScanConfig | cfg_path_max_depth | int | varies | 1000 | Run config dataclass field |
+| ScanConfig | cfg_loop_visits | int | varies | 2 | Run config dataclass field |
+| ScanConfig | cfg_probability | bool | varies | False | Run config dataclass field |
+| ScanConfig | cfg_mermaid_probabilities | bool | varies | False | Run config dataclass field |
+| ScanConfig | cfg_runtime_trace | Path \| None | varies | None | Run config dataclass field |
+| ScanConfig | cfg_loop_repeat_prob | float | varies | 0.6 | Run config dataclass field |
+| ScanConfig | graph_include_structural | bool | varies | False | Run config dataclass field |
+| ScanConfig | include_references | bool | varies | False | Run config dataclass field |
+| ScanConfig | include_events | bool | varies | False | Run config dataclass field |
+| ScanConfig | cluster_mode | Literal['file_imports', 'structural', 'semantic', 'hybrid'] | varies | 'file_imports' | Run config dataclass field |
+| ScanConfig | graph_query | str \| None | varies | None | Run config dataclass field |
+| ScanConfig | intelligence_transitive_callers | bool | varies | False | Run config dataclass field |
+| ScanConfig | emit_system_graph_stats | bool | varies | False | Run config dataclass field |
+| ScanConfig | emit_graph_sqlite | bool | varies | False | Run config dataclass field |
+| ScanConfig | graph_sqlite_mode | Literal['full', 'incremental'] | varies | 'full' | Run config dataclass field |
+| ScanConfig | graph_sqlite_prune_missing | bool | varies | False | Run config dataclass field |
+| ScanConfig | emit_graph_communities | bool | varies | False | Run config dataclass field |
+| ScanConfig | emit_cluster_labels | bool | varies | True | Run config dataclass field |
+| ScanConfig | emit_llm_entry_sidecar | bool | varies | False | Run config dataclass field |
+| ScanConfig | cfg_ir_go | bool | varies | True | Run config dataclass field |
+| ScanConfig | cfg_ir_php | bool | varies | True | Run config dataclass field |
+| ScanConfig | cfg_ir_cpp | bool | varies | True | Run config dataclass field |
+| ScanConfig | flow_include_event_edges | bool | varies | False | Run config dataclass field |
+| ScanConfig | flow_include_reference_edges | bool | varies | False | Run config dataclass field |
+| ScanConfig | event_impact | bool | varies | False | Run config dataclass field |
+| ScanConfig | enable_embeddings | bool | varies | False | Run config dataclass field |
+| ScanConfig | embedding_model | str | varies | 'all-MiniLM-L6-v2' | Run config dataclass field |
+| ScanConfig | embedding_max_nodes | int | varies | 5000 | Run config dataclass field |
+| ScanConfig | embedding_k_clusters | int | varies | 8 | Run config dataclass field |
+| ScanConfig | semantic_top_k | int | varies | 10 | Run config dataclass field |
+| ScanConfig | semantic_search | str \| None | varies | None | Run config dataclass field |
+| ScanConfig | emit_html_unified | bool | varies | False | Run config dataclass field |
+| ScanConfig | nl_query | str \| None | varies | None | Run config dataclass field |
+| ScanConfig | emit_runtime_insights | bool | varies | False | Run config dataclass field |
+| ScanConfig | runtime_insight_frequency_threshold | float | varies | 0.05 | Run config dataclass field |
+| ScanConfig | runtime_insight_hot_paths_top | int | varies | 5 | Run config dataclass field |
+| ScanConfig | semantic_outlier_distance_threshold | float | varies | 0.7 | Run config dataclass field |
+| ScanConfig | multi_repo_roots | tuple[Path, ...] | varies | () | Run config dataclass field |
+| ScanConfig | diff_base | str \| None | varies | None | Run config dataclass field |
+| ScanConfig | diff_head | str \| None | varies | None | Run config dataclass field |
+| ScanConfig | cross_repo_package_hints | dict[str, str] \| None | varies | None | Run config dataclass field |
+| ScanConfig | resolve_cross_repo | bool | varies | False | Run config dataclass field |
+| ScanConfig | cross_repo_tsconfig | bool | varies | False | Run config dataclass field |
+| ScanConfig | cross_repo_maven_hints | bool | varies | False | Run config dataclass field |
+| ScanConfig | cache_enabled | bool | varies | True | Run config dataclass field |
+| ScanConfig | cache_ttl_seconds | int | varies | 0 | Run config dataclass field |
 
 
 ## Options / dataclass fields (sample)

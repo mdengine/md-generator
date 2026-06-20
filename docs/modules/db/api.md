@@ -10,6 +10,8 @@ Source: `src\md_generator\db\api\main.py`
 | GET | /health | See OpenAPI `/docs` | Upload/body per route | Job id or ZIP | Standard FastAPI errors |
 | POST | /db-to-md/run/sqlite | See OpenAPI `/docs` | Upload/body per route | Job id or ZIP | Standard FastAPI errors |
 | POST | /db-to-md/job/sqlite | See OpenAPI `/docs` | Upload/body per route | Job id or ZIP | Standard FastAPI errors |
+| POST | /db-to-md/run/elasticsearch | See OpenAPI `/docs` | Upload/body per route | Job id or ZIP | Standard FastAPI errors |
+| POST | /db-to-md/job/elasticsearch | See OpenAPI `/docs` | Upload/body per route | Job id or ZIP | Standard FastAPI errors |
 | POST | /db-to-md/run/access | See OpenAPI `/docs` | Upload/body per route | Job id or ZIP | Standard FastAPI errors |
 | POST | /db-to-md/job/access | See OpenAPI `/docs` | Upload/body per route | Job id or ZIP | Standard FastAPI errors |
 | POST | /db-to-md/run | See OpenAPI `/docs` | Upload/body per route | Job id or ZIP | Standard FastAPI errors |

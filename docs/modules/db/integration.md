@@ -7,10 +7,12 @@
 - pymongo
 - Graphviz
 - mermaid-py
+- Elasticsearch/OpenSearch REST API
+- offline ES bundle ZIP upload
 
 ## Related documentation
 
-- [Module README](https://github.com/vishal7090/md-generator/blob/main/db-to-md/README.md)
+- [Module README](https://github.com/mdengine/md-generator/blob/main/db-to-md/README.md)
 
 ## MCP
 

@@ -7,7 +7,7 @@
 
 ## Related documentation
 
-- [Module README](https://github.com/vishal7090/md-generator/blob/main/url-to-md/README.md)
+- [Module README](https://github.com/mdengine/md-generator/blob/main/url-to-md/README.md)
 
 ## MCP
 

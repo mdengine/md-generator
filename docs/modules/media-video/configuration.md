@@ -4,8 +4,13 @@ Configuration surfaces:
 
 1. **CLI flags** — `md-video --help`
 2. **Environment variables** — see `parameters.md`
-3. **Python options classes** — under `src/md_generator/media/video`
+3. **Run config dataclasses** — `src/md_generator/media/video/**/run_config.py`
 4. **YAML presets** — none packaged
+
+## YAML keys (extracted defaults)
+
+_No YAML keys detected._
+
 
 ## Example
 

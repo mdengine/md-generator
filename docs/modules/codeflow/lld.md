@@ -37,6 +37,6 @@ sequenceDiagram
 | `src\md_generator\codeflow\api\semantic_api.py` | Implementation |
 | `src\md_generator\codeflow\api\settings.py` | Implementation |
 | `src\md_generator\codeflow\api\sse.py` | Implementation |
-| ... | (111 Python files total) |
+| ... | (139 Python files total) |
 
 Language parsers under `codeflow/parsers/` and optional tree-sitter adapters.

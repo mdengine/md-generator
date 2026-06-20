@@ -2,7 +2,7 @@
 
 ## Internal layout
 
-Source root: `src/md_generator/codeflow` (111 Python modules detected).
+Source root: `src/md_generator/codeflow` (139 Python modules detected).
 
 Subpackages and areas: `analyzers`, `api`, `cli`, `config`, `core`, `detectors`, `generators`, `graph`, `ingestion`, `mcp`, `models`, `parsers`, `rules`, `runtime`, `utils`.
 

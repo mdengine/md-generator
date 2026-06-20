@@ -19,8 +19,8 @@ flowchart TB
 
 ## Dependency graph (logical)
 
-- **Inputs:** ABAP, CDS, DDIC exports, OData, BAPI, IDoc, transport files
-- **Outputs:** AI-ready SAP knowledge packs, graphs, governance, chunks
+- **Inputs:** ABAP, CDS/DDL, DDIC (ADT XML, abapGit `.tabl.xml`), HANA CV exports, BW, Datasphere, OData $metadata, BAPI, IDoc, transport files
+- **Outputs:** Canonical JSON, per-artifact Markdown (DDIC/HANA/CDS/ABAP), lineage/impact graphs, semantic narrative, cross-linked knowledge packs, optional chunks
 - **Optional extras:** `sap` from `pyproject.toml`
 - **Cross-module:** See `integration.md` for delegated converters and shared job patterns.
 

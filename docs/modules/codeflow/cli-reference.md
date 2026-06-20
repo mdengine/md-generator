@@ -10,7 +10,7 @@ Alternate: `codeflow / mdengine codeflow-to-md scan`
 | `path` | str | required | None | — | Local directory, source file, .zip, or https/git remote URL (omit when using --clean-git-cache only) |
 | `--output` | Path | optional | None | — | Output directory |
 | `--entry` | str | optional | None | — | Comma-separated symbol ids (Class.method style) |
-| `--lang` | str | optional | 'mixed' | — | mixed \| python \| java \| javascript \| typescript \| tsx \| cpp \| go \| php \| comma-separated (e.g. python,javascript). Aliases: js→javascript, ts→typescript. |
+| `--lang` | str | optional | 'mixed' | — | mixed \| python \| java \| javascript \| typescript \| tsx \| cpp \| go \| php \| rust \| kotlin \| csharp \| swift \| ruby \| lua \| scala \| zig \| comma-separated (e.g. python,javascript). Aliases: js→javascript, ts→typescript. |
 | `--formats` | str | optional | None | — | Comma-separated: md,html,mermaid,json |
 | `--depth` | int | optional | 5 | — | — |
 | `--include` | str | optional | None | — | Filter entry kinds: api,event,main,... |
@@ -67,7 +67,7 @@ Alternate: `codeflow / mdengine codeflow-to-md scan`
 | `--graph-include-structural` | str | optional | False | — | Merge parser structural edges (IMPORTS / INHERITS / …; Java) into the graph (default: off) |
 | `--enable-dependency-graph` | str | optional | False | — | Alias: enable structural IMPORTS/dependency edges (same merge as --graph-include-structural) |
 | `--graph-include-contains-reachability` | str | optional | False | — | Include CONTAINS in dependency reachability (PR impact, Called by, Impact lists) |
-| `--parser-mode` | str | optional | 'auto' | ('auto', 'treesitter', 'external') | C++: treesitter=Tree-sitter only; external=clang only; auto=current fallback |
+| `--parser-mode` | str | optional | 'auto' | ('auto', 'treesitter', 'external') | auto=native parsers; treesitter=Tree-sitter for java/python/go/php/cpp (+ JS/TS when installed); external=clang only for C++ |
 | `--ui-cfg-max-methods` | int | optional | 25 | — | Max methods in flow slice to embed CFG Mermaid in index.unified.html (default: 25) |
 | `--ui` | str | optional | 'default' | ('default', 'unified') | unified: write index.unified.html (same as --emit-html-unified) |
 | `--intelligence-transitive-callers` | str | optional | False | — | List transitive callers in Called By sections (default: direct only) |

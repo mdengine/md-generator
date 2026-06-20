@@ -31,7 +31,17 @@ All parameters below are extracted from source where possible. Validate against 
 | AUDIO_TO_MD_PORT | string/int | optional | varies | — | HTTP API listen port |
 
 
-## Config file parameters
+## Config files
+
+_No entries detected._
+
+
+## YAML config keys (from packaged defaults)
+
+_No entries detected._
+
+
+## Run config dataclass fields
 
 _No entries detected._
 

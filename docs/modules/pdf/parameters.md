@@ -37,7 +37,17 @@ All parameters below are extracted from source where possible. Validate against 
 | PDF_TO_MD_PORT | string/int | optional | — | — | Derived env pattern in `settings.py` |
 
 
-## Config file parameters
+## Config files
+
+_No entries detected._
+
+
+## YAML config keys (from packaged defaults)
+
+_No entries detected._
+
+
+## Run config dataclass fields
 
 _No entries detected._
 

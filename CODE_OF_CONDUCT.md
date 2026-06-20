@@ -38,7 +38,7 @@ This Code of Conduct applies within all community spaces, and also applies when 
 
 Instances of abusive, harassing, or otherwise unacceptable behavior may be reported to the community leaders responsible for enforcement by opening an issue (use **Security** or a private channel if the report should not be public) at:
 
-https://github.com/vishal7090/md-generator/issues
+https://github.com/mdengine/md-generator/issues
 
 All complaints will be reviewed and investigated promptly and fairly.
 

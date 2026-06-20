@@ -28,4 +28,4 @@ pip install -e ".[db,api]"
 | ffmpeg / imageio-ffmpeg | audio/video |
 | Playwright browsers | playwright (`playwright install chromium`) |
 
-See [module README](https://github.com/vishal7090/md-generator/blob/main/db-to-md/README.md) for module-specific notes.
+See [module README](https://github.com/mdengine/md-generator/blob/main/db-to-md/README.md) for module-specific notes.

@@ -12,7 +12,7 @@ from pathlib import Path
 from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
-REPO_URL = "https://github.com/vishal7090/md-generator/blob/main"
+REPO_URL = "https://github.com/mdengine/md-generator/blob/main"
 SRC = ROOT / "src" / "md_generator"
 DOCS = ROOT / "docs" / "modules"
 REF_API = ROOT / "docs" / "reference" / "api"
@@ -194,11 +194,12 @@ MODULES: list[ModuleSpec] = [
                entry_functions=["convert_url_to_md", "PlaywrightOptions"],
                integration_items=["playwright", "Chromium browser binaries"]),
     ModuleSpec("db", "Database Metadata", "md_generator.db", "db", "md-db", cli_alt="mdengine db-to-md", extra="db", api_title="db-to-md", service="db-to-md",
-               input_desc="Postgres, MySQL, Oracle, SQLite, Mongo, Access", output_desc="Schema docs, ERD, Markdown ZIP",
+               input_desc="Postgres, MySQL, Oracle, SQLite, Mongo, Access, Elasticsearch/OpenSearch clusters and offline JSON bundles",
+               output_desc="Schema docs, ERD, Markdown ZIP; Elasticsearch indices, templates, pipelines, ILM/SLM, search templates, alias and dependency graphs",
                tier="complex", has_db=True, has_jobs=True, test_dir="db-to-md/tests", readme_link="db-to-md/README.md",
-               entry_functions=["extract_to_markdown", "create_adapter", "RunConfig", "JobManager"],
-               extension_notes="Database adapters in `db/adapters/` (factory pattern).",
-               integration_items=["SQLAlchemy", "psycopg2", "pymysql", "oracledb", "pymongo", "Graphviz", "mermaid-py"]),
+               entry_functions=["extract_to_markdown", "create_adapter", "RunConfig", "JobManager", "export_elasticsearch_markdown"],
+               extension_notes="Database adapters in `db/adapters/` (factory pattern). Elasticsearch via `--type elasticsearch` or bundle upload to `/db-to-md/run/elasticsearch`.",
+               integration_items=["SQLAlchemy", "psycopg2", "pymysql", "oracledb", "pymongo", "Graphviz", "mermaid-py", "Elasticsearch/OpenSearch REST API", "offline ES bundle ZIP upload"]),
     ModuleSpec("graph", "Graph Metadata", "md_generator.graph", "graph", "md-graph", cli_alt="mdengine graph-to-md", extra="graph", api_title="graph-to-md", service="graph-to-md",
                input_desc="Neo4j or NetworkX GraphML/GML", output_desc="Node/relationship Markdown, Mermaid, Graphviz",
                tier="medium", has_db=True, has_jobs=True, test_dir="graph-to-md/tests", readme_link="graph-to-md/README.md",
@@ -219,18 +220,20 @@ MODULES: list[ModuleSpec] = [
                extension_notes="Language parsers under `codeflow/parsers/` and optional tree-sitter adapters.",
                integration_items=["networkx", "javalang", "optional Celery/Redis workers", "sentence-transformers for semantic"]),
     ModuleSpec("log", "Log Analysis", "md_generator.log", "log", "md-log", cli_alt="mdengine log-to-md", extra="log", api_title="log-to-md", service="log-to-md",
-               input_desc="Log files and uploads", output_desc="Parsed events, summaries, incidents, optional clustering",
+               input_desc="Log files, directories, OTLP sidecars, streaming sources (tail, Kafka, Redis, websocket, stdin)",
+               output_desc="Parsed events, summaries, incidents, knowledge graph, clustering, embedding exports, incremental checkpoints",
                tier="complex", has_jobs=True, test_dir="log-to-md/tests", readme_link="log-to-md/README.md",
-               entry_functions=["extract_to_markdown", "run_pipeline", "LogRunConfig", "load_run_config"],
-               extension_notes="Presets in `log/config/presets/`; pipeline stages under ingestion, parsing, clustering.",
-               integration_items=["pandas", "scikit-learn", "optional sentence-transformers", "Chroma export"]),
+               entry_functions=["extract_to_markdown", "run_pipeline", "LogRunConfig", "load_run_config", "iter_stream_lines"],
+               extension_notes="Presets in `log/config/presets/`; subcommands `md-log stream` and `md-log presets`; stages under ingestion, parsing, clustering, knowledge_graph, incremental, streaming, noise_reduction.",
+               integration_items=["pandas", "scikit-learn", "optional sentence-transformers", "Chroma export", "Kafka/Redis streaming", "archive bridge", "governance/MDAF hooks"]),
     ModuleSpec("sap", "SAP Intelligence", "md_generator.sap", "sap", "md-sap", cli_alt="mdengine sap-to-md", extra="sap", api_title="sap-to-md", service="sap-to-md",
-               input_desc="ABAP, CDS, DDIC exports, OData, BAPI, IDoc, transport files", output_desc="AI-ready SAP knowledge packs, graphs, governance, chunks",
+               input_desc="ABAP, CDS/DDL, DDIC (ADT XML, abapGit `.tabl.xml`), HANA CV exports, BW, Datasphere, OData $metadata, BAPI, IDoc, transport files",
+               output_desc="Canonical JSON, per-artifact Markdown (DDIC/HANA/CDS/ABAP), lineage/impact graphs, semantic narrative, cross-linked knowledge packs, optional chunks",
                tier="complex", has_jobs=True, test_dir="sap-to-md/tests", readme_link="sap-to-md/README.md",
                deep_docs=[],
-               entry_functions=["extract_to_markdown", "SapRunConfig", "load_run_config", "SapJobManager"],
-               extension_notes="Parser plugins via YAML `parser.plugins`; generators registered in `sap/generators/registry.py`.",
-               integration_items=["networkx", "pyyaml", "pydantic", "httpx", "lxml", "governance module", "optional tree-sitter ABAP"]),
+               entry_functions=["extract_to_markdown", "SapRunConfig", "load_run_config", "SapJobManager", "format_semantic_narrative"],
+               extension_notes="Parser plugins via YAML `parser.plugins`; parsers toggled with `parser.include_*`; generators in `sap/generators/registry.py`; pipeline v2 via `pipeline.version: 2` or `--pipeline-version 2`; semantic narrative via `pipeline.semantic_narrative`.",
+               integration_items=["networkx", "pyyaml", "pydantic", "httpx", "lxml", "governance module", "optional tree-sitter ABAP", "CrossLinkRegistry", "UnifiedOutputRegistry"]),
     ModuleSpec("odata", "OData Metadata", "md_generator.odata", "odata", "md-odata", cli_alt="mdengine odata-to-md generate", extra="odata", api_title="odata-to-md", service="odata-to-md",
                input_desc="OData CSDL metadata (XML/JSON), folders, ZIP archives, or $metadata URLs", output_desc="Entity catalog Markdown, optional graph and semantic chunks",
                tier="medium", has_jobs=False, test_dir="odata-to-md/tests", readme_link="odata-to-md/README.md",
@@ -439,12 +442,243 @@ def extract_dataclass_fields(root: Path) -> list[tuple[str, str, str]]:
             continue
         for node in ast.walk(tree):
             if isinstance(node, ast.ClassDef):
-                if "Options" not in node.name and "Config" not in node.name and "Settings" not in node.name:
+                if not any(
+                    token in node.name
+                    for token in ("Options", "Config", "Settings", "Section", "RunConfig")
+                ):
                     continue
                 for stmt in node.body:
                     if isinstance(stmt, ast.AnnAssign) and isinstance(stmt.target, ast.Name):
                         fields.append((node.name, stmt.target.id, ast_unparse(stmt.annotation)))
     return fields[:40]
+
+
+def _is_dataclass(node: ast.ClassDef) -> bool:
+    for dec in node.decorator_list:
+        if isinstance(dec, ast.Name) and dec.id == "dataclass":
+            return True
+        if isinstance(dec, ast.Call) and isinstance(dec.func, ast.Name) and dec.func.id == "dataclass":
+            return True
+    return False
+
+
+def extract_run_config_fields(root: Path) -> list[tuple[str, str, str, str]]:
+    """Extract @dataclass fields from **/run_config.py under a module."""
+    rows: list[tuple[str, str, str, str]] = []
+    for py in sorted(root.rglob("run_config.py")):
+        if "__pycache__" in py.parts:
+            continue
+        try:
+            tree = ast.parse(read_text(py))
+        except SyntaxError:
+            continue
+        for node in tree.body:
+            if not isinstance(node, ast.ClassDef) or not _is_dataclass(node):
+                continue
+            for stmt in node.body:
+                if isinstance(stmt, ast.AnnAssign) and isinstance(stmt.target, ast.Name):
+                    default = ast_unparse(stmt.value) if stmt.value else "—"
+                    if len(default) > 48:
+                        default = default[:45] + "..."
+                    rows.append(
+                        (node.name, stmt.target.id, ast_unparse(stmt.annotation), default)
+                    )
+    return rows[:80]
+
+
+def extract_registry_entries(root: Path) -> list[tuple[str, str]]:
+    """Extract reg.register('artifact.type', ...) and tuple-expanded types from registry modules."""
+    entries: list[tuple[str, str]] = []
+    seen: set[str] = set()
+    registry_paths = [
+        p
+        for p in list_py_files(root)
+        if p.name == "registry.py" and any(x in p.parts for x in ("generators", "parser", "normalizer", "chunking"))
+    ]
+    if (root / "generators" / "registry.py").exists():
+        registry_paths.insert(0, root / "generators" / "registry.py")
+    for path in registry_paths:
+        text = read_text(path)
+        rel = str(path.relative_to(ROOT))
+        for m in re.finditer(r'reg\.register\s*\(\s*["\']([^"\']+)["\']', text):
+            key = m.group(1)
+            if key not in seen:
+                seen.add(key)
+                entries.append((key, rel))
+        for m in re.finditer(r'for \w+ in \(([^)]+)\)\s*:', text):
+            for sm in re.finditer(r'["\']([^"\']+)["\']', m.group(1)):
+                key = sm.group(1)
+                if key not in seen:
+                    seen.add(key)
+                    entries.append((key, rel))
+    return entries
+
+
+def extract_feature_flags(root: Path) -> list[str]:
+    features_path = root / "core" / "features.py"
+    if not features_path.exists():
+        return []
+    text = read_text(features_path)
+    m = re.search(r"FEATURES\s*=\s*frozenset\s*\(\s*\{([^}]+)\}", text, re.DOTALL)
+    if not m:
+        return []
+    return sorted(set(re.findall(r'["\']([^"\']+)["\']', m.group(1))))
+
+
+def extract_yaml_keys(paths: list[Path], *, max_keys: int = 80) -> list[tuple[str, str, str]]:
+    rows: list[tuple[str, str, str]] = []
+    try:
+        import yaml
+    except ImportError:
+        return rows
+    for path in paths:
+        try:
+            data = yaml.safe_load(read_text(path))
+        except Exception:
+            continue
+        if not isinstance(data, dict):
+            continue
+        rel = str(path.relative_to(ROOT))
+
+        def walk(prefix: str, obj: Any, depth: int = 0) -> None:
+            if depth > 2 or len(rows) >= max_keys:
+                return
+            if isinstance(obj, dict):
+                for key, val in obj.items():
+                    dotted = f"{prefix}.{key}" if prefix else key
+                    if isinstance(val, dict) and depth < 2:
+                        walk(dotted, val, depth + 1)
+                    elif isinstance(val, list) and depth < 2 and val and not isinstance(val[0], dict):
+                        sample = ", ".join(repr(v)[:24] for v in val[:4])
+                        if len(val) > 4:
+                            sample += ", ..."
+                        rows.append((rel, dotted, sample))
+                    else:
+                        sample = repr(val)[:60] if val is not None else "null"
+                        rows.append((rel, dotted, sample))
+
+        walk("", data)
+    return rows[:max_keys]
+
+
+def format_registry_table(entries: list[tuple[str, str]]) -> str:
+    if not entries:
+        return "_No registry entries detected._\n"
+    rows = [[t, f"`{src}`"] for t, src in entries]
+    return table(["Artifact / plugin type", "Registered in"], rows)
+
+
+def format_yaml_table(keys: list[tuple[str, str, str]]) -> str:
+    if not keys:
+        return "_No YAML keys detected._\n"
+    rows = [[f, k, v.replace("|", "\\|")] for f, k, v in keys]
+    return table(["Config file", "Key", "Default / sample"], rows)
+
+
+def format_run_config_table(fields: list[tuple[str, str, str, str]]) -> str:
+    if not fields:
+        return "_No run_config dataclass fields detected._\n"
+    rows = [[cls, fld, typ, default.replace("|", "\\|")] for cls, fld, typ, default in fields]
+    return table(["Class", "Field", "Type", "Default"], rows)
+
+
+def domain_workflow_extra(ctx: ModuleContext) -> str:
+    key = ctx.spec.key
+    if key == "sap":
+        flags = ", ".join(f"`{f}`" for f in ctx.feature_flags) or "see `sap/core/features.py`"
+        return f"""
+## SAP pipeline (v1 vs v2)
+
+- **Pipeline v1** — legacy entity builder path.
+- **Pipeline v2** — canonical JSON + artifact graph + registered generators (`--pipeline-version 2` or `pipeline.version: 2` in YAML).
+- Enable **semantic narrative** (deterministic, no LLM) with `pipeline.semantic_narrative: true`.
+
+```mermaid
+flowchart TD
+    Inputs[SAP_source_files] --> Discovery[Parser_registry]
+    Discovery --> Canonical[CanonicalArtifact_JSON]
+    Canonical --> Graph[Artifact_graph_store]
+    Graph --> Generators[Generator_registry]
+    Generators --> Markdown[Cross_linked_Markdown]
+    Generators --> Sidecars[lineage_impact_mermaid]
+    Markdown --> Chunks[Optional_semantic_chunks]
+```
+
+## Feature flags (`--include` / `--exclude`)
+
+Supported values: {flags}.
+"""
+    if key == "db":
+        return """
+## Elasticsearch / OpenSearch export
+
+1. **Live cluster** — `--type elasticsearch` with cluster URI (or YAML `database.type: elasticsearch`).
+2. **Offline bundle** — POST a ZIP of exported cluster JSON to `/db-to-md/run/elasticsearch` (sync) or `/db-to-md/job/elasticsearch` (async).
+3. Enable feature flags such as `elasticsearch_indices`, `elasticsearch_search_templates`, `elasticsearch_search_dependency_graph` via `--include`.
+
+Output lands under `elasticsearch/` (indices, templates, pipelines, ILM, search templates, alias graph, dependency graph).
+"""
+    if key == "log":
+        return """
+## Streaming and incremental processing
+
+- **`md-log stream`** — tail, stdin, Kafka, Redis, or websocket sources (`streaming.*` in YAML).
+- **`md-log presets`** — list parser presets (generic, springboot, logback, json, …).
+- **`--resume`** — incremental checkpoint resume (`incremental.*` in YAML).
+- **Knowledge graph** — enable `knowledge_graph.enabled` for service/event graph Markdown + Mermaid.
+
+```mermaid
+flowchart LR
+    Source[files_or_stream] --> Ingest[ingestion]
+    Ingest --> Parse[parser_presets]
+    Parse --> Normalize[normalization]
+    Normalize --> Enrich[enrichment_clustering]
+    Enrich --> Graph[knowledge_graph_optional]
+    Graph --> Emit[Markdown_JSONL_Parquet]
+```
+"""
+    return ""
+
+
+def domain_extension_extra(ctx: ModuleContext) -> str:
+    if not ctx.registry_entries:
+        return ""
+    return f"""
+## Registered artifact / plugin types (from source)
+
+{format_registry_table(ctx.registry_entries)}
+"""
+
+
+def domain_responsibilities_extra(ctx: ModuleContext) -> str:
+    key = ctx.spec.key
+    if key == "sap" and ctx.registry_entries:
+        types = ", ".join(f"`{t}`" for t, _ in ctx.registry_entries[:20])
+        more = f" (+{len(ctx.registry_entries) - 20} more)" if len(ctx.registry_entries) > 20 else ""
+        return f"""
+## Supported artifact types (generators)
+
+{types}{more}
+
+Parsers are toggled independently via `parser.include_abap`, `include_cds`, `include_ddic`, `include_hana`, `include_bw`, `include_datasphere`, `include_external`, plus YAML `parser.plugins`.
+"""
+    if key == "db":
+        return """
+## Elasticsearch export scope
+
+When `database.type` is `elasticsearch`, optional features include indices, data streams, component/index templates, ingest pipelines, ILM/SLM policies, snapshot repositories, search templates, field caps, security placeholders, search architecture, and search dependency graph exports.
+"""
+    if key == "log":
+        return """
+## Platform extensions
+
+- **Incremental** checkpoints and resume (`incremental.*`)
+- **Knowledge graph** builder with optional Mermaid export
+- **Streaming** coordinator (tail/Kafka/Redis/websocket)
+- **Noise reduction**, correlation, topology, linking, governance/MDAF hooks
+- **Archive bridge** for compressed log inputs (`ingestion.use_archive_bridge`)
+"""
+    return ""
 
 
 def is_generic_content(text: str) -> bool:
@@ -494,6 +728,10 @@ class ModuleContext:
     env_vars: list[EnvVar]
     py_files: list[Path]
     dataclass_fields: list[tuple[str, str, str]]
+    run_config_fields: list[tuple[str, str, str, str]]
+    registry_entries: list[tuple[str, str]]
+    yaml_keys: list[tuple[str, str, str]]
+    feature_flags: list[str]
     yaml_configs: list[Path]
     api_path: Path | None
     cli_paths: list[Path]
@@ -517,6 +755,7 @@ def build_context(spec: ModuleSpec) -> ModuleContext:
     routes = extract_routes(api_path) if api_path else []
     prefix = spec.api_title.upper().replace("-", "_") if spec.api_title and spec.api_title != "(none)" else ""
     env_vars = extract_env_vars(find_settings_files(spec), prefix)
+    yaml_configs = find_yaml_configs(spec)
     return ModuleContext(
         spec=spec,
         cli_args=cli_args,
@@ -524,7 +763,11 @@ def build_context(spec: ModuleSpec) -> ModuleContext:
         env_vars=env_vars,
         py_files=list_py_files(root),
         dataclass_fields=extract_dataclass_fields(root),
-        yaml_configs=find_yaml_configs(spec),
+        run_config_fields=extract_run_config_fields(root),
+        registry_entries=extract_registry_entries(root),
+        yaml_keys=extract_yaml_keys(yaml_configs),
+        feature_flags=extract_feature_flags(root),
+        yaml_configs=yaml_configs,
         api_path=api_path,
         cli_paths=cli_paths,
     )
@@ -592,8 +835,27 @@ def gen_parameters(ctx: ModuleContext) -> str:
     cli_rows = cli_arg_rows(ctx.cli_args)
     env_rows = [[e.name, "string/int", "optional", e.default, "—", e.description] for e in ctx.env_vars]
     dc_rows = [[c, f, t, "varies", "—", f"Field on options/config class"] for c, f, t in ctx.dataclass_fields]
+    rc_rows = [
+        [cls, fld, typ, "varies", default.replace("|", "\\|"), "Run config dataclass field"]
+        for cls, fld, typ, default in ctx.run_config_fields
+    ]
     route_rows = [[r.method, r.path, "HTTP", "—", "—", "FastAPI route"] for r in ctx.routes]
-    yaml_rows = [[str(p.relative_to(ROOT)), "YAML", "optional", "—", "—", "Packaged or preset config"] for p in ctx.yaml_configs]
+    yaml_file_rows = [[str(p.relative_to(ROOT)), "YAML", "optional", "—", "—", "Packaged or preset config"] for p in ctx.yaml_configs]
+    yaml_key_rows = [[f, k, v.replace("|", "\\|"), "optional", "—", "From packaged YAML"] for f, k, v in ctx.yaml_keys[:40]]
+    registry_block = ""
+    if ctx.registry_entries:
+        registry_block = f"""
+## Registered types (generators / plugins)
+
+{format_registry_table(ctx.registry_entries)}
+"""
+    feature_block = ""
+    if ctx.feature_flags:
+        feature_block = f"""
+## Feature flags
+
+{", ".join(f"`{f}`" for f in ctx.feature_flags)}
+"""
     return f"""# {s.title} Parameter Reference
 
 All parameters below are extracted from source where possible. Validate against `--help` and OpenAPI (`/docs`) before production use.
@@ -610,14 +872,22 @@ All parameters below are extracted from source where possible. Validate against 
 
 {table(["Name", "Type", "Required", "Default", "Choices", "Description"], env_rows)}
 
-## Config file parameters
+## Config files
 
-{table(["File", "Type", "Required", "Default", "Choices", "Description"], yaml_rows)}
+{table(["File", "Type", "Required", "Default", "Choices", "Description"], yaml_file_rows)}
+
+## YAML config keys (from packaged defaults)
+
+{table(["File", "Key", "Default / sample", "Required", "Choices", "Description"], yaml_key_rows)}
+
+## Run config dataclass fields
+
+{table(["Class", "Field", "Type", "Required", "Default", "Description"], rc_rows)}
 
 ## Options / dataclass fields (sample)
 
 {table(["Class", "Field", "Type", "Required", "Default", "Description"], dc_rows)}
-
+{registry_block}{feature_block}
 ## Validation and edge cases
 
 - Positional CLI arguments are required unless documented as optional flags.
@@ -701,6 +971,7 @@ sequenceDiagram
     Client->>API: GET status/download
     API-->>Client: ZIP or Markdown
 ```
+{domain_workflow_extra(ctx)}
 """
 
 
@@ -886,7 +1157,7 @@ def gen_remaining_pages(ctx: ModuleContext) -> dict[str, str]:
 - Expose `{s.cli}` CLI for local and CI usage.
 - Convert {s.input_desc} to {s.output_desc}.
 - {"Provide FastAPI + optional MCP integration." if ctx.routes else "Operate as library/CLI tooling without HTTP surface."}
-
+{domain_responsibilities_extra(ctx)}
 ## Out of scope
 
 - Owning user authentication/authorization for enterprise SSO (delegate to gateway).
@@ -933,8 +1204,12 @@ Configuration surfaces:
 
 1. **CLI flags** — `{s.cli} --help`
 2. **Environment variables** — see `parameters.md`
-3. **Python options classes** — under `{root_rel}`
+3. **Run config dataclasses** — `{root_rel}/**/run_config.py`
 4. **YAML presets** — {", ".join(f"`{p.relative_to(ROOT)}`" for p in ctx.yaml_configs) or "none packaged"}
+
+## YAML keys (extracted defaults)
+
+{format_yaml_table(ctx.yaml_keys[:35])}
 
 ## Example
 
@@ -1060,7 +1335,7 @@ sequenceDiagram
     pages["extension-points.md"] = f"""# {s.title} Extension Points
 
 {s.extension_notes or "Extend via fork of converter pipeline or adding optional backends alongside existing factories."}
-
+{domain_extension_extra(ctx)}
 ## Safe extension patterns
 
 - Add adapter implementations and register in factory modules.

@@ -2,17 +2,17 @@
 
 ## Purpose
 
-The **Database Metadata** module (`md_generator.db`) converts **Postgres, MySQL, Oracle, SQLite, Mongo, Access** into **Schema docs, ERD, Markdown ZIP**. It exists so teams can publish searchable, diff-friendly Markdown from operational inputs without maintaining separate documentation pipelines per format.
+The **Database Metadata** module (`md_generator.db`) converts **Postgres, MySQL, Oracle, SQLite, Mongo, Access, Elasticsearch/OpenSearch clusters and offline JSON bundles** into **Schema docs, ERD, Markdown ZIP; Elasticsearch indices, templates, pipelines, ILM/SLM, search templates, alias and dependency graphs**. It exists so teams can publish searchable, diff-friendly Markdown from operational inputs without maintaining separate documentation pipelines per format.
 
 ## Problem solved
 
-- Manual copy/paste from Postgres, MySQL, Oracle, SQLite, Mongo, Access into wikis does not scale.
+- Manual copy/paste from Postgres, MySQL, Oracle, SQLite, Mongo, Access, Elasticsearch/OpenSearch clusters and offline JSON bundles into wikis does not scale.
 - Downstream AI/RAG workflows need stable text and asset bundles.
 - CI and gateways need a consistent CLI/API surface across `mdengine` modules.
 
 ## When to use
 
-- You need repeatable Markdown export from Postgres, MySQL, Oracle, SQLite, Mongo, Access.
+- You need repeatable Markdown export from Postgres, MySQL, Oracle, SQLite, Mongo, Access, Elasticsearch/OpenSearch clusters and offline JSON bundles.
 - You want CLI automation, HTTP conversion, or MCP tool integration (where implemented).
 - You can install the `db` optional extra (and `api` for HTTP services).
 
@@ -29,7 +29,7 @@ The **Database Metadata** module (`md_generator.db`) converts **Postgres, MySQL,
 | Import path | `md_generator.db` |
 | Source tree | `src/md_generator/db` |
 | CLI | `md-db` |
-- Alternate entry: `mdengine db-to-md`
+| Alternate CLI | `mdengine db-to-md` |
 | PyPI extra | `db` |
 | Complexity tier | `complex` |
 | API service name | `db-to-md` |
@@ -40,6 +40,7 @@ The **Database Metadata** module (`md_generator.db`) converts **Postgres, MySQL,
 - `create_adapter`
 - `RunConfig`
 - `JobManager`
+- `export_elasticsearch_markdown`
 
 ```mermaid
 flowchart LR

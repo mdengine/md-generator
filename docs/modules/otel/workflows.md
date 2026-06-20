@@ -44,3 +44,4 @@ sequenceDiagram
     Client->>API: GET status/download
     API-->>Client: ZIP or Markdown
 ```
+

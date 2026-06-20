@@ -29,7 +29,7 @@ The **Graph Metadata** module (`md_generator.graph`) converts **Neo4j or Network
 | Import path | `md_generator.graph` |
 | Source tree | `src/md_generator/graph` |
 | CLI | `md-graph` |
-- Alternate entry: `mdengine graph-to-md`
+| Alternate CLI | `mdengine graph-to-md` |
 | PyPI extra | `graph` |
 | Complexity tier | `medium` |
 | API service name | `graph-to-md` |

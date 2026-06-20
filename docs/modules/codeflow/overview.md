@@ -29,7 +29,7 @@ The **Codeflow** module (`md_generator.codeflow`) converts **Source repositories
 | Import path | `md_generator.codeflow` |
 | Source tree | `src/md_generator/codeflow` |
 | CLI | `md-codeflow` |
-- Alternate entry: `codeflow / mdengine codeflow-to-md scan`
+| Alternate CLI | `codeflow / mdengine codeflow-to-md scan` |
 | PyPI extra | `codeflow` |
 | Complexity tier | `complex` |
 | API service name | `codeflow-to-md` |
@@ -52,7 +52,7 @@ flowchart LR
 
 ## Deep documentation
 
-- [graph-and-outputs.md](https://github.com/vishal7090/md-generator/blob/main/codeflow-to-md/docs/graph-and-outputs.md)
-- [remote-repos.md](https://github.com/vishal7090/md-generator/blob/main/codeflow-to-md/docs/remote-repos.md)
-- [cache-and-semantic.md](https://github.com/vishal7090/md-generator/blob/main/codeflow-to-md/docs/cache-and-semantic.md)
+- [graph-and-outputs.md](https://github.com/mdengine/md-generator/blob/main/codeflow-to-md/docs/graph-and-outputs.md)
+- [remote-repos.md](https://github.com/mdengine/md-generator/blob/main/codeflow-to-md/docs/remote-repos.md)
+- [cache-and-semantic.md](https://github.com/mdengine/md-generator/blob/main/codeflow-to-md/docs/cache-and-semantic.md)
 

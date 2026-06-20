@@ -8,6 +8,7 @@
 | `create_adapter` | Public entry / orchestration |
 | `RunConfig` | Public entry / orchestration |
 | `JobManager` | Public entry / orchestration |
+| `export_elasticsearch_markdown` | Public entry / orchestration |
 
 ## Call sequence (CLI)
 
@@ -30,13 +31,13 @@ sequenceDiagram
 | `src\md_generator\db\adapters\access_adapter.py` | Implementation |
 | `src\md_generator\db\adapters\access_introspect.py` | Implementation |
 | `src\md_generator\db\adapters\access_odbc.py` | Implementation |
+| `src\md_generator\db\adapters\elasticsearch_adapter.py` | Implementation |
+| `src\md_generator\db\adapters\elasticsearch_json_adapter.py` | Implementation |
 | `src\md_generator\db\adapters\factory.py` | Implementation |
 | `src\md_generator\db\adapters\mongo_adapter.py` | Implementation |
 | `src\md_generator\db\adapters\mysql_adapter.py` | Implementation |
 | `src\md_generator\db\adapters\oracle_adapter.py` | Implementation |
 | `src\md_generator\db\adapters\postgres_adapter.py` | Implementation |
-| `src\md_generator\db\adapters\sql_common.py` | Implementation |
-| `src\md_generator\db\adapters\sqlite_adapter.py` | Implementation |
-| ... | (48 Python files total) |
+| ... | (64 Python files total) |
 
-Database adapters in `db/adapters/` (factory pattern).
+Database adapters in `db/adapters/` (factory pattern). Elasticsearch via `--type elasticsearch` or bundle upload to `/db-to-md/run/elasticsearch`.

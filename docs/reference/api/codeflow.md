@@ -16,7 +16,7 @@
 | `path` | str | required | None | — | Local directory, source file, .zip, or https/git remote URL (omit when using --clean-git-cache only) |
 | `--output` | Path | optional | None | — | Output directory |
 | `--entry` | str | optional | None | — | Comma-separated symbol ids (Class.method style) |
-| `--lang` | str | optional | 'mixed' | — | mixed \| python \| java \| javascript \| typescript \| tsx \| cpp \| go \| php \| comma-separated (e.g. python,javascript). Aliases: js→javascript, ts→typescript. |
+| `--lang` | str | optional | 'mixed' | — | mixed \| python \| java \| javascript \| typescript \| tsx \| cpp \| go \| php \| rust \| kotlin \| csharp \| swift \| ruby \| lua \| scala \| zig \| comma-separated (e.g. python,javascript). Aliases: js→javascript, ts→typescript. |
 | `--formats` | str | optional | None | — | Comma-separated: md,html,mermaid,json |
 | `--depth` | int | optional | 5 | — | — |
 | `--include` | str | optional | None | — | Filter entry kinds: api,event,main,... |

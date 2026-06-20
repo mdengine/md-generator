@@ -10,7 +10,7 @@ pip install "mdengine[all]"
 ## From A Clone
 
 ```bash
-git clone https://github.com/vishal7090/md-generator.git
+git clone https://github.com/mdengine/md-generator.git
 cd md-generator
 python -m venv .venv
 . .venv/bin/activate

@@ -22,11 +22,29 @@ _No entries detected._
 | OPENAPI_TO_MD_PORT | string/int | optional | varies | — | HTTP API listen port |
 
 
-## Config file parameters
+## Config files
 
 | File | Type | Required | Default | Choices | Description |
 | --- | --- | --- | --- | --- | --- |
 | src\md_generator\openapi\config\default.yaml | YAML | optional | — | — | Packaged or preset config |
+
+
+## YAML config keys (from packaged defaults)
+
+| File | Key | Default / sample | Required | Choices | Description |
+| --- | --- | --- | --- | --- | --- |
+| src\md_generator\openapi\config\default.yaml | input.file | null | optional | — | From packaged YAML |
+| src\md_generator\openapi\config\default.yaml | input.folder | null | optional | — | From packaged YAML |
+| src\md_generator\openapi\config\default.yaml | input.zip | null | optional | — | From packaged YAML |
+| src\md_generator\openapi\config\default.yaml | input.url | null | optional | — | From packaged YAML |
+| src\md_generator\openapi\config\default.yaml | output.path | './docs' | optional | — | From packaged YAML |
+| src\md_generator\openapi\config\default.yaml | output.formats | 'md', 'mermaid' | optional | — | From packaged YAML |
+| src\md_generator\openapi\config\default.yaml | openapi.preferred_media_type | 'application/json' | optional | — | From packaged YAML |
+
+
+## Run config dataclass fields
+
+_No entries detected._
 
 
 ## Options / dataclass fields (sample)

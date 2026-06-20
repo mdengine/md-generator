@@ -2,17 +2,17 @@
 
 ## Purpose
 
-The **Log Analysis** module (`md_generator.log`) converts **Log files and uploads** into **Parsed events, summaries, incidents, optional clustering**. It exists so teams can publish searchable, diff-friendly Markdown from operational inputs without maintaining separate documentation pipelines per format.
+The **Log Analysis** module (`md_generator.log`) converts **Log files, directories, OTLP sidecars, streaming sources (tail, Kafka, Redis, websocket, stdin)** into **Parsed events, summaries, incidents, knowledge graph, clustering, embedding exports, incremental checkpoints**. It exists so teams can publish searchable, diff-friendly Markdown from operational inputs without maintaining separate documentation pipelines per format.
 
 ## Problem solved
 
-- Manual copy/paste from Log files and uploads into wikis does not scale.
+- Manual copy/paste from Log files, directories, OTLP sidecars, streaming sources (tail, Kafka, Redis, websocket, stdin) into wikis does not scale.
 - Downstream AI/RAG workflows need stable text and asset bundles.
 - CI and gateways need a consistent CLI/API surface across `mdengine` modules.
 
 ## When to use
 
-- You need repeatable Markdown export from Log files and uploads.
+- You need repeatable Markdown export from Log files, directories, OTLP sidecars, streaming sources (tail, Kafka, Redis, websocket, stdin).
 - You want CLI automation, HTTP conversion, or MCP tool integration (where implemented).
 - You can install the `log` optional extra (and `api` for HTTP services).
 
@@ -29,7 +29,7 @@ The **Log Analysis** module (`md_generator.log`) converts **Log files and upload
 | Import path | `md_generator.log` |
 | Source tree | `src/md_generator/log` |
 | CLI | `md-log` |
-- Alternate entry: `mdengine log-to-md`
+| Alternate CLI | `mdengine log-to-md` |
 | PyPI extra | `log` |
 | Complexity tier | `complex` |
 | API service name | `log-to-md` |
@@ -40,6 +40,7 @@ The **Log Analysis** module (`md_generator.log`) converts **Log files and upload
 - `run_pipeline`
 - `LogRunConfig`
 - `load_run_config`
+- `iter_stream_lines`
 
 ```mermaid
 flowchart LR

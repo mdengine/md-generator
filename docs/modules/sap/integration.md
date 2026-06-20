@@ -7,10 +7,12 @@
 - lxml
 - governance module
 - optional tree-sitter ABAP
+- CrossLinkRegistry
+- UnifiedOutputRegistry
 
 ## Related documentation
 
-- [Module README](https://github.com/vishal7090/md-generator/blob/main/sap-to-md/README.md)
+- [Module README](https://github.com/mdengine/md-generator/blob/main/sap-to-md/README.md)
 
 ## MCP
 

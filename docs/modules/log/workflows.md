@@ -4,7 +4,7 @@
 
 1. Install `mdengine[log]`.
 2. Run `md-log --help` to list flags.
-3. Provide input (Log files and uploads) and output path.
+3. Provide input (Log files, directories, OTLP sidecars, streaming sources (tail, Kafka, Redis, websocket, stdin)) and output path.
 4. Inspect generated Markdown and sidecar assets.
 
 ## API workflow
@@ -44,3 +44,21 @@ sequenceDiagram
     Client->>API: GET status/download
     API-->>Client: ZIP or Markdown
 ```
+
+## Streaming and incremental processing
+
+- **`md-log stream`** — tail, stdin, Kafka, Redis, or websocket sources (`streaming.*` in YAML).
+- **`md-log presets`** — list parser presets (generic, springboot, logback, json, …).
+- **`--resume`** — incremental checkpoint resume (`incremental.*` in YAML).
+- **Knowledge graph** — enable `knowledge_graph.enabled` for service/event graph Markdown + Mermaid.
+
+```mermaid
+flowchart LR
+    Source[files_or_stream] --> Ingest[ingestion]
+    Ingest --> Parse[parser_presets]
+    Parse --> Normalize[normalization]
+    Normalize --> Enrich[enrichment_clustering]
+    Enrich --> Graph[knowledge_graph_optional]
+    Graph --> Emit[Markdown_JSONL_Parquet]
+```
+

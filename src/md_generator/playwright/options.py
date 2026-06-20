@@ -15,7 +15,7 @@ class PlaywrightOptions:
     verbose: bool = False
     navigation_timeout_ms: float = 60_000.0
     user_agent: str = (
-        "mdengine-playwright/0.1 (+https://github.com/vishal7090/md-generator)"
+        "mdengine-playwright/0.1 (+https://github.com/mdengine/md-generator)"
     )
     wait_selector: str | None = None
     wait_until: WaitUntil = "networkidle"

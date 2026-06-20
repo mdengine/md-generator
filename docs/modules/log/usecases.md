@@ -4,9 +4,9 @@
 
 | Aspect | Detail |
 |--------|--------|
-| Objective | Convert a single Log files and uploads during feature work. |
-| Input | Sample Log files and uploads |
-| Output | Parsed events, summaries, incidents, optional clustering |
+| Objective | Convert a single Log files, directories, OTLP sidecars, streaming sources (tail, Kafka, Redis, websocket, stdin) during feature work. |
+| Input | Sample Log files, directories, OTLP sidecars, streaming sources (tail, Kafka, Redis, websocket, stdin) |
+| Output | Parsed events, summaries, incidents, knowledge graph, clustering, embedding exports, incremental checkpoints |
 | Configuration | `pip install -e ".[log]"` |
 | Performance | Fast for small inputs; use job API for large bundles. |
 | Failure | Missing extra, invalid input, timeout, upload too large |
@@ -53,7 +53,7 @@
 | Aspect | Detail |
 |--------|--------|
 | Objective | Feed Markdown into embeddings index. |
-| Input | Parsed events, summaries, incidents, optional clustering |
+| Input | Parsed events, summaries, incidents, knowledge graph, clustering, embedding exports, incremental checkpoints |
 | Output | Chunked Markdown |
 | Configuration | Stable naming + front matter if enabled |
 | Performance | Sanitize secrets before indexing. |

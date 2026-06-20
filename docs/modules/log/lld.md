@@ -8,6 +8,7 @@
 | `run_pipeline` | Public entry / orchestration |
 | `LogRunConfig` | Public entry / orchestration |
 | `load_run_config` | Public entry / orchestration |
+| `iter_stream_lines` | Public entry / orchestration |
 
 ## Call sequence (CLI)
 
@@ -39,4 +40,4 @@ sequenceDiagram
 | `src\md_generator\log\api\settings.py` | Implementation |
 | ... | (154 Python files total) |
 
-Presets in `log/config/presets/`; pipeline stages under ingestion, parsing, clustering.
+Presets in `log/config/presets/`; subcommands `md-log stream` and `md-log presets`; stages under ingestion, parsing, clustering, knowledge_graph, incremental, streaming, noise_reduction.

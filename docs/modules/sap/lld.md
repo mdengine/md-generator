@@ -8,6 +8,7 @@
 | `SapRunConfig` | Public entry / orchestration |
 | `load_run_config` | Public entry / orchestration |
 | `SapJobManager` | Public entry / orchestration |
+| `format_semantic_narrative` | Public entry / orchestration |
 
 ## Call sequence (CLI)
 
@@ -39,4 +40,4 @@ sequenceDiagram
 | `src\md_generator\sap\api\settings.py` | Implementation |
 | ... | (190 Python files total) |
 
-Parser plugins via YAML `parser.plugins`; generators registered in `sap/generators/registry.py`.
+Parser plugins via YAML `parser.plugins`; parsers toggled with `parser.include_*`; generators in `sap/generators/registry.py`; pipeline v2 via `pipeline.version: 2` or `--pipeline-version 2`; semantic narrative via `pipeline.semantic_narrative`.

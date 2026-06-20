@@ -29,7 +29,7 @@ The **AI Assistant Tools** module (`md_generator.tools.assistant`) converts **Sk
 | Import path | `md_generator.tools.assistant` |
 | Source tree | `src/md_generator/tools/assistant` |
 | CLI | `mdengine ai assist` |
-- Alternate entry: `mdengine ai export`
+| Alternate CLI | `mdengine ai export` |
 | PyPI extra | `skill-openai or skill-rag-chroma` |
 | Complexity tier | `medium` |
 | API service name | `(none)` |

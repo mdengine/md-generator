@@ -1,8 +1,8 @@
 site_name: mdengine Documentation
 site_description: Enterprise documentation for the mdengine Python monorepo.
-site_url: https://vishal7090.github.io/md-generator/
-repo_url: https://github.com/vishal7090/md-generator
-repo_name: vishal7090/md-generator
+site_url: https://mdengine.github.io/md-generator/
+repo_url: https://github.com/mdengine/md-generator
+repo_name: mdengine/md-generator
 edit_uri: edit/main/docs/
 
 strict: true

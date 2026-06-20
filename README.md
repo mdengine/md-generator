@@ -3,11 +3,11 @@
 Single Python distribution for converting **PDF**, **Word (.docx)**, **PowerPoint (.pptx)**, **Excel (.xlsx/.xlsm)**, **images** (OCR), **plain text / JSON / XML**, **ZIP archives**, **audio / video** (Whisper transcription → Markdown), **database metadata** (SQL + Mongo), **graphs** (Neo4j / NetworkX → Markdown), **OpenAPI** specs, **Playwright**-captured web pages (including SPAs), **application logs** (plain, JSON, CSV, ZIP bundles → Markdown with optional clustering and semantic grouping), **OpenTelemetry** traces (**OTLP** JSON or protobuf → Markdown trace summaries; optional correlation with log exports via `otel_path`), **OData CSDL metadata** (V1–V4, XML/JSON → Markdown catalogs via **`md-odata`**), **SAP artifacts** (ABAP, CDS, ADT DDIC XML, HANA views, BW, Datasphere, BAPI, IDoc, transport → AI-ready Markdown; OData catalogs via **`md-sap`**, standalone **`md-odata`**, or shared **`md_generator.odata`**), and **source code** (codeflow → architecture Markdown) into **Markdown** (and related assets). Install only the extras you need; everything imports under the **`md_generator`** package.
 
 - **PyPI name:** `mdengine` (import package: `md_generator`)
-- **Source:** [github.com/vishal7090/md-generator](https://github.com/vishal7090/md-generator)
+- **Source:** [github.com/mdengine/md-generator](https://github.com/mdengine/md-generator)
 - **Python:** 3.10+
 - **License:** [MIT](LICENSE)
 
-**Quick links:** [On a new computer](#on-a-new-computer) · [Command-line execution](#command-line-execution) · [Python library](#python-library) · [SAP metadata](#sap-metadata-md_generatorsap) · [Audio and video](#audio-and-video-to-markdown) · [HTTP API](#http-api-fastapi) · [MCP](#mcp-model-context-protocol) · [AI assistant CLI](#ai-assistant-cli) · [Development](#development) · [Published documentation](https://vishal7090.github.io/md-generator/) · [Code of Conduct](CODE_OF_CONDUCT.md)
+**Quick links:** [On a new computer](#on-a-new-computer) · [Command-line execution](#command-line-execution) · [Python library](#python-library) · [SAP metadata](#sap-metadata-md_generatorsap) · [Audio and video](#audio-and-video-to-markdown) · [HTTP API](#http-api-fastapi) · [MCP](#mcp-model-context-protocol) · [AI assistant CLI](#ai-assistant-cli) · [Development](#development) · [Published documentation](https://mdengine.github.io/md-generator/) · [Code of Conduct](CODE_OF_CONDUCT.md)
 
 ---
 
@@ -25,7 +25,7 @@ Use this checklist the first time you run the tools on a machine that does not h
    ```bash
    pip install "mdengine[pdf,word]"
    ```
-   If the package is not on PyPI yet, clone [the repository](https://github.com/vishal7090/md-generator), `cd` into the repo root, then:
+   If the package is not on PyPI yet, clone [the repository](https://github.com/mdengine/md-generator), `cd` into the repo root, then:
    ```bash
    pip install -e ".[pdf,word]"
    ```
@@ -1032,7 +1032,7 @@ python -m pytest
 
 Tests live under each legacy folder’s `tests/` directory (e.g. `pdf-to-md/tests/`), plus **`url-to-md/tests/`**, **`playwright-to-md/tests/`**, **`youtube-to-md/tests/`**, **`graph-to-md/tests/`**, **`openapi-to-md/tests/`**, **`odata-to-md/tests/`**, **`codeflow-to-md/tests/`**, **`log-to-md/tests/`**, **`sap-to-md/tests/`**, and **[`tool-assistant/tests/`](tool-assistant/tests/)** for the skill SDK; `pyproject.toml` sets `pythonpath = ["src"]` so **`md_generator`** (including **`md_generator.tools.assistant`**) resolves without a manual `PYTHONPATH` when you use `pytest` from the config.
 
-**Docs site (maintainers):** install **`mdengine[docs]`**, then build or serve the MkDocs project from the repo root (`mkdocs.yml`). The published site URL is listed under **Documentation** in `[project.urls]` on PyPI ([GitHub Pages build](https://vishal7090.github.io/md-generator/)).
+**Docs site (maintainers):** install **`mdengine[docs]`**, then build or serve the MkDocs project from the repo root (`mkdocs.yml`). The published site URL is listed under **Documentation** in `[project.urls]` on PyPI ([GitHub Pages build](https://mdengine.github.io/md-generator/)).
 
 ### Codeflow (`md_generator.codeflow`)
 

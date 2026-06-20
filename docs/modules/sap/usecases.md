@@ -4,9 +4,9 @@
 
 | Aspect | Detail |
 |--------|--------|
-| Objective | Convert a single ABAP, CDS, DDIC exports, OData, BAPI, IDoc, transport files during feature work. |
-| Input | Sample ABAP, CDS, DDIC exports, OData, BAPI, IDoc, transport files |
-| Output | AI-ready SAP knowledge packs, graphs, governance, chunks |
+| Objective | Convert a single ABAP, CDS/DDL, DDIC (ADT XML, abapGit `.tabl.xml`), HANA CV exports, BW, Datasphere, OData $metadata, BAPI, IDoc, transport files during feature work. |
+| Input | Sample ABAP, CDS/DDL, DDIC (ADT XML, abapGit `.tabl.xml`), HANA CV exports, BW, Datasphere, OData $metadata, BAPI, IDoc, transport files |
+| Output | Canonical JSON, per-artifact Markdown (DDIC/HANA/CDS/ABAP), lineage/impact graphs, semantic narrative, cross-linked knowledge packs, optional chunks |
 | Configuration | `pip install -e ".[sap]"` |
 | Performance | Fast for small inputs; use job API for large bundles. |
 | Failure | Missing extra, invalid input, timeout, upload too large |
@@ -53,7 +53,7 @@
 | Aspect | Detail |
 |--------|--------|
 | Objective | Feed Markdown into embeddings index. |
-| Input | AI-ready SAP knowledge packs, graphs, governance, chunks |
+| Input | Canonical JSON, per-artifact Markdown (DDIC/HANA/CDS/ABAP), lineage/impact graphs, semantic narrative, cross-linked knowledge packs, optional chunks |
 | Output | Chunked Markdown |
 | Configuration | Stable naming + front matter if enabled |
 | Performance | Sanitize secrets before indexing. |

@@ -4,7 +4,7 @@ This module **exports metadata** from external databases or graphs. It does not 
 
 ## Adapters
 
-Database adapters in `db/adapters/` (factory pattern).
+Database adapters in `db/adapters/` (factory pattern). Elasticsearch via `--type elasticsearch` or bundle upload to `/db-to-md/run/elasticsearch`.
 
 ## Consumer databases
 

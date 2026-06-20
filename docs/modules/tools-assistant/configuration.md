@@ -4,8 +4,13 @@ Configuration surfaces:
 
 1. **CLI flags** — `mdengine ai assist --help`
 2. **Environment variables** — see `parameters.md`
-3. **Python options classes** — under `src/md_generator/tools/assistant`
+3. **Run config dataclasses** — `src/md_generator/tools/assistant/**/run_config.py`
 4. **YAML presets** — none packaged
+
+## YAML keys (extracted defaults)
+
+_No YAML keys detected._
+
 
 ## Example
 

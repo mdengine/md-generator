@@ -18,7 +18,7 @@ class ConvertOptions:
 
     timeout_seconds: float = 30.0
     max_response_bytes: int = 10 * 1024 * 1024
-    user_agent: str = "mdengine-url-to-md/0.1 (+https://github.com/vishal7090/md-generator)"
+    user_agent: str = "mdengine-url-to-md/0.1 (+https://github.com/mdengine/md-generator)"
 
     table_csv: bool = True
     download_linked_files: bool = True

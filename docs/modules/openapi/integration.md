@@ -6,7 +6,7 @@
 
 ## Related documentation
 
-- [Module README](https://github.com/vishal7090/md-generator/blob/main/openapi-to-md/README.md)
+- [Module README](https://github.com/mdengine/md-generator/blob/main/openapi-to-md/README.md)
 
 ## MCP
 

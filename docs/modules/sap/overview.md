@@ -2,17 +2,17 @@
 
 ## Purpose
 
-The **SAP Intelligence** module (`md_generator.sap`) converts **ABAP, CDS, DDIC exports, OData, BAPI, IDoc, transport files** into **AI-ready SAP knowledge packs, graphs, governance, chunks**. It exists so teams can publish searchable, diff-friendly Markdown from operational inputs without maintaining separate documentation pipelines per format.
+The **SAP Intelligence** module (`md_generator.sap`) converts **ABAP, CDS/DDL, DDIC (ADT XML, abapGit `.tabl.xml`), HANA CV exports, BW, Datasphere, OData $metadata, BAPI, IDoc, transport files** into **Canonical JSON, per-artifact Markdown (DDIC/HANA/CDS/ABAP), lineage/impact graphs, semantic narrative, cross-linked knowledge packs, optional chunks**. It exists so teams can publish searchable, diff-friendly Markdown from operational inputs without maintaining separate documentation pipelines per format.
 
 ## Problem solved
 
-- Manual copy/paste from ABAP, CDS, DDIC exports, OData, BAPI, IDoc, transport files into wikis does not scale.
+- Manual copy/paste from ABAP, CDS/DDL, DDIC (ADT XML, abapGit `.tabl.xml`), HANA CV exports, BW, Datasphere, OData $metadata, BAPI, IDoc, transport files into wikis does not scale.
 - Downstream AI/RAG workflows need stable text and asset bundles.
 - CI and gateways need a consistent CLI/API surface across `mdengine` modules.
 
 ## When to use
 
-- You need repeatable Markdown export from ABAP, CDS, DDIC exports, OData, BAPI, IDoc, transport files.
+- You need repeatable Markdown export from ABAP, CDS/DDL, DDIC (ADT XML, abapGit `.tabl.xml`), HANA CV exports, BW, Datasphere, OData $metadata, BAPI, IDoc, transport files.
 - You want CLI automation, HTTP conversion, or MCP tool integration (where implemented).
 - You can install the `sap` optional extra (and `api` for HTTP services).
 
@@ -40,6 +40,7 @@ The **SAP Intelligence** module (`md_generator.sap`) converts **ABAP, CDS, DDIC 
 - `SapRunConfig`
 - `load_run_config`
 - `SapJobManager`
+- `format_semantic_narrative`
 
 ```mermaid
 flowchart LR

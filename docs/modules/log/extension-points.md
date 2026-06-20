@@ -1,6 +1,6 @@
 # Log Analysis Extension Points
 
-Presets in `log/config/presets/`; pipeline stages under ingestion, parsing, clustering.
+Presets in `log/config/presets/`; subcommands `md-log stream` and `md-log presets`; stages under ingestion, parsing, clustering, knowledge_graph, incremental, streaming, noise_reduction.
 
 ## Safe extension patterns
 

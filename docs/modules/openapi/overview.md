@@ -29,7 +29,7 @@ The **OpenAPI** module (`md_generator.openapi`) converts **OpenAPI 3.x or Swagge
 | Import path | `md_generator.openapi` |
 | Source tree | `src/md_generator/openapi` |
 | CLI | `md-openapi` |
-- Alternate entry: `mdengine openapi-to-md generate`
+| Alternate CLI | `mdengine openapi-to-md generate` |
 | PyPI extra | `openapi` |
 | Complexity tier | `medium` |
 | API service name | `openapi-to-md` |

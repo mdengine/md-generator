@@ -19,8 +19,8 @@ flowchart TB
 
 ## Dependency graph (logical)
 
-- **Inputs:** Log files and uploads
-- **Outputs:** Parsed events, summaries, incidents, optional clustering
+- **Inputs:** Log files, directories, OTLP sidecars, streaming sources (tail, Kafka, Redis, websocket, stdin)
+- **Outputs:** Parsed events, summaries, incidents, knowledge graph, clustering, embedding exports, incremental checkpoints
 - **Optional extras:** `log` from `pyproject.toml`
 - **Cross-module:** See `integration.md` for delegated converters and shared job patterns.
 

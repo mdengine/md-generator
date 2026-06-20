@@ -2,7 +2,7 @@
 
 ## Internal layout
 
-Source root: `src/md_generator/db` (48 Python modules detected).
+Source root: `src/md_generator/db` (64 Python modules detected).
 
 Subpackages and areas: `adapters`, `api`, `cli`, `config`, `core`, `mcp`.
 
@@ -19,8 +19,8 @@ flowchart TB
 
 ## Dependency graph (logical)
 
-- **Inputs:** Postgres, MySQL, Oracle, SQLite, Mongo, Access
-- **Outputs:** Schema docs, ERD, Markdown ZIP
+- **Inputs:** Postgres, MySQL, Oracle, SQLite, Mongo, Access, Elasticsearch/OpenSearch clusters and offline JSON bundles
+- **Outputs:** Schema docs, ERD, Markdown ZIP; Elasticsearch indices, templates, pipelines, ILM/SLM, search templates, alias and dependency graphs
 - **Optional extras:** `db` from `pyproject.toml`
 - **Cross-module:** See `integration.md` for delegated converters and shared job patterns.
 

@@ -4,7 +4,7 @@
 
 | Item | Value |
 |------|-------|
-| Purpose | Convert Log files and uploads to Parsed events, summaries, incidents, optional clustering |
+| Purpose | Convert Log files, directories, OTLP sidecars, streaming sources (tail, Kafka, Redis, websocket, stdin) to Parsed events, summaries, incidents, knowledge graph, clustering, embedding exports, incremental checkpoints |
 | CLI | `md-log` |
 | Extra | `log` |
 | Tier | `complex` |
@@ -38,6 +38,7 @@
 | run_pipeline | callable | — |
 | LogRunConfig | callable | — |
 | load_run_config | callable | — |
+| iter_stream_lines | callable | — |
 
 
 ## Python API (mkdocstrings)

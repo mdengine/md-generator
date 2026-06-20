@@ -4,9 +4,9 @@
 
 | Aspect | Detail |
 |--------|--------|
-| Objective | Convert a single Postgres, MySQL, Oracle, SQLite, Mongo, Access during feature work. |
-| Input | Sample Postgres, MySQL, Oracle, SQLite, Mongo, Access |
-| Output | Schema docs, ERD, Markdown ZIP |
+| Objective | Convert a single Postgres, MySQL, Oracle, SQLite, Mongo, Access, Elasticsearch/OpenSearch clusters and offline JSON bundles during feature work. |
+| Input | Sample Postgres, MySQL, Oracle, SQLite, Mongo, Access, Elasticsearch/OpenSearch clusters and offline JSON bundles |
+| Output | Schema docs, ERD, Markdown ZIP; Elasticsearch indices, templates, pipelines, ILM/SLM, search templates, alias and dependency graphs |
 | Configuration | `pip install -e ".[db]"` |
 | Performance | Fast for small inputs; use job API for large bundles. |
 | Failure | Missing extra, invalid input, timeout, upload too large |
@@ -53,7 +53,7 @@
 | Aspect | Detail |
 |--------|--------|
 | Objective | Feed Markdown into embeddings index. |
-| Input | Schema docs, ERD, Markdown ZIP |
+| Input | Schema docs, ERD, Markdown ZIP; Elasticsearch indices, templates, pipelines, ILM/SLM, search templates, alias and dependency graphs |
 | Output | Chunked Markdown |
 | Configuration | Stable naming + front matter if enabled |
 | Performance | Sanitize secrets before indexing. |

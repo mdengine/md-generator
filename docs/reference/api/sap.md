@@ -4,7 +4,7 @@
 
 | Item | Value |
 |------|-------|
-| Purpose | Convert ABAP, CDS, DDIC exports, OData, BAPI, IDoc, transport files to AI-ready SAP knowledge packs, graphs, governance, chunks |
+| Purpose | Convert ABAP, CDS/DDL, DDIC (ADT XML, abapGit `.tabl.xml`), HANA CV exports, BW, Datasphere, OData $metadata, BAPI, IDoc, transport files to Canonical JSON, per-artifact Markdown (DDIC/HANA/CDS/ABAP), lineage/impact graphs, semantic narrative, cross-linked knowledge packs, optional chunks |
 | CLI | `md-sap` |
 | Extra | `sap` |
 | Tier | `complex` |
@@ -38,6 +38,7 @@
 | SapRunConfig | callable | — |
 | load_run_config | callable | — |
 | SapJobManager | callable | — |
+| format_semantic_narrative | callable | — |
 
 
 ## Python API (mkdocstrings)
