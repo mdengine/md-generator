@@ -130,6 +130,13 @@ class ScanConfig:
     graph_include_contains_reachability: bool = False
     # Cap embedded per-method CFG Mermaid payloads in ``index.unified.html``.
     ui_cfg_max_methods: int = 25
+    config_analysis: bool = False
+    dependency_analysis: bool = False
+    query_analysis: bool = False
+    external_analysis: bool = False
+    repository_analysis: bool = False
+    max_traversal_depth: int = 5
+    preferred_backend: str | None = None
 
     def structural_graph_enabled(self) -> bool:
         return bool(self.graph_include_structural or self.enable_dependency_graph)

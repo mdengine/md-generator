@@ -479,6 +479,152 @@ def run_scan(cfg: ScanConfig, *, workspace: LoadedWorkspace | None = None) -> Pa
 
     fmts = {x.strip().lower() for x in cfg.formats}
 
+    has_enterprise = (
+        getattr(cfg, "config_analysis", False)
+        or getattr(cfg, "dependency_analysis", False)
+        or getattr(cfg, "query_analysis", False)
+        or getattr(cfg, "external_analysis", False)
+        or getattr(cfg, "repository_analysis", False)
+    )
+    if has_enterprise:
+        from md_generator.codeflow.repository.model import Repository, Workspace
+        from md_generator.codeflow.plugins import global_plugin_registry
+        from md_generator.codeflow.plugins.registry import topological_sort_plugins
+        from md_generator.codeflow.graph.enterprise_builder import EnterpriseGraphBuilder
+        from md_generator.codeflow.graph.query import GraphQuery
+        from md_generator.codeflow.repository.analyzer import RepositoryAnalyzer
+        from md_generator.codeflow.generators.enterprise_exporter import EnterpriseExporter
+        from md_generator.codeflow.enterprise_ir import Diagnostic, DiagnosticSeverity, AnalysisStatistics, EnterpriseIR
+
+        # Build repository model hierarchy
+        ws_node = Workspace(path=ws.root)
+        repo_obj = Repository(name=primary_repo_label or "local", path=ws.root, workspace=ws_node)
+
+        # Select plugins based on config flags
+        plugins_to_run = []
+        if getattr(cfg, "config_analysis", False):
+            plugins_to_run.append(global_plugin_registry.get_plugin("configuration"))
+        if getattr(cfg, "dependency_analysis", False):
+            plugins_to_run.append(global_plugin_registry.get_plugin("dependency"))
+        if getattr(cfg, "query_analysis", False):
+            plugins_to_run.append(global_plugin_registry.get_plugin("query"))
+        if getattr(cfg, "external_analysis", False):
+            plugins_to_run.append(global_plugin_registry.get_plugin("external"))
+        
+        plugins_to_run = [p for p in plugins_to_run if p is not None]
+        plugins_to_run = topological_sort_plugins(plugins_to_run)
+
+        # Execution Lifecycle
+        diagnostics = []
+        stats_data = AnalysisStatistics()
+        
+        import time
+        start_time = time.time()
+
+        combined_ir = EnterpriseIR()
+        for p_class in plugins_to_run:
+            plugin = p_class()
+            try:
+                # 1. Discover
+                files = plugin.discover(repo_obj)
+                for f in files:
+                    stats_data.files_scanned += 1
+                    # 2. Scan
+                    if not plugin.scan(f):
+                        stats_data.files_skipped += 1
+                        continue
+                    # 3. Extract
+                    try:
+                        raw = plugin.extract(f)
+                    except Exception as ex:
+                        stats_data.files_failed += 1
+                        diagnostics.append(
+                            Diagnostic(
+                                severity=DiagnosticSeverity.ERROR,
+                                file=str(f),
+                                line=None,
+                                message=f"Extraction failed: {ex}",
+                                plugin=plugin.metadata.name,
+                            )
+                        )
+                        continue
+                    # 4. Normalize & Validate
+                    norm = plugin.normalize(raw)
+                    if not plugin.validate(norm):
+                        diagnostics.append(
+                            Diagnostic(
+                                severity=DiagnosticSeverity.WARNING,
+                                file=str(f),
+                                line=None,
+                                message="Normalization validation failed",
+                                plugin=plugin.metadata.name,
+                            )
+                        )
+                        continue
+                    # 5. Post Process & Build IR
+                    norm = plugin.post_process(norm)
+                    ir = plugin.build_ir(norm)
+                    # Merge IR
+                    combined_ir.configs.extend(ir.configs)
+                    combined_ir.dependencies.extend(ir.dependencies)
+                    combined_ir.queries.extend(ir.queries)
+                    combined_ir.tables.extend(ir.tables)
+                    combined_ir.columns.extend(ir.columns)
+                    combined_ir.views.extend(ir.views)
+                    combined_ir.resources.extend(ir.resources)
+                    combined_ir.queues.extend(ir.queues)
+                    combined_ir.storages.extend(ir.storages)
+                    combined_ir.events.extend(ir.events)
+            except Exception as e:
+                diagnostics.append(
+                    Diagnostic(
+                        severity=DiagnosticSeverity.ERROR,
+                        file="",
+                        line=None,
+                        message=f"Plugin execution failed: {e}",
+                        plugin=p_class.__name__,
+                    )
+                )
+
+        # Central Graph Builder
+        builder = EnterpriseGraphBuilder(
+            graph=g,
+            scan_id=str(int(time.time())),
+            repository=repo_obj.name,
+            branch=repo_obj.branch,
+            commit=repo_obj.commit,
+        )
+        builder.merge_ir(combined_ir)
+
+        # Set final execution metrics
+        stats_data.nodes_created = builder.nodes_created
+        stats_data.nodes_reused = builder.nodes_reused
+        stats_data.edges_created = builder.edges_created
+        stats_data.execution_time_seconds = time.time() - start_time
+        
+        # Exporter Pipeline
+        g_query = GraphQuery(g)
+        repo_analyzer = RepositoryAnalyzer(g_query)
+        repo_stats = repo_analyzer.analyze()
+        
+        # Merge stats payload
+        stats_payload = {
+            **repo_stats,
+            "files_scanned": stats_data.files_scanned,
+            "files_skipped": stats_data.files_skipped,
+            "files_failed": stats_data.files_failed,
+            "nodes_created": stats_data.nodes_created,
+            "nodes_reused": stats_data.nodes_reused,
+            "edges_created": stats_data.edges_created,
+            "cache_hits": stats_data.cache_hits,
+            "cache_misses": stats_data.cache_misses,
+            "execution_time_seconds": stats_data.execution_time_seconds,
+            "diagnostics": diagnostics,
+        }
+        
+        exporter = EnterpriseExporter(g_query, out)
+        exporter.export_all(stats_payload)
+
     cluster_by_file: dict[str, int] | None = None
     cluster_label_by_file: dict[str, str] | None = None
     community_profiles: list[dict[str, Any]] | None = None

@@ -388,6 +388,48 @@ def build_parser() -> argparse.ArgumentParser:
         help="Max methods in flow slice to embed CFG Mermaid in index.unified.html (default: 25)",
     )
     scan.add_argument(
+        "--config-analysis",
+        action="store_true",
+        default=False,
+        help="Enable Configuration analysis scan",
+    )
+    scan.add_argument(
+        "--dependency-analysis",
+        action="store_true",
+        default=False,
+        help="Enable Dependency package analysis scan",
+    )
+    scan.add_argument(
+        "--query-analysis",
+        action="store_true",
+        default=False,
+        help="Enable SQL & NoSQL Query analysis scan",
+    )
+    scan.add_argument(
+        "--external-analysis",
+        action="store_true",
+        default=False,
+        help="Enable External resource connection scan",
+    )
+    scan.add_argument(
+        "--repository-analysis",
+        action="store_true",
+        default=False,
+        help="Enable Repository metrics intelligence summary scan",
+    )
+    scan.add_argument(
+        "--max-traversal-depth",
+        type=int,
+        default=5,
+        help="Max depth limit for deep method/connectivity traversals (default: 5)",
+    )
+    scan.add_argument(
+        "--preferred-backend",
+        choices=("native", "treesitter", "regex"),
+        default=None,
+        help="Preferred parsing backend",
+    )
+    scan.add_argument(
         "--ui",
         choices=("default", "unified"),
         default="default",
@@ -725,6 +767,13 @@ def main(argv: list[str] | None = None) -> int:
             cross_repo_tsconfig=bool(getattr(ns, "cross_repo_tsconfig", False)),
             cross_repo_maven_hints=bool(getattr(ns, "cross_repo_maven_hints", False)),
             graph_include_contains_reachability=bool(getattr(ns, "graph_include_contains_reachability", False)),
+            config_analysis=bool(ns.config_analysis),
+            dependency_analysis=bool(ns.dependency_analysis),
+            query_analysis=bool(ns.query_analysis),
+            external_analysis=bool(ns.external_analysis),
+            repository_analysis=bool(ns.repository_analysis),
+            max_traversal_depth=int(ns.max_traversal_depth),
+            preferred_backend=ns.preferred_backend,
             cache_enabled=not bool(getattr(ns, "no_cache_layer", False)),
             cache_ttl_seconds=int(getattr(ns, "cache_ttl", 0) or 0),
             cache_clear_mode=getattr(ns, "cache_clear", None),
