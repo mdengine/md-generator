@@ -14,10 +14,11 @@ class ExtensionRegistry:
         self._plugins[plugin_class.__name__] = plugin_class
         # Also register by lowercase metadata name if present
         try:
-            meta = plugin_class.metadata
+            instance = plugin_class()
+            meta = instance.metadata
             if hasattr(meta, "name") and meta.name:
                 self._plugins[meta.name] = plugin_class
-        except (AttributeError, TypeError):
+        except Exception:
             pass
 
     def get_plugin(self, name: str) -> Type[BasePlugin] | None:

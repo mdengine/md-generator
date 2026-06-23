@@ -10,7 +10,7 @@ from md_generator.codeflow.graph.analysis import (
     called_by_transitive_dependency,
     impact_descendants_dependency,
 )
-from md_generator.codeflow.graph.multigraph_utils import CodeflowGraph, iter_multi_edges, iter_out_edges
+from md_generator.codeflow.graph.multigraph_utils import CodeflowGraph, iter_multi_edges, iter_out_edges, parse_confidence
 
 _REL_CALLS = rel.REL_CALLS
 
@@ -70,14 +70,14 @@ def structural_dependency_bullets(g: CodeflowGraph, entry_id: str, cap: int) -> 
             for _u, v, _k, ed in iter_out_edges(g, cid):
                 r = ed.get("relation")
                 if r in (rel.REL_INHERITS, rel.REL_IMPLEMENTS):
-                    conf = float(ed.get("confidence", 1.0))
+                    conf = parse_confidence(ed.get("confidence"), 1.0)
                     lines.append(f"- **{r}** → `{v}` (confidence {conf:.2f})")
     if fp:
         fid = f"file:{fp}"
         if g.has_node(fid):
             for _u, v, _k, ed in iter_out_edges(g, fid):
                 if ed.get("relation") == rel.REL_IMPORTS:
-                    conf = float(ed.get("confidence", 1.0))
+                    conf = parse_confidence(ed.get("confidence"), 1.0)
                     lines.append(f"- **IMPORTS** → `{v}` (confidence {conf:.2f})")
     return lines[:cap]
 

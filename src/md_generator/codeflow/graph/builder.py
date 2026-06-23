@@ -12,6 +12,7 @@ from md_generator.codeflow.graph.multigraph_utils import (
     edge_payload,
     find_edge_key_with_relation,
     iter_multi_edges,
+    parse_confidence,
 )
 from md_generator.codeflow.models.ir import CallSite, FileParseResult, StructuralEdge
 
@@ -230,7 +231,7 @@ def _add_file_level_import_edges(g: CodeflowGraph) -> None:
         lang_v = str(g.nodes[v].get("language") or lang_u)
         _ensure_structural_vertex(g, fu, lang_u)
         _ensure_structural_vertex(g, fv, lang_v)
-        conf = float(d.get("confidence", 1.0))
+        conf = parse_confidence(d.get("confidence"), 1.0)
         ek_file = None
         if g.has_edge(fu, fv):
             for kk, dd in g[fu][fv].items():
@@ -238,8 +239,8 @@ def _add_file_level_import_edges(g: CodeflowGraph) -> None:
                     ek_file = kk
                     break
         if ek_file is not None:
-            cur = float(g[fu][fv][ek_file].get("confidence", 1.0))
-            g[fu][fv][ek_file]["confidence"] = min(cur, conf)
+            cur = parse_confidence(g[fu][fv][ek_file].get("confidence"), 1.0)
+            g[fu][fu if fu==fv else fv][ek_file]["confidence"] = min(cur, conf)
             continue
         g.add_edge(
             fu,
@@ -283,7 +284,7 @@ def _merge_or_update_call_edge(
             ed["condition"] = cond
         ed["unknown_call"] = bool(ed.get("unknown_call")) or unknown_call
         ed["recursive"] = bool(ed.get("recursive")) or recursive
-        ed["confidence"] = min(float(ed.get("confidence", 1.0)), conf)
+        ed["confidence"] = min(parse_confidence(ed.get("confidence"), 1.0), conf)
         ed["kind"] = rel.REL_CALLS
         return
     g.add_edge(

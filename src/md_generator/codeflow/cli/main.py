@@ -418,6 +418,24 @@ def build_parser() -> argparse.ArgumentParser:
         help="Enable Repository metrics intelligence summary scan",
     )
     scan.add_argument(
+        "--classification-analysis",
+        action="store_true",
+        default=False,
+        help="Enable Classification analysis scan",
+    )
+    scan.add_argument(
+        "--annotation-analysis",
+        action="store_true",
+        default=False,
+        help="Enable Annotation analysis scan",
+    )
+    scan.add_argument(
+        "--semantic-analysis",
+        action="store_true",
+        default=False,
+        help="Enable Semantic plugin analysis scan",
+    )
+    scan.add_argument(
         "--max-traversal-depth",
         type=int,
         default=5,
@@ -428,6 +446,7 @@ def build_parser() -> argparse.ArgumentParser:
         choices=("native", "treesitter", "regex"),
         default=None,
         help="Preferred parsing backend",
+
     )
     scan.add_argument(
         "--ui",
@@ -772,8 +791,12 @@ def main(argv: list[str] | None = None) -> int:
             query_analysis=bool(ns.query_analysis),
             external_analysis=bool(ns.external_analysis),
             repository_analysis=bool(ns.repository_analysis),
+            classification_analysis=bool(ns.classification_analysis),
+            annotation_analysis=bool(ns.annotation_analysis),
+            semantic_analysis=bool(ns.semantic_analysis),
             max_traversal_depth=int(ns.max_traversal_depth),
             preferred_backend=ns.preferred_backend,
+
             cache_enabled=not bool(getattr(ns, "no_cache_layer", False)),
             cache_ttl_seconds=int(getattr(ns, "cache_ttl", 0) or 0),
             cache_clear_mode=getattr(ns, "cache_clear", None),

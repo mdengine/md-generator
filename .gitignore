@@ -227,3 +227,6 @@ example
 # Local run/wrapper scripts
 run_all.bat
 run_all_projects_codeflow.py
+
+# Artifacts and benchmark outputs
+artifacts/

@@ -135,8 +135,12 @@ class ScanConfig:
     query_analysis: bool = False
     external_analysis: bool = False
     repository_analysis: bool = False
+    classification_analysis: bool = False
+    annotation_analysis: bool = False
+    semantic_analysis: bool = False
     max_traversal_depth: int = 5
     preferred_backend: str | None = None
+
 
     def structural_graph_enabled(self) -> bool:
         return bool(self.graph_include_structural or self.enable_dependency_graph)

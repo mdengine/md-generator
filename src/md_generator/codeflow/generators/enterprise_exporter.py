@@ -19,6 +19,7 @@ class EnterpriseExporter:
         self.output_dir = output_dir
 
     def export_all(self, stats_payload: dict[str, Any]) -> None:
+        self._before_export()
         self.output_dir.mkdir(parents=True, exist_ok=True)
         g = self.query.g
 
@@ -48,8 +49,18 @@ class EnterpriseExporter:
 
         # 7. Export Markdown reports
         self._export_markdown(stats_payload)
+        self._after_export()
+
+    def _before_export(self) -> None:
+        """Lifecycle hook called before exporting graph artifacts."""
+        pass
+
+    def _after_export(self) -> None:
+        """Lifecycle hook called after exporting graph artifacts."""
+        pass
 
     def _export_dot(self) -> None:
+
         lines = ["digraph G {"]
         for u, v, data in self.query.g.edges(data=True):
             rel = data.get("edge_type", "CALLS")

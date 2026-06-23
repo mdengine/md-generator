@@ -126,10 +126,17 @@ class EnterpriseGraphBuilder:
             return node_id  # type: ignore
 
         node_id = resolved_uri
+        
+        attrs_copy = dict(attributes)
+        node_version = attrs_copy.pop("version", "1.0.0")
+        node_kind = attrs_copy.pop("kind", kind.value)
+        for col_key in ("id", "language", "repository", "module", "file", "line", "column", "confidence", "parser", "backend", "scan_id", "branch", "commit", "schema_version"):
+            attrs_copy.pop(col_key, None)
+
         self.graph.add_node(
             node_id,
             id=node_id,
-            kind=kind.value,
+            kind=node_kind,
             language=language,
             repository=self.repository,
             module=None,
@@ -139,16 +146,17 @@ class EnterpriseGraphBuilder:
             confidence="HIGH",
             parser="graph_builder",
             backend="native",
-            version="1.0.0",
+            version=node_version,
             scan_id=self.scan_id,
             branch=self.branch,
             commit=self.commit,
             schema_version=GRAPH_SCHEMA_VERSION,
-            **attributes,
+            **attrs_copy,
         )
         self.entity_registry.register(resolved_uri, node_id)
         self.nodes_created += 1
         return node_id
+
 
     def build_edge(self, source_id: str, target_id: str, edge_type: EdgeType, parser: str, plugin: str, language: str, confidence: str = "HIGH") -> None:
         # Check if identical edge already exists
@@ -180,6 +188,8 @@ class EnterpriseGraphBuilder:
 
     def merge_ir(self, ir: EnterpriseIR) -> None:
         """Merges all packages in EnterpriseIR to build Graph nodes and edge relationships."""
+        self._before_build_graph()
+
         # 1. Configs
         for cfg in ir.configs:
             node_id = self.build_node(
@@ -252,3 +262,34 @@ class EnterpriseGraphBuilder:
                     plugin="query_plugin",
                     language=qy.metadata.language,
                 )
+
+        self._enrich_graph()
+        self._enrich_semantics()
+        self._correlate_runtime()
+        self._finalize_graph()
+        self._after_build_graph()
+
+    def _before_build_graph(self) -> None:
+        """Lifecycle hook called before merging EnterpriseIR nodes."""
+        pass
+
+    def _after_build_graph(self) -> None:
+        """Lifecycle hook called after merging EnterpriseIR nodes."""
+        pass
+
+    def _enrich_graph(self) -> None:
+        """Lifecycle hook to enrich the graph structure before finalization."""
+        pass
+
+    def _enrich_semantics(self) -> None:
+        """Lifecycle hook to enrich semantic clusters and similarity links."""
+        pass
+
+    def _correlate_runtime(self) -> None:
+        """Lifecycle hook to correlate dynamic profiles with the static graph."""
+        pass
+
+    def _finalize_graph(self) -> None:
+        """Lifecycle hook to finalize graph properties and integrity checks."""
+        pass
+

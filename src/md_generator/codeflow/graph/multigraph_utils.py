@@ -14,6 +14,25 @@ CodeflowGraph = nx.MultiDiGraph | nx.DiGraph
 _SKIP_REACHABILITY: frozenset[str] = frozenset({rel.REL_CONTAINS})
 
 
+def parse_confidence(conf: Any, default_val: float = 1.0) -> float:
+    if conf is None:
+        return default_val
+    if isinstance(conf, (int, float)):
+        return float(conf)
+    s = str(conf).strip().lower()
+    if s == "high":
+        return 1.0
+    if s == "medium":
+        return 0.7
+    if s == "low":
+        return 0.4
+    try:
+        return float(s)
+    except ValueError:
+        return default_val
+
+
+
 def edge_payload(
     *,
     relation: str,

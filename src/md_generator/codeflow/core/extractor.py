@@ -485,6 +485,9 @@ def run_scan(cfg: ScanConfig, *, workspace: LoadedWorkspace | None = None) -> Pa
         or getattr(cfg, "query_analysis", False)
         or getattr(cfg, "external_analysis", False)
         or getattr(cfg, "repository_analysis", False)
+        or getattr(cfg, "classification_analysis", False)
+        or getattr(cfg, "annotation_analysis", False)
+        or getattr(cfg, "semantic_analysis", False)
     )
     if has_enterprise:
         from md_generator.codeflow.repository.model import Repository, Workspace
@@ -510,6 +513,12 @@ def run_scan(cfg: ScanConfig, *, workspace: LoadedWorkspace | None = None) -> Pa
             plugins_to_run.append(global_plugin_registry.get_plugin("query"))
         if getattr(cfg, "external_analysis", False):
             plugins_to_run.append(global_plugin_registry.get_plugin("external"))
+        if getattr(cfg, "classification_analysis", False):
+            plugins_to_run.append(global_plugin_registry.get_plugin("classification"))
+        if getattr(cfg, "annotation_analysis", False):
+            plugins_to_run.append(global_plugin_registry.get_plugin("annotation"))
+        if getattr(cfg, "semantic_analysis", False):
+            plugins_to_run.append(global_plugin_registry.get_plugin("semantic_plugin"))
         
         plugins_to_run = [p for p in plugins_to_run if p is not None]
         plugins_to_run = topological_sort_plugins(plugins_to_run)

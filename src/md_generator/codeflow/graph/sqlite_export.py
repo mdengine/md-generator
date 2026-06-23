@@ -10,6 +10,25 @@ from pathlib import Path
 from md_generator.codeflow.graph.multigraph_utils import CodeflowGraph, iter_multi_edges
 
 
+def _parse_confidence(conf: any) -> float | None:
+    if conf is None:
+        return None
+    if isinstance(conf, (int, float)):
+        return float(conf)
+    s = str(conf).strip().lower()
+    if s == "high":
+        return 1.0
+    if s == "medium":
+        return 0.7
+    if s == "low":
+        return 0.4
+    try:
+        return float(s)
+    except ValueError:
+        return 1.0
+
+
+
 def _pragma_columns(conn: sqlite3.Connection, table: str) -> set[str]:
     rows = conn.execute(f"PRAGMA table_info({table})").fetchall()
     return {str(r[1]) for r in rows}
@@ -95,7 +114,7 @@ def export_graph_sqlite_incremental(
             relation = str(d.get("relation", "CALLS"))
             cond = d.get("condition")
             conf = d.get("confidence")
-            conf_f = float(conf) if conf is not None else None
+            conf_f = _parse_confidence(conf)
             payload = {k: v for k, v in d.items() if k not in ("relation", "condition", "confidence")}
             ek_s = str(ek) if ek is not None else "0"
             conn.execute(
@@ -163,7 +182,7 @@ def export_graph_sqlite(db_path: Path, g: CodeflowGraph) -> None:
             relation = str(d.get("relation", "CALLS"))
             cond = d.get("condition")
             conf = d.get("confidence")
-            conf_f = float(conf) if conf is not None else None
+            conf_f = _parse_confidence(conf)
             payload = {k: v for k, v in d.items() if k not in ("relation", "condition", "confidence")}
             ek_s = str(ek) if ek is not None else "0"
             conn.execute(

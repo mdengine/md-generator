@@ -23,3 +23,16 @@ from md_generator.codeflow.enterprise_ir.resource import ResourceEntity
 from md_generator.codeflow.enterprise_ir.storage import StorageEntity
 from md_generator.codeflow.enterprise_ir.queue import QueueEntity
 from md_generator.codeflow.enterprise_ir.graph import EnterpriseIR, SemanticEntity
+from md_generator.codeflow.enterprise_ir.semantic import (
+    SemanticRelation,
+    SemanticGroup,
+    SemanticCluster,
+    SemanticTag,
+)
+from md_generator.codeflow.enterprise_ir.embedding import (
+    EmbeddingMetadata,
+    EmbeddingResult,
+    EmbeddingProvider,
+    EmbeddingStorage,
+)
+

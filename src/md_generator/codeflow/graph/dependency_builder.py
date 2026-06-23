@@ -11,6 +11,7 @@ from md_generator.codeflow.graph.multigraph_utils import (
     find_edge_key_with_relation,
     iter_multi_edges,
     iter_out_edges,
+    parse_confidence,
 )
 from md_generator.codeflow.models.ir import FileParseResult
 
@@ -110,7 +111,7 @@ def apply_import_resolution(g: CodeflowGraph, parse_results: list[FileParseResul
             **edge_payload(
                 relation=rel.REL_IMPORTS,
                 condition=None,
-                confidence=min(0.98, float(d.get("confidence", 0.8)) + 0.1),
+                confidence=min(0.98, parse_confidence(d.get("confidence"), 0.8) + 0.1),
                 type="structural",
                 labels=[],
                 async_=False,
