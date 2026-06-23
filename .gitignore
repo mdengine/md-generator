@@ -220,6 +220,7 @@ __marimo__/
 
 # Cursor (local IDE state) — keep versioned agent skills under .cursor/skills/
 .cursor/*
+.antigravity/*
 
 # Example sample inputs / CLI batch folder (local)
 example
