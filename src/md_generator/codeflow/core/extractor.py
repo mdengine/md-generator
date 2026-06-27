@@ -1030,6 +1030,7 @@ def run_scan(cfg: ScanConfig, *, workspace: LoadedWorkspace | None = None) -> Pa
             from md_generator.codeflow.journey.mermaid import write_journey_mermaid
             from md_generator.codeflow.journey.html import write_journey_html
             from md_generator.codeflow.journey.json_export import write_journey_json, write_generic_json
+            from md_generator.codeflow.journey.graph_export import write_journey_dot, write_journey_graphml, write_journey_gexf
             
             j_cfg = JourneyConfig(
                 journey_type=JourneyType(cfg.journey_type) if cfg.journey_type else JourneyType.METHOD,
@@ -1061,6 +1062,12 @@ def run_scan(cfg: ScanConfig, *, workspace: LoadedWorkspace | None = None) -> Pa
                     write_journey_json(j_ir, sub / "journey.json")
                 if "html" in j_fmts:
                     write_journey_html(j_ir, sub / "journey.html")
+                if "dot" in j_fmts:
+                    write_journey_dot(j_ir, sub / "journey.dot")
+                if "graphml" in j_fmts:
+                    write_journey_graphml(j_ir, sub / "journey.graphml")
+                if "gexf" in j_fmts:
+                    write_journey_gexf(j_ir, sub / "journey.gexf")
                     
                 if cfg.journey_paths and j_ir.execution_paths:
                     from md_generator.codeflow.journey.paths import write_execution_paths_markdown
@@ -1125,6 +1132,7 @@ def run_scan(cfg: ScanConfig, *, workspace: LoadedWorkspace | None = None) -> Pa
             from md_generator.codeflow.journey.mermaid import write_journey_mermaid
             from md_generator.codeflow.journey.html import write_journey_html
             from md_generator.codeflow.journey.json_export import write_journey_json
+            from md_generator.codeflow.journey.graph_export import write_journey_dot, write_journey_graphml, write_journey_gexf
             
             bulk_cfg = JourneyConfig(
                 journey_type=JourneyType(cfg.journey_type) if cfg.journey_type else JourneyType.METHOD,
@@ -1162,6 +1170,12 @@ def run_scan(cfg: ScanConfig, *, workspace: LoadedWorkspace | None = None) -> Pa
                         write_journey_json(b_ir, b_out_dir / "journey.json")
                     if "html" in j_fmts:
                         write_journey_html(b_ir, b_out_dir / "journey.html")
+                    if "dot" in j_fmts:
+                        write_journey_dot(b_ir, b_out_dir / "journey.dot")
+                    if "graphml" in j_fmts:
+                        write_journey_graphml(b_ir, b_out_dir / "journey.graphml")
+                    if "gexf" in j_fmts:
+                        write_journey_gexf(b_ir, b_out_dir / "journey.gexf")
                 except Exception as ex:
                     pass
                     
