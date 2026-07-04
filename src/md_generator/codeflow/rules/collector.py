@@ -88,11 +88,18 @@ _VALIDATION_DECORATORS = frozenset(
 )
 
 
+_PYTHON_RULES_CACHE: dict[Path, list[BusinessRule]] = {}
+
+
 def _extract_python_method_rules(
     path: Path,
     project_root: Path,
     target_sids: set[str],
 ) -> list[BusinessRule]:
+    if path in _PYTHON_RULES_CACHE:
+        cached = _PYTHON_RULES_CACHE[path]
+        return [r for r in cached if r.symbol_id in target_sids]
+
     rules: list[BusinessRule] = []
     key = _rel_key(path, project_root)
     text = path.read_text(encoding="utf-8", errors="replace")
@@ -106,8 +113,6 @@ def _extract_python_method_rules(
         class_name: str | None,
     ) -> None:
         sid = _sid_py(key, class_name, node.name)
-        if sid not in target_sids:
-            return
         fp = str(path.resolve())
         for dec in node.decorator_list:
             nm = _decorator_name(dec)
@@ -172,7 +177,8 @@ def _extract_python_method_rules(
                     handle_function(body, mod_child.name)
         elif isinstance(mod_child, (ast.FunctionDef, ast.AsyncFunctionDef)):
             handle_function(mod_child, None)
-    return rules
+    _PYTHON_RULES_CACHE[path] = rules
+    return [r for r in rules if r.symbol_id in target_sids]
 
 
 _CREATE_TRIGGER_RE = re.compile(r"\bCREATE\s+TRIGGER\b", re.IGNORECASE)
@@ -212,7 +218,14 @@ def _slice_nodes_by_file(sl: FlowSlice, g: CodeflowGraph) -> dict[str, set[str]]
     return by_file
 
 
+_SQL_PATHS_CACHE: dict[tuple[Path, tuple[Path, ...]], list[Path]] = {}
+
+
 def _iter_sql_paths(project_root: Path, paths_override: list[Path] | None) -> list[Path]:
+    key = (project_root, tuple(paths_override or ()))
+    if key in _SQL_PATHS_CACHE:
+        return _SQL_PATHS_CACHE[key]
+
     root = project_root.resolve()
     paths: list[Path] = []
     if paths_override:
@@ -229,7 +242,9 @@ def _iter_sql_paths(project_root: Path, paths_override: list[Path] | None) -> li
             uniq[p.resolve().as_posix()] = p
         except OSError:
             continue
-    return list(uniq.values())[:300]
+    res = list(uniq.values())[:300]
+    _SQL_PATHS_CACHE[key] = res
+    return res
 
 
 def collect_business_rules(

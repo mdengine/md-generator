@@ -90,9 +90,16 @@ def _iter_java_subtree(root: object):
                 stack.append(v)
 
 
+_JAVA_RULES_CACHE: dict[Path, list[BusinessRule]] = {}
+
+
 def extract_java_method_rules(path: Path, project_root: Path, target_sids: set[str]) -> list[BusinessRule]:
     import javalang
     from javalang.tree import ClassCreator, MethodDeclaration, ThrowStatement
+
+    if path in _JAVA_RULES_CACHE:
+        cached = _JAVA_RULES_CACHE[path]
+        return [r for r in cached if r.symbol_id in target_sids]
 
     rules: list[BusinessRule] = []
     key = _rel_key(path, project_root)
@@ -110,8 +117,6 @@ def extract_java_method_rules(path: Path, project_root: Path, target_sids: set[s
             if not isinstance(m, MethodDeclaration):
                 continue
             sid = _sid_java(key, cls_name, m.name)
-            if sid not in target_sids:
-                continue
             fp = str(path.resolve())
             pos = getattr(m, "position", None)
             base_line = int(getattr(pos, "line", 0) or 0) if pos else 1
@@ -185,4 +190,5 @@ def extract_java_method_rules(path: Path, project_root: Path, target_sids: set[s
                                 confidence="high" if exc in ("IllegalArgumentException", "ValidationException") else "medium",
                             ),
                         )
-    return rules
+    _JAVA_RULES_CACHE[path] = rules
+    return [r for r in rules if r.symbol_id in target_sids]

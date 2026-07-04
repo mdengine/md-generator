@@ -18,7 +18,10 @@ def _sid(key: str, cls: str | None, name: str) -> str:
 def detect_api_entries_python(path: Path, project_root: Path) -> list[EntryRecord]:
     key = path.resolve().relative_to(project_root.resolve()).as_posix()
     src = path.read_text(encoding="utf-8", errors="replace")
-    tree = ast.parse(src, filename=str(path))
+    try:
+        tree = ast.parse(src, filename=str(path))
+    except Exception:
+        return []
     out: list[EntryRecord] = []
 
     for node in ast.walk(tree):

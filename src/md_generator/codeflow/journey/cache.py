@@ -92,7 +92,7 @@ class JourneyCache:
     def warm_graph_index(self, g: Any) -> None:
         """Pre-load node attributes from the graph for O(1) lookup."""
         for n, d in g.nodes(data=True):
-            self._graph_index[str(n)] = dict(d)
+            self._graph_index[str(n)] = d
 
     # ------------------------------------------------------------------
     # LRU eviction

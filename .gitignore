@@ -231,3 +231,5 @@ run_all_projects_codeflow.py
 
 # Artifacts and benchmark outputs
 artifacts/
+codeflow_go_dump
+codeflow_go_dump.exe

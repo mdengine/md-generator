@@ -50,13 +50,18 @@ class PythonParser:
         root = project_root.resolve()
         key = _rel_key(path, root)
         text = path.read_text(encoding="utf-8", errors="replace")
-        tree = ast.parse(text, filename=str(path))
         fr = FileParseResult(
             path=path.resolve(),
             language=self.language,
             parse_backend="native",
             grammar_package="ast",
         )
+        try:
+            tree = ast.parse(text, filename=str(path))
+        except Exception:
+            import logging
+            logging.getLogger("md_generator.codeflow.parsers.python_parser").warning("python ast parse failed %s", path)
+            return fr
 
         self._emit_module_import_edges(tree, key, fr)
 

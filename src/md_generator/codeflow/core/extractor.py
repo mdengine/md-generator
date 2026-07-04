@@ -737,10 +737,32 @@ def run_scan(cfg: ScanConfig, *, workspace: LoadedWorkspace | None = None) -> Pa
             top_k=cfg.semantic_top_k,
             list_cap=cfg.intelligence_list_cap,
         )
-        (out / "nl-query-results.json").write_text(
-            json.dumps({"query": _nq, "parsed": dict(_parsed), "result": _nqr}, indent=2),
-            encoding="utf-8",
+    j_builder = None
+    if cfg.emit_journey:
+        from md_generator.codeflow.journey import JourneyBuilder, JourneyConfig, JourneyType, TraversalStrategy
+        from md_generator.codeflow.journey.markdown import write_journey_markdown
+        from md_generator.codeflow.journey.mermaid import write_journey_mermaid
+        from md_generator.codeflow.journey.html import write_journey_html
+        from md_generator.codeflow.journey.json_export import write_journey_json, write_generic_json
+        from md_generator.codeflow.journey.graph_export import write_journey_dot, write_journey_graphml, write_journey_gexf
+        
+        j_cfg = JourneyConfig(
+            journey_type=JourneyType(cfg.journey_type) if cfg.journey_type else JourneyType.METHOD,
+            traversal_strategy=TraversalStrategy.BFS if cfg.journey_traversal.upper() == "BFS" else TraversalStrategy.DFS,
+            max_depth=cfg.journey_depth,
+            max_nodes=cfg.journey_max_nodes,
+            include_structural=cfg.journey_include_structural,
+            include_events=cfg.journey_include_events,
+            include_framework=cfg.journey_include_framework,
+            include_library=cfg.journey_include_library,
+            include_cfg=cfg.journey_include_cfg,
+            confidence_threshold=cfg.journey_confidence_threshold,
+            collapse_linear_chains=cfg.journey_collapse_chains,
+            enumerate_paths=cfg.journey_paths,
+            compute_analytics=cfg.journey_statistics,
         )
+        
+        j_builder = JourneyBuilder(g_query, g, j_cfg)
 
     for eid in entry_ids:
         if include_map:
@@ -1024,31 +1046,7 @@ def run_scan(cfg: ScanConfig, *, workspace: LoadedWorkspace | None = None) -> Pa
                 file_cluster_label_map=cluster_label_by_file,
             )
 
-        if cfg.emit_journey:
-            from md_generator.codeflow.journey import JourneyBuilder, JourneyConfig, JourneyType, TraversalStrategy
-            from md_generator.codeflow.journey.markdown import write_journey_markdown
-            from md_generator.codeflow.journey.mermaid import write_journey_mermaid
-            from md_generator.codeflow.journey.html import write_journey_html
-            from md_generator.codeflow.journey.json_export import write_journey_json, write_generic_json
-            from md_generator.codeflow.journey.graph_export import write_journey_dot, write_journey_graphml, write_journey_gexf
-            
-            j_cfg = JourneyConfig(
-                journey_type=JourneyType(cfg.journey_type) if cfg.journey_type else JourneyType.METHOD,
-                traversal_strategy=TraversalStrategy.BFS if cfg.journey_traversal.upper() == "BFS" else TraversalStrategy.DFS,
-                max_depth=cfg.journey_depth,
-                max_nodes=cfg.journey_max_nodes,
-                include_structural=cfg.journey_include_structural,
-                include_events=cfg.journey_include_events,
-                include_framework=cfg.journey_include_framework,
-                include_library=cfg.journey_include_library,
-                include_cfg=cfg.journey_include_cfg,
-                confidence_threshold=cfg.journey_confidence_threshold,
-                collapse_linear_chains=cfg.journey_collapse_chains,
-                enumerate_paths=cfg.journey_paths,
-                compute_analytics=cfg.journey_statistics,
-            )
-            
-            j_builder = JourneyBuilder(g_query, g, j_cfg)
+        if cfg.emit_journey and j_builder is not None:
             try:
                 j_ir = j_builder.build(eid)
                 all_generated_journeys.append(j_ir)
@@ -1397,7 +1395,11 @@ def _lookup_ir_method(entry_id: str, parse_results: list[FileParseResult]) -> IR
 
 def _slug(entry_id: str) -> str:
     s = "".join(c if c.isalnum() or c in "._-" else "_" for c in entry_id)
-    return s[:180] if len(s) > 180 else s
+    if len(s) > 80:
+        import hashlib
+        h = hashlib.md5(entry_id.encode("utf-8", errors="replace")).hexdigest()[:8]
+        return f"{s[:70]}_{h}"
+    return s
 
 
 def build_output_zip(cfg: ScanConfig, workspace_root: Path | None = None) -> bytes:

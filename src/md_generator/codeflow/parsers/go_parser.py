@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 import shutil
 import subprocess
 from pathlib import Path
@@ -39,12 +40,32 @@ class GoParser:
             logger.debug("go not on PATH; skip %s", path)
             return fr
         rel = _rel_key(path, project_root)
+
+        binary_name = "codeflow_go_dump.exe" if os.name == "nt" else "codeflow_go_dump"
+        binary_path = tool / binary_name
+
+        if not binary_path.is_file():
+            try:
+                subprocess.run(
+                    ["go", "build", "-o", binary_name, "."],
+                    cwd=str(tool),
+                    capture_output=True,
+                    check=True,
+                    timeout=30,
+                )
+            except Exception as e:
+                logger.debug("Failed to compile codeflow_go_dump: %s", e)
+
+        if binary_path.is_file():
+            cmd = [str(binary_path.resolve()), str(path.resolve()), rel]
+        else:
+            cmd = ["go", "run", ".", str(path.resolve()), rel]
+
         try:
             proc = subprocess.run(
-                ["go", "run", ".", str(path.resolve()), rel],
+                cmd,
                 cwd=str(tool),
                 capture_output=True,
-                text=True,
                 timeout=120,
                 check=False,
             )
@@ -52,7 +73,10 @@ class GoParser:
             logger.debug("go dump failed for %s: %s", path, e)
             return fr
         if proc.returncode != 0:
-            logger.debug("go dump stderr: %s", proc.stderr[:500] if proc.stderr else "")
+            err_msg = proc.stderr.decode("utf-8", errors="replace") if proc.stderr else ""
+            logger.debug("go dump stderr: %s", err_msg[:500])
+            return fr
+        if not proc.stdout:
             return fr
         try:
             data = json.loads(proc.stdout)

@@ -12,7 +12,14 @@ def _sid_cpp(key: str, name: str) -> str:
     return f"{key}::{name}"
 
 
+_CPP_RULES_CACHE: dict[Path, list[BusinessRule]] = {}
+
+
 def extract_cpp_method_rules(path: Path, project_root: Path, target_sids: set[str]) -> list[BusinessRule]:
+    if path in _CPP_RULES_CACHE:
+        cached = _CPP_RULES_CACHE[path]
+        return [r for r in cached if r.symbol_id in target_sids]
+
     try:
         import tree_sitter_cpp as tscpp
         from tree_sitter import Language, Parser
@@ -110,4 +117,5 @@ def extract_cpp_method_rules(path: Path, project_root: Path, target_sids: set[st
             visit(c)
 
     visit(tree.root_node)
-    return rules
+    _CPP_RULES_CACHE[path] = rules
+    return [r for r in rules if r.symbol_id in target_sids]
