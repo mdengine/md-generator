@@ -139,7 +139,7 @@ def _build_hana_cv_markdown(artifact: CanonicalArtifact) -> str:
         f"# {artifact.name}",
         "",
         f"**Type:** HANA Calculation View",
-        f"**Schema:** {artifact.schema or '—'}",
+        f"**Schema:** {artifact.artifact_schema or '—'}",
         f"**Package:** {artifact.package or '—'}",
     ]
     if semantics.get("description"):
@@ -342,7 +342,7 @@ def _write_hana_sql(artifact: CanonicalArtifact, path: Path) -> Path:
                     lines.append(f"-- PROJECTION {nid} WHERE {filt}")
                 lines.append(f"SELECT {', '.join(cols)} FROM {nid};")
     else:
-        schema = artifact.schema or "_SYS_BIC"
+        schema = artifact.artifact_schema or "_SYS_BIC"
         lines.append(f'SELECT * FROM "{schema}"."{artifact.package}/{artifact.name}";')
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")

@@ -36,6 +36,8 @@ class BapiParserPlugin:
             data = _parse_bapi_json(path)
         else:
             data = _parse_bapi_xml(path)
+        if not isinstance(data, dict):
+            return SapParseResult(path=path, objects=[], metadata={})
         name = str(data.get("name") or data.get("bapi") or path.stem).upper()
         obj = SapObject(
             kind=SapObjectKind.BAPI,

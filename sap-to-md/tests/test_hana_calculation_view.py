@@ -15,7 +15,7 @@ FIXTURE = Path(__file__).resolve().parent / "fixtures" / "hana" / "cv_sales.xml"
 def test_hana_cv_parse_golden():
     cv, graph = parse_calculation_view_xml(FIXTURE)
     assert cv.name == "CV_SALES"
-    assert cv.schema == "SALES"
+    assert cv.artifact_schema == "SALES"
     assert len(cv.data_sources) == 2
     assert cv.transformation_graph is not None
     assert len(cv.transformation_graph.nodes) >= 3

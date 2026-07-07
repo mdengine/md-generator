@@ -1,0 +1,1 @@
+{"name": "DF_SALES", "steps": [{"id": "s1", "kind": "source", "object": "VIEW_SALES"}, {"id": "s2", "kind": "filter", "expression": "REVENUE > 0"}]}

@@ -28,8 +28,9 @@ class DatasphereDataFlowParser(SapParserPlugin):
         return _ds_capabilities()
 
     def can_parse(self, path: Path) -> bool:
+        n = path.name.lower()
         return path.suffix.lower() in {".dataflow", ".df"} or (
-            path.suffix.lower() == ".json" and "dataflow" in path.name.lower()
+            path.suffix.lower() == ".json" and ("dataflow" in n or "data_flow" in n)
         )
 
     def parse(self, path: Path, ctx: ParseContext) -> SapParseResult | None:

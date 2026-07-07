@@ -20,6 +20,12 @@ from md_generator.sap.models.entities.sap_object import SapObject
 from md_generator.sap.normalizer.registry import default_normalizer_registry
 from md_generator.sap.orchestration.pipeline import run_pipeline_legacy
 from md_generator.sap.rules.engine import DeterministicRuleEngine
+from md_generator.sap.framework.events import (
+    EventBus,
+    ArtifactParsedEvent,
+    GraphMergedEvent,
+    LineageResolvedEvent,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -76,6 +82,11 @@ def run_pipeline_v2(ctx: RunContext) -> None:
     index = MetadataIndex(root / "index")
     artifacts: list[CanonicalArtifact] = []
 
+    bus = None
+    if cfg.pipeline.event_bus:
+        bus = EventBus()
+        ctx.event_bus = bus
+
     catalog_path = Path(__file__).resolve().parent.parent / "rules" / "catalog.yaml"
     rule_engine = DeterministicRuleEngine(catalog_path if cfg.pipeline.rule_engine else None)
     chunk_registry = SemanticChunkRegistryV2()
@@ -87,6 +98,13 @@ def run_pipeline_v2(ctx: RunContext) -> None:
         store.add_fragment(fragment)
         registry.register(artifact.identity)
         index.register(artifact)
+        if bus:
+            bus.publish(ArtifactParsedEvent(
+                artifact_id=artifact.identity.stable_id,
+                artifact_type=artifact.artifact_type,
+                parser_id=obj.kind.value,
+                metadata={"name": artifact.identity.display_id}
+            ))
         findings = rule_engine.evaluate(artifact, store) if cfg.pipeline.rule_engine else []
         if findings:
             artifact.metadata["rule_findings"] = findings
@@ -105,8 +123,23 @@ def run_pipeline_v2(ctx: RunContext) -> None:
                 )
         artifacts.append(artifact)
 
+    if bus:
+        bus.publish(GraphMergedEvent(
+            graph_id=store.graph.graph_id,
+            fragment_id="run_merge",
+            node_count=len(store.graph.nodes),
+            edge_count=len(store.graph.edges),
+        ))
+
+    linked_count = 0
     if cfg.pipeline.cross_lineage:
-        link_cross_system_lineage(store, registry)
+        linked_count = link_cross_system_lineage(store, registry)
+
+    if bus:
+        bus.publish(LineageResolvedEvent(
+            run_id=store.graph.graph_id,
+            edges_linked=linked_count,
+        ))
 
     if cfg.pipeline.artifact_graph:
         graph_path = root / "graph" / "artifacts.json"

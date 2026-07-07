@@ -20,6 +20,7 @@ class PipelineSection:
     cross_lineage: bool = False
     semantic_chunks_jsonl: bool = False
     semantic_narrative: bool = False
+    event_bus: bool = False
 
 
 @dataclass
