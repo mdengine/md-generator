@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from md_generator.codeflow.graph import relations as rel
 from md_generator.codeflow.graph.dependency_builder import _candidate_relpaths, _lang_from_path
-from md_generator.codeflow.graph.multigraph_utils import CodeflowGraph, edge_payload, find_edge_key_with_relation, iter_multi_edges
+from md_generator.codeflow.graph.multigraph_utils import CodeflowGraph, edge_payload, find_edge_key_with_relation, iter_multi_edges, parse_confidence
 from md_generator.codeflow.graph.tsconfig_cross_repo import expand_module_with_tsconfig_paths, tsconfig_candidate_files
 
 _EXT_MARKER = "::external::"
@@ -183,7 +183,7 @@ def resolve_cross_repo_imports(
             **edge_payload(
                 relation=rel.REL_CROSS_REPO_IMPORT,
                 condition=None,
-                confidence=min(0.95, float(d.get("confidence", 0.75)) + 0.05),
+                confidence=min(0.95, parse_confidence(d.get("confidence"), 0.75) + 0.05),
                 type="structural",
                 labels=[],
                 async_=False,

@@ -388,6 +388,67 @@ def build_parser() -> argparse.ArgumentParser:
         help="Max methods in flow slice to embed CFG Mermaid in index.unified.html (default: 25)",
     )
     scan.add_argument(
+        "--config-analysis",
+        action="store_true",
+        default=False,
+        help="Enable Configuration analysis scan",
+    )
+    scan.add_argument(
+        "--dependency-analysis",
+        action="store_true",
+        default=False,
+        help="Enable Dependency package analysis scan",
+    )
+    scan.add_argument(
+        "--query-analysis",
+        action="store_true",
+        default=False,
+        help="Enable SQL & NoSQL Query analysis scan",
+    )
+    scan.add_argument(
+        "--external-analysis",
+        action="store_true",
+        default=False,
+        help="Enable External resource connection scan",
+    )
+    scan.add_argument(
+        "--repository-analysis",
+        action="store_true",
+        default=False,
+        help="Enable Repository metrics intelligence summary scan",
+    )
+    scan.add_argument(
+        "--classification-analysis",
+        action="store_true",
+        default=False,
+        help="Enable Classification analysis scan",
+    )
+    scan.add_argument(
+        "--annotation-analysis",
+        action="store_true",
+        default=False,
+        help="Enable Annotation analysis scan",
+    )
+    scan.add_argument(
+        "--semantic-analysis",
+        action="store_true",
+        default=False,
+        help="Enable Semantic plugin analysis scan",
+    )
+    scan.add_argument(
+        "--max-traversal-depth",
+        type=int,
+        default=5,
+        help="Max depth limit for deep method/connectivity traversals (default: 5)",
+    )
+    scan.add_argument(
+        "--preferred-backend",
+        choices=("native", "treesitter", "regex"),
+        default=None,
+        help="Preferred parsing backend",
+
+    )
+    scan.add_argument(
         "--ui",
         choices=("default", "unified"),
         default="default",
@@ -563,6 +624,39 @@ def build_parser() -> argparse.ArgumentParser:
         default=False,
         help="Disable git TTL skip and omit per-clone cache metadata writes",
     )
+    # Journey Generator CLI flags
+    scan.add_argument("--journey", action="store_true", default=False, help="Enable Journey Tree generation")
+    scan.add_argument("--journey-depth", type=int, default=8, help="Max depth (default: 8; 0=unlimited)")
+    scan.add_argument("--journey-stop", default=None, help="Stop conditions")
+    scan.add_argument("--journey-output", type=Path, default=None, help="Override output directory")
+    scan.add_argument("--journey-format", default=None, help="md,json,mermaid,html,dot,graphml,gexf")
+    scan.add_argument("--journey-entry", default=None, help="Symbol starting points")
+    scan.add_argument("--journey-type", default="method", help="Journey type")
+    scan.add_argument("--journey-traversal", default="dfs", choices=["dfs", "bfs"], help="dfs or bfs strategy")
+    scan.add_argument("--journey-max-nodes", type=int, default=2000, help="Max nodes")
+    scan.add_argument("--journey-expand", default="application", help="application|framework|library|database|queue|external|all")
+    scan.add_argument("--journey-shared-subtrees", default="reference", choices=["reference", "duplicate", "collapse"], help="reference|duplicate|collapse")
+    scan.add_argument("--journey-all-files", action="store_true", default=False, help="Generate journeys for all files")
+    scan.add_argument("--journey-all-classes", action="store_true", default=False, help="Generate journeys for all classes")
+    scan.add_argument("--journey-all-methods", action="store_true", default=False, help="Generate journeys for all methods")
+    scan.add_argument("--journey-all-entrypoints", action="store_true", default=False, help="Generate journeys for all entrypoints")
+    scan.add_argument("--journey-include-framework", action="store_true", default=False, help="Include framework nodes")
+    scan.add_argument("--journey-include-library", action="store_true", default=False, help="Include library nodes")
+    scan.add_argument("--journey-include-structural", action="store_true", default=False, help="Include IMPORTS/INHERITS/IMPLEMENTS edges")
+    scan.add_argument("--journey-include-events", action="store_true", default=False, help="Include EVENT edges")
+    scan.add_argument("--journey-include-cfg", action="store_true", default=False, help="Include CFG control flow overlay")
+    scan.add_argument("--journey-confidence-threshold", type=float, default=0.0, help="Min edge confidence")
+    scan.add_argument("--journey-collapse-chains", action=argparse.BooleanOptionalAction, default=True, help="Collapse single-child chains")
+    scan.add_argument("--journey-paths", action="store_true", default=False, help="Enumerate execution paths")
+    scan.add_argument("--journey-statistics", action="store_true", default=False, help="Enable metrics + analyzer output")
+    scan.add_argument("--journey-tree", action=argparse.BooleanOptionalAction, default=True, help="Enable single tree mode")
+    scan.add_argument("--journey-forest", action="store_true", default=False, help="Enable forest mode")
+    scan.add_argument("--journey-cross-repo", action="store_true", default=False, help="Allow crossing repo boundaries")
+    scan.add_argument("--journey-business", action="store_true", default=False, help="Future business capability analysis")
+    scan.add_argument("--journey-db", action="store_true", default=False, help="Database-focused journey")
+    scan.add_argument("--journey-events", action="store_true", default=False, help="Event-focused journey")
+    scan.add_argument("--journey-config", action="store_true", default=False, help="Config-focused journey")
+    scan.add_argument("--journey-dependencies", action="store_true", default=False, help="Dependency-focused journey")
     return p
 
 
@@ -642,6 +736,9 @@ def main(argv: list[str] | None = None) -> int:
                     cr_hints = {str(k): str(v) for k, v in obj.items()}
             except json.JSONDecodeError:
                 cr_hints = None
+        j_stop = _parse_csv_identifiers(ns.journey_stop)
+        j_fmt = _parse_csv_identifiers(ns.journey_format) if ns.journey_format else ("md", "json", "mermaid")
+        j_out = Path(ns.journey_output).expanduser().resolve() if ns.journey_output else None
         cfg = ScanConfig(
             project_root=root,
             paths_override=paths_override,
@@ -725,6 +822,50 @@ def main(argv: list[str] | None = None) -> int:
             cross_repo_tsconfig=bool(getattr(ns, "cross_repo_tsconfig", False)),
             cross_repo_maven_hints=bool(getattr(ns, "cross_repo_maven_hints", False)),
             graph_include_contains_reachability=bool(getattr(ns, "graph_include_contains_reachability", False)),
+            config_analysis=bool(ns.config_analysis),
+            dependency_analysis=bool(ns.dependency_analysis),
+            query_analysis=bool(ns.query_analysis),
+            external_analysis=bool(ns.external_analysis),
+            repository_analysis=bool(ns.repository_analysis),
+            classification_analysis=bool(ns.classification_analysis),
+            annotation_analysis=bool(ns.annotation_analysis),
+            semantic_analysis=bool(ns.semantic_analysis),
+            max_traversal_depth=int(ns.max_traversal_depth),
+            preferred_backend=ns.preferred_backend,
+
+            emit_journey=bool(ns.journey),
+            journey_depth=int(ns.journey_depth),
+            journey_stop=j_stop,
+            journey_output=j_out,
+            journey_format=j_fmt,
+            journey_entry=_parse_entry(ns.journey_entry),
+            journey_type=str(ns.journey_type),
+            journey_traversal=str(ns.journey_traversal),
+            journey_max_nodes=int(ns.journey_max_nodes),
+            journey_expand=str(ns.journey_expand),
+            journey_shared_subtrees=str(ns.journey_shared_subtrees),
+            journey_all_files=bool(ns.journey_all_files),
+            journey_all_classes=bool(ns.journey_all_classes),
+            journey_all_methods=bool(ns.journey_all_methods),
+            journey_all_entrypoints=bool(ns.journey_all_entrypoints),
+            journey_include_framework=bool(ns.journey_include_framework),
+            journey_include_library=bool(ns.journey_include_library),
+            journey_include_structural=bool(ns.journey_include_structural),
+            journey_include_events=bool(ns.journey_include_events),
+            journey_include_cfg=bool(ns.journey_include_cfg),
+            journey_confidence_threshold=float(ns.journey_confidence_threshold),
+            journey_collapse_chains=bool(ns.journey_collapse_chains),
+            journey_paths=bool(ns.journey_paths),
+            journey_statistics=bool(ns.journey_statistics),
+            journey_tree=bool(ns.journey_tree),
+            journey_forest=bool(ns.journey_forest),
+            journey_cross_repo=bool(ns.journey_cross_repo),
+            journey_business=bool(ns.journey_business),
+            journey_db=bool(ns.journey_db),
+            journey_events=bool(ns.journey_events),
+            journey_config=bool(ns.journey_config),
+            journey_dependencies=bool(ns.journey_dependencies),
+
             cache_enabled=not bool(getattr(ns, "no_cache_layer", False)),
             cache_ttl_seconds=int(getattr(ns, "cache_ttl", 0) or 0),
             cache_clear_mode=getattr(ns, "cache_clear", None),

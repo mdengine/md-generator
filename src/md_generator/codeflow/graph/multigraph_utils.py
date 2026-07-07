@@ -14,6 +14,25 @@ CodeflowGraph = nx.MultiDiGraph | nx.DiGraph
 _SKIP_REACHABILITY: frozenset[str] = frozenset({rel.REL_CONTAINS})
 
 
+def parse_confidence(conf: Any, default_val: float = 1.0) -> float:
+    if conf is None:
+        return default_val
+    if isinstance(conf, (int, float)):
+        return float(conf)
+    s = str(conf).strip().lower()
+    if s == "high":
+        return 1.0
+    if s == "medium":
+        return 0.7
+    if s == "low":
+        return 0.4
+    try:
+        return float(s)
+    except ValueError:
+        return default_val
+
+
+
 def edge_payload(
     *,
     relation: str,
@@ -62,8 +81,15 @@ def call_collapsed_digraph(g: nx.Graph) -> nx.DiGraph:
     return collapsed_digraph_for_relations(g, frozenset({rel.REL_CALLS}))
 
 
+_COLLAPSED_CACHE: dict[tuple[int, frozenset[str]], nx.DiGraph] = {}
+
+
 def collapsed_digraph_for_relations(g: nx.Graph, relations: frozenset[str]) -> nx.DiGraph:
     """One arc per (u,v) when any edge has ``relation`` in ``relations`` (for flow slice / reachability)."""
+    key = (id(g), relations)
+    if key in _COLLAPSED_CACHE:
+        return _COLLAPSED_CACHE[key]
+
     cg = nx.DiGraph()
     cg.add_nodes_from(g.nodes(data=True))
     for u, v, _k, d in iter_multi_edges(g):
@@ -71,6 +97,10 @@ def collapsed_digraph_for_relations(g: nx.Graph, relations: frozenset[str]) -> n
         if r not in relations:
             continue
         cg.add_edge(u, v)
+
+    if len(_COLLAPSED_CACHE) >= 32:
+        _COLLAPSED_CACHE.clear()
+    _COLLAPSED_CACHE[key] = cg
     return cg
 
 

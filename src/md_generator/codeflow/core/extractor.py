@@ -410,6 +410,10 @@ def run_scan(cfg: ScanConfig, *, workspace: LoadedWorkspace | None = None) -> Pa
 
     g, parse_results, ws, primary_repo_label = _graph_and_parse_for_scan(cfg, workspace)
 
+    from md_generator.codeflow.graph.query import GraphQuery
+    g_query = GraphQuery(g)
+
+
     semantic_artifacts = None
     scan_semantic_warnings: list[str] = []
     if cfg.enable_embeddings:
@@ -479,6 +483,161 @@ def run_scan(cfg: ScanConfig, *, workspace: LoadedWorkspace | None = None) -> Pa
 
     fmts = {x.strip().lower() for x in cfg.formats}
 
+    has_enterprise = (
+        getattr(cfg, "config_analysis", False)
+        or getattr(cfg, "dependency_analysis", False)
+        or getattr(cfg, "query_analysis", False)
+        or getattr(cfg, "external_analysis", False)
+        or getattr(cfg, "repository_analysis", False)
+        or getattr(cfg, "classification_analysis", False)
+        or getattr(cfg, "annotation_analysis", False)
+        or getattr(cfg, "semantic_analysis", False)
+    )
+    if has_enterprise:
+        from md_generator.codeflow.repository.model import Repository, Workspace
+        from md_generator.codeflow.plugins import global_plugin_registry
+        from md_generator.codeflow.plugins.registry import topological_sort_plugins
+        from md_generator.codeflow.graph.enterprise_builder import EnterpriseGraphBuilder
+        from md_generator.codeflow.graph.query import GraphQuery
+        from md_generator.codeflow.repository.analyzer import RepositoryAnalyzer
+        from md_generator.codeflow.generators.enterprise_exporter import EnterpriseExporter
+        from md_generator.codeflow.enterprise_ir import Diagnostic, DiagnosticSeverity, AnalysisStatistics, EnterpriseIR
+
+        # Build repository model hierarchy
+        ws_node = Workspace(path=ws.root)
+        repo_obj = Repository(name=primary_repo_label or "local", path=ws.root, workspace=ws_node)
+
+        # Select plugins based on config flags
+        plugins_to_run = []
+        if getattr(cfg, "config_analysis", False):
+            plugins_to_run.append(global_plugin_registry.get_plugin("configuration"))
+        if getattr(cfg, "dependency_analysis", False):
+            plugins_to_run.append(global_plugin_registry.get_plugin("dependency"))
+        if getattr(cfg, "query_analysis", False):
+            plugins_to_run.append(global_plugin_registry.get_plugin("query"))
+        if getattr(cfg, "external_analysis", False):
+            plugins_to_run.append(global_plugin_registry.get_plugin("external"))
+        if getattr(cfg, "classification_analysis", False):
+            plugins_to_run.append(global_plugin_registry.get_plugin("classification"))
+        if getattr(cfg, "annotation_analysis", False):
+            plugins_to_run.append(global_plugin_registry.get_plugin("annotation"))
+        if getattr(cfg, "semantic_analysis", False):
+            plugins_to_run.append(global_plugin_registry.get_plugin("semantic_plugin"))
+        
+        plugins_to_run = [p for p in plugins_to_run if p is not None]
+        plugins_to_run = topological_sort_plugins(plugins_to_run)
+
+        # Execution Lifecycle
+        diagnostics = []
+        stats_data = AnalysisStatistics()
+        
+        import time
+        start_time = time.time()
+
+        combined_ir = EnterpriseIR()
+        for p_class in plugins_to_run:
+            plugin = p_class()
+            try:
+                # 1. Discover
+                files = plugin.discover(repo_obj)
+                for f in files:
+                    stats_data.files_scanned += 1
+                    # 2. Scan
+                    if not plugin.scan(f):
+                        stats_data.files_skipped += 1
+                        continue
+                    # 3. Extract
+                    try:
+                        raw = plugin.extract(f)
+                    except Exception as ex:
+                        stats_data.files_failed += 1
+                        diagnostics.append(
+                            Diagnostic(
+                                severity=DiagnosticSeverity.ERROR,
+                                file=str(f),
+                                line=None,
+                                message=f"Extraction failed: {ex}",
+                                plugin=plugin.metadata.name,
+                            )
+                        )
+                        continue
+                    # 4. Normalize & Validate
+                    norm = plugin.normalize(raw)
+                    if not plugin.validate(norm):
+                        diagnostics.append(
+                            Diagnostic(
+                                severity=DiagnosticSeverity.WARNING,
+                                file=str(f),
+                                line=None,
+                                message="Normalization validation failed",
+                                plugin=plugin.metadata.name,
+                            )
+                        )
+                        continue
+                    # 5. Post Process & Build IR
+                    norm = plugin.post_process(norm)
+                    ir = plugin.build_ir(norm)
+                    # Merge IR
+                    combined_ir.configs.extend(ir.configs)
+                    combined_ir.dependencies.extend(ir.dependencies)
+                    combined_ir.queries.extend(ir.queries)
+                    combined_ir.tables.extend(ir.tables)
+                    combined_ir.columns.extend(ir.columns)
+                    combined_ir.views.extend(ir.views)
+                    combined_ir.resources.extend(ir.resources)
+                    combined_ir.queues.extend(ir.queues)
+                    combined_ir.storages.extend(ir.storages)
+                    combined_ir.events.extend(ir.events)
+            except Exception as e:
+                diagnostics.append(
+                    Diagnostic(
+                        severity=DiagnosticSeverity.ERROR,
+                        file="",
+                        line=None,
+                        message=f"Plugin execution failed: {e}",
+                        plugin=p_class.__name__,
+                    )
+                )
+
+        # Central Graph Builder
+        builder = EnterpriseGraphBuilder(
+            graph=g,
+            scan_id=str(int(time.time())),
+            repository=repo_obj.name,
+            branch=repo_obj.branch,
+            commit=repo_obj.commit,
+        )
+        builder.merge_ir(combined_ir)
+
+        # Set final execution metrics
+        stats_data.nodes_created = builder.nodes_created
+        stats_data.nodes_reused = builder.nodes_reused
+        stats_data.edges_created = builder.edges_created
+        stats_data.execution_time_seconds = time.time() - start_time
+        
+        # Exporter Pipeline
+        g_query = GraphQuery(g)
+        repo_analyzer = RepositoryAnalyzer(g_query)
+        repo_stats = repo_analyzer.analyze()
+        
+        # Merge stats payload
+        stats_payload = {
+            **repo_stats,
+            "files_scanned": stats_data.files_scanned,
+            "files_skipped": stats_data.files_skipped,
+            "files_failed": stats_data.files_failed,
+            "nodes_created": stats_data.nodes_created,
+            "nodes_reused": stats_data.nodes_reused,
+            "edges_created": stats_data.edges_created,
+            "cache_hits": stats_data.cache_hits,
+            "cache_misses": stats_data.cache_misses,
+            "execution_time_seconds": stats_data.execution_time_seconds,
+            "diagnostics": diagnostics,
+        }
+        
+        exporter = EnterpriseExporter(g_query, out)
+        exporter.export_all(stats_payload)
+
     cluster_by_file: dict[str, int] | None = None
     cluster_label_by_file: dict[str, str] | None = None
     community_profiles: list[dict[str, Any]] | None = None
@@ -536,6 +695,7 @@ def run_scan(cfg: ScanConfig, *, workspace: LoadedWorkspace | None = None) -> Pa
 
     include_map = cfg.parsed_include()
     overview_rows: list[tuple[str, str, str, str, str]] = []
+    all_generated_journeys = []
     emitted_slugs = 0
     entry_base = out / "methods" if cfg.emit_entry_per_method else out
     if cfg.emit_entry_per_method:
@@ -577,10 +737,32 @@ def run_scan(cfg: ScanConfig, *, workspace: LoadedWorkspace | None = None) -> Pa
             top_k=cfg.semantic_top_k,
             list_cap=cfg.intelligence_list_cap,
         )
-        (out / "nl-query-results.json").write_text(
-            json.dumps({"query": _nq, "parsed": dict(_parsed), "result": _nqr}, indent=2),
-            encoding="utf-8",
+    j_builder = None
+    if cfg.emit_journey:
+        from md_generator.codeflow.journey import JourneyBuilder, JourneyConfig, JourneyType, TraversalStrategy
+        from md_generator.codeflow.journey.markdown import write_journey_markdown
+        from md_generator.codeflow.journey.mermaid import write_journey_mermaid
+        from md_generator.codeflow.journey.html import write_journey_html
+        from md_generator.codeflow.journey.json_export import write_journey_json, write_generic_json
+        from md_generator.codeflow.journey.graph_export import write_journey_dot, write_journey_graphml, write_journey_gexf
+        
+        j_cfg = JourneyConfig(
+            journey_type=JourneyType(cfg.journey_type) if cfg.journey_type else JourneyType.METHOD,
+            traversal_strategy=TraversalStrategy.BFS if cfg.journey_traversal.upper() == "BFS" else TraversalStrategy.DFS,
+            max_depth=cfg.journey_depth,
+            max_nodes=cfg.journey_max_nodes,
+            include_structural=cfg.journey_include_structural,
+            include_events=cfg.journey_include_events,
+            include_framework=cfg.journey_include_framework,
+            include_library=cfg.journey_include_library,
+            include_cfg=cfg.journey_include_cfg,
+            confidence_threshold=cfg.journey_confidence_threshold,
+            collapse_linear_chains=cfg.journey_collapse_chains,
+            enumerate_paths=cfg.journey_paths,
+            compute_analytics=cfg.journey_statistics,
         )
+        
+        j_builder = JourneyBuilder(g_query, g, j_cfg)
 
     for eid in entry_ids:
         if include_map:
@@ -864,6 +1046,174 @@ def run_scan(cfg: ScanConfig, *, workspace: LoadedWorkspace | None = None) -> Pa
                 file_cluster_label_map=cluster_label_by_file,
             )
 
+        if cfg.emit_journey and j_builder is not None:
+            try:
+                j_ir = j_builder.build(eid)
+                all_generated_journeys.append(j_ir)
+                
+                j_fmts = cfg.journey_format
+                if "md" in j_fmts:
+                    write_journey_markdown(j_ir, sub / "journey.md")
+                if "mermaid" in j_fmts:
+                    write_journey_mermaid(j_ir, sub / "journey.mmd")
+                if "json" in j_fmts:
+                    write_journey_json(j_ir, sub / "journey.json")
+                if "html" in j_fmts:
+                    write_journey_html(j_ir, sub / "journey.html")
+                if "dot" in j_fmts:
+                    write_journey_dot(j_ir, sub / "journey.dot")
+                if "graphml" in j_fmts:
+                    write_journey_graphml(j_ir, sub / "journey.graphml")
+                if "gexf" in j_fmts:
+                    write_journey_gexf(j_ir, sub / "journey.gexf")
+                    
+                if cfg.journey_paths and j_ir.execution_paths:
+                    from md_generator.codeflow.journey.paths import write_execution_paths_markdown
+                    if "md" in j_fmts:
+                        write_execution_paths_markdown(j_ir.execution_paths, sub / "execution-paths.md")
+                    if "json" in j_fmts:
+                        write_generic_json(j_ir.execution_paths, sub / "execution-paths.json")
+                        
+                if cfg.journey_statistics:
+                    from md_generator.codeflow.journey.analyzer import JourneyAnalyzer, write_journey_analysis_markdown
+                    analyzer = JourneyAnalyzer(j_ir, g)
+                    j_analysis = analyzer.analyze()
+                    if "md" in j_fmts:
+                        write_journey_analysis_markdown(j_analysis, sub / "journey-analysis.md")
+                    if "json" in j_fmts:
+                        write_generic_json(j_analysis, sub / "journey-analysis.json")
+            except Exception as ex:
+                scan_warnings.append(f"Failed to generate journey for {eid}: {ex}")
+
+    # Forest / Bulk generation / Summary / Diff
+    if cfg.emit_journey:
+        from md_generator.codeflow.journey.markdown import write_repository_journey_summary
+        summary_path = out / "repository-journey-summary.md"
+        write_repository_journey_summary(all_generated_journeys, summary_path)
+        
+        # Build Forest
+        if cfg.journey_forest:
+            from md_generator.codeflow.journey import JourneyBuilder, JourneyConfig, JourneyType, TraversalStrategy
+            from md_generator.codeflow.journey.json_export import write_forest_json
+            from md_generator.codeflow.journey.html import write_forest_html
+            from md_generator.codeflow.journey.resolver import resolve_journey_starts
+            
+            j_cfg = JourneyConfig(
+                journey_type=JourneyType(cfg.journey_type) if cfg.journey_type else JourneyType.METHOD,
+                traversal_strategy=TraversalStrategy.BFS if cfg.journey_traversal.upper() == "BFS" else TraversalStrategy.DFS,
+                max_depth=cfg.journey_depth,
+                max_nodes=cfg.journey_max_nodes,
+                include_structural=cfg.journey_include_structural,
+                include_events=cfg.journey_include_events,
+                include_framework=cfg.journey_include_framework,
+                include_library=cfg.journey_include_library,
+                include_cfg=cfg.journey_include_cfg,
+                confidence_threshold=cfg.journey_confidence_threshold,
+                collapse_linear_chains=cfg.journey_collapse_chains,
+            )
+            
+            j_builder = JourneyBuilder(g_query, g, j_cfg)
+            start_ids = resolve_journey_starts(g, g_query, j_cfg, entry_ids)
+            if start_ids:
+                try:
+                    forest = j_builder.build_forest(start_ids)
+                    write_forest_json(forest, out / "journey-forest.json")
+                    write_forest_html(forest, out / "journey-forest.html")
+                except Exception as ex:
+                    scan_warnings.append(f"Failed to generate journey forest: {ex}")
+                    
+        # Bulk generation
+        if cfg.journey_all_files or cfg.journey_all_classes or cfg.journey_all_methods or cfg.journey_all_entrypoints:
+            from md_generator.codeflow.journey import JourneyBuilder, JourneyConfig, JourneyType, TraversalStrategy
+            from md_generator.codeflow.journey.resolver import resolve_journey_starts, compute_journey_output_path
+            from md_generator.codeflow.journey.markdown import write_journey_markdown
+            from md_generator.codeflow.journey.mermaid import write_journey_mermaid
+            from md_generator.codeflow.journey.html import write_journey_html
+            from md_generator.codeflow.journey.json_export import write_journey_json
+            from md_generator.codeflow.journey.graph_export import write_journey_dot, write_journey_graphml, write_journey_gexf
+            
+            bulk_cfg = JourneyConfig(
+                journey_type=JourneyType(cfg.journey_type) if cfg.journey_type else JourneyType.METHOD,
+                traversal_strategy=TraversalStrategy.BFS if cfg.journey_traversal.upper() == "BFS" else TraversalStrategy.DFS,
+                max_depth=cfg.journey_depth,
+                max_nodes=cfg.journey_max_nodes,
+                include_structural=cfg.journey_include_structural,
+                include_events=cfg.journey_include_events,
+                include_framework=cfg.journey_include_framework,
+                include_library=cfg.journey_include_library,
+                include_cfg=cfg.journey_include_cfg,
+                confidence_threshold=cfg.journey_confidence_threshold,
+                collapse_linear_chains=cfg.journey_collapse_chains,
+                generate_all_files=cfg.journey_all_files,
+                generate_all_classes=cfg.journey_all_classes,
+                generate_all_methods=cfg.journey_all_methods,
+                generate_all_entrypoints=cfg.journey_all_entrypoints,
+            )
+            
+            starts = resolve_journey_starts(g, g_query, bulk_cfg, entry_ids)
+            j_builder = JourneyBuilder(g_query, g, bulk_cfg)
+            
+            journeys_dir = out / "journeys"
+            for start_id in starts:
+                try:
+                    b_ir = j_builder.build(start_id)
+                    b_out_dir = compute_journey_output_path(start_id, g, journeys_dir)
+                    
+                    j_fmts = cfg.journey_format
+                    if "md" in j_fmts:
+                        write_journey_markdown(b_ir, b_out_dir / "journey.md")
+                    if "mermaid" in j_fmts:
+                        write_journey_mermaid(b_ir, b_out_dir / "journey.mmd")
+                    if "json" in j_fmts:
+                        write_journey_json(b_ir, b_out_dir / "journey.json")
+                    if "html" in j_fmts:
+                        write_journey_html(b_ir, b_out_dir / "journey.html")
+                    if "dot" in j_fmts:
+                        write_journey_dot(b_ir, b_out_dir / "journey.dot")
+                    if "graphml" in j_fmts:
+                        write_journey_graphml(b_ir, b_out_dir / "journey.graphml")
+                    if "gexf" in j_fmts:
+                        write_journey_gexf(b_ir, b_out_dir / "journey.gexf")
+                except Exception as ex:
+                    pass
+                    
+        # Git diff comparison for journeys
+        if cfg.emit_journey and cfg.diff_base and cfg.diff_head:
+            from md_generator.codeflow.journey.diff import compute_journey_diff, write_journey_diff_markdown
+            from md_generator.codeflow.journey.json_export import write_generic_json
+            from md_generator.codeflow.journey import JourneyBuilder, JourneyConfig, JourneyType, TraversalStrategy
+            
+            try:
+                changed = git_changed_files(cfg.project_root.resolve(), cfg.diff_base, cfg.diff_head)
+                g_base = g.copy()
+                base_seeds = nodes_touching_files(g, set(changed), primary_repo_label=primary_repo_label)
+                g_base.remove_nodes_from(base_seeds)
+                
+                # Build base journey for each generated head journey
+                for h_ir in all_generated_journeys:
+                    eid = h_ir.metadata.entry_id
+                    j_cfg = h_ir.metadata.config
+                    j_builder_base = JourneyBuilder(GraphQuery(g_base), g_base, j_cfg)
+                    b_ir = j_builder_base.build(eid)
+                    
+                    # Compute diff
+                    j_diff = compute_journey_diff(b_ir, h_ir, cfg.diff_base, cfg.diff_head)
+                    
+                    slug = _slug(eid)
+                    sub = entry_base / slug
+                    
+                    j_fmts = cfg.journey_format
+                    if "md" in j_fmts:
+                        write_journey_diff_markdown(j_diff, sub / "journey-diff.md")
+                        if entry_ids and eid == entry_ids[0]:
+                            write_journey_diff_markdown(j_diff, out / "journey-diff.md")
+                    if "json" in j_fmts:
+                        write_generic_json(j_diff, sub / "journey-diff.json")
+                        if entry_ids and eid == entry_ids[0]:
+                            write_generic_json(j_diff, out / "journey-diff.json")
+            except Exception as ex:
+                scan_warnings.append(f"Failed to generate journey diffs: {ex}")
+
     if "json" in fmts:
         full = graph_to_serializable(g)
         (out / "graph-full.json").write_text(json.dumps(full, indent=2), encoding="utf-8")
@@ -1045,7 +1395,11 @@ def _lookup_ir_method(entry_id: str, parse_results: list[FileParseResult]) -> IR
 
 def _slug(entry_id: str) -> str:
     s = "".join(c if c.isalnum() or c in "._-" else "_" for c in entry_id)
-    return s[:180] if len(s) > 180 else s
+    if len(s) > 80:
+        import hashlib
+        h = hashlib.md5(entry_id.encode("utf-8", errors="replace")).hexdigest()[:8]
+        return f"{s[:70]}_{h}"
+    return s
 
 
 def build_output_zip(cfg: ScanConfig, workspace_root: Path | None = None) -> bytes:

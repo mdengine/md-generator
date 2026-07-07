@@ -130,6 +130,51 @@ class ScanConfig:
     graph_include_contains_reachability: bool = False
     # Cap embedded per-method CFG Mermaid payloads in ``index.unified.html``.
     ui_cfg_max_methods: int = 25
+    config_analysis: bool = False
+    dependency_analysis: bool = False
+    query_analysis: bool = False
+    external_analysis: bool = False
+    repository_analysis: bool = False
+    classification_analysis: bool = False
+    annotation_analysis: bool = False
+    semantic_analysis: bool = False
+    max_traversal_depth: int = 5
+    preferred_backend: str | None = None
+
+    # Journey Generator
+    emit_journey: bool = False
+    journey_depth: int = 8                     # 0 = unlimited
+    journey_stop: tuple[str, ...] = ()
+    journey_output: str | None = None
+    journey_format: tuple[str, ...] = ("md", "json", "mermaid")
+    journey_entry: list[str] | None = None
+    journey_type: str = "method"
+    journey_traversal: str = "dfs"
+    journey_max_nodes: int = 2000
+    journey_expand: str = "application"
+    journey_shared_subtrees: str = "reference"
+    journey_all_files: bool = False
+    journey_all_classes: bool = False
+    journey_all_methods: bool = False
+    journey_all_entrypoints: bool = False
+    journey_include_framework: bool = False
+    journey_include_library: bool = False
+    journey_include_structural: bool = False
+    journey_include_events: bool = False
+    journey_include_cfg: bool = False
+    journey_confidence_threshold: float = 0.0
+    journey_collapse_chains: bool = True
+    journey_paths: bool = False
+    journey_statistics: bool = False
+    journey_tree: bool = True
+    journey_forest: bool = False
+    journey_cross_repo: bool = False
+    journey_business: bool = False
+    journey_db: bool = False
+    journey_events: bool = False
+    journey_config: bool = False
+    journey_dependencies: bool = False
+
 
     def structural_graph_enabled(self) -> bool:
         return bool(self.graph_include_structural or self.enable_dependency_graph)

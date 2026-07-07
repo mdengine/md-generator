@@ -7,7 +7,7 @@ from typing import Any
 import networkx as nx
 
 from md_generator.codeflow.graph import relations as rel
-from md_generator.codeflow.graph.multigraph_utils import iter_multi_edges
+from md_generator.codeflow.graph.multigraph_utils import iter_multi_edges, parse_confidence
 
 _REL_CALLS = rel.REL_CALLS
 _REL_ASYNC = rel.REL_ASYNC
@@ -78,7 +78,7 @@ def _ingest_prebuilt_structural_nodes(
                     "line_end": None,
                     "language": d.get("language"),
                     "tags": list(d.get("tags") or ["file"]),
-                    "confidence": float(d.get("confidence", 1.0)),
+                    "confidence": parse_confidence(d.get("confidence"), 1.0),
                 },
             )
         elif sid.startswith("class:"):
@@ -101,7 +101,7 @@ def _ingest_prebuilt_structural_nodes(
                     "line_end": None,
                     "language": d.get("language"),
                     "tags": list(d.get("tags") or ["class"]),
-                    "confidence": float(d.get("confidence", 1.0)),
+                    "confidence": parse_confidence(d.get("confidence"), 1.0),
                 },
             )
         elif sid.startswith("external:"):
@@ -117,7 +117,7 @@ def _ingest_prebuilt_structural_nodes(
                     "line_end": None,
                     "language": d.get("language"),
                     "tags": list(d.get("tags") or ["external"]),
-                    "confidence": float(d.get("confidence", 0.6)),
+                    "confidence": parse_confidence(d.get("confidence"), 0.6),
                 },
             )
         elif sid.startswith("topic:"):
@@ -244,7 +244,7 @@ def to_stable_schema(g: nx.MultiDiGraph) -> dict[str, Any]:
                 "kind": _REL_CALLS,
                 "graph_key": ek if ek is not None else 0,
                 "condition": ed.get("condition"),
-                "confidence": float(ed.get("confidence", 1.0)),
+                "confidence": parse_confidence(ed.get("confidence"), 1.0),
                 "resolution": ed.get("resolution"),
                 "unknown_call": ed.get("unknown_call"),
                 "recursive": ed.get("recursive"),
@@ -258,7 +258,7 @@ def to_stable_schema(g: nx.MultiDiGraph) -> dict[str, Any]:
                     "kind": _REL_ASYNC,
                     "graph_key": ek if ek is not None else 0,
                     "condition": ed.get("condition"),
-                    "confidence": float(ed.get("confidence", 1.0)),
+                    "confidence": parse_confidence(ed.get("confidence"), 1.0),
                 },
             )
 
@@ -271,7 +271,7 @@ def to_stable_schema(g: nx.MultiDiGraph) -> dict[str, Any]:
             v,
             str(rk),
             graph_key=str(ek) if ek is not None else "0",
-            confidence=float(ed.get("confidence", 1.0)),
+            confidence=parse_confidence(ed.get("confidence"), 1.0),
             condition=ed.get("condition"),
         )
 
