@@ -14,6 +14,7 @@ class ResolvedLink:
     source: str = ""
     match_reason: str = ""
     scores: dict[str, float] | None = None  # reserved Phase 3
+    importance_score: float = 0.0
 
     def to_dict(self) -> dict[str, Any]:
         d: dict[str, Any] = {
@@ -24,6 +25,7 @@ class ResolvedLink:
             "strategy": self.strategy,
             "source": self.source,
             "match_reason": self.match_reason,
+            "importance_score": self.importance_score,
         }
         if self.scores:
             d["scores"] = self.scores

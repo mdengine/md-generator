@@ -353,3 +353,11 @@ testpaths = [
   "sap-to-md/tests",
 ]
 markers = ["integration: optional dependency or slower checks"]
+
+[tool.coverage.run]
+source = ["src/md_generator/sap", "src/md_generator/odata"]
+omit = ["*/tests/*"]
+
+[tool.coverage.report]
+fail_under = 75
+show_missing = true

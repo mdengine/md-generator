@@ -22,12 +22,16 @@ def format_semantic_narrative(artifact: CanonicalArtifact, ctx: RendererContext 
         secondary: list[str] = []
         for node, edge in neighbors[:20]:
             link = reg.resolve_link("", node.label)
+            link.stable_id = link.stable_id or node.node_id
+            link.importance_score = reg.get_importance_score(link.stable_id)
             rel_w = relationship_weight(edge.relationship)
             entry = f"- `{node.label}` ({edge.relationship.value}, weight {rel_w:.2f})"
             if link.strategy != "unresolved":
                 entry += f" — resolved via `{link.strategy}` (confidence {link.confidence:.2f})"
             elif link.confidence < 0.6:
                 entry += " — _low confidence_"
+            if link.importance_score > 0:
+                entry += f" — **[importance: {link.importance_score:.1f}]**"
             (primary if rel_w >= 0.65 else secondary).append(entry)
         if primary:
             lines.extend(["**Primary relationships**", ""] + primary + [""])
@@ -58,9 +62,10 @@ def format_semantic_narrative(artifact: CanonicalArtifact, ctx: RendererContext 
 
 def _format_chain_link(link: ResolvedLink) -> str:
     href = f" → [{link.href}]({link.href})" if link.href else ""
+    badge = f" — **[importance: {link.importance_score:.1f}]**" if link.importance_score > 0 else ""
     return (
         f"- `{link.target}` via `{link.strategy}` "
-        f"(confidence {link.confidence:.2f}){href}"
+        f"(confidence {link.confidence:.2f}){href}{badge}"
     )
 
 

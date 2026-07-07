@@ -36,6 +36,7 @@ class CrossLinkRegistry:
     stable_id_by_name: dict[str, str] = field(default_factory=dict)
     _cache: dict[tuple[str, ...], ResolvedLink] = field(default_factory=dict)
     _chain_cache: dict[str, list[ResolvedLink]] = field(default_factory=dict)
+    _degrees: dict[str, int] = field(default_factory=dict, init=False, repr=False)
 
     def resolve_link(self, kind: str, name: str) -> ResolvedLink:
         cache_key = ("link", kind.upper(), name.upper())
@@ -46,24 +47,36 @@ class CrossLinkRegistry:
             link = unresolved_link("", reason="empty name")
             self._cache[cache_key] = link
             return link
+
+        link = None
         for strategy_fn in (
             lambda: self._from_path_registry(kind, target),
             lambda: self._from_graph_label(target),
             lambda: self._from_link_graph(kind, target),
         ):
-            link = strategy_fn()
-            if link.strategy != "unresolved":
-                self._cache[cache_key] = link
-                return link
-        link = ResolvedLink(
-            target=target,
-            href=None,
-            stable_id=self.stable_id_by_name.get(target, ""),
-            confidence=CONFIDENCE_BY_STRATEGY["heuristic_label"],
-            strategy="heuristic_label",
-            source="cross_link_registry",
-            match_reason="name known; no path",
-        )
+            res_link = strategy_fn()
+            if res_link.strategy != "unresolved":
+                link = res_link
+                break
+
+        if link is None:
+            link = ResolvedLink(
+                target=target,
+                href=None,
+                stable_id=self.stable_id_by_name.get(target, ""),
+                confidence=CONFIDENCE_BY_STRATEGY["heuristic_label"],
+                strategy="heuristic_label",
+                source="cross_link_registry",
+                match_reason="name known; no path",
+            )
+
+        if not link.stable_id and self.graph_store:
+            for node in self.graph_store.graph.nodes.values():
+                if node.label.upper() == link.target.upper():
+                    link.stable_id = node.node_id
+                    break
+
+        link.importance_score = self.get_importance_score(link.stable_id)
         self._cache[cache_key] = link
         return link
 
@@ -198,27 +211,162 @@ class CrossLinkRegistry:
         results.sort(
             key=lambda pair: (
                 -relationship_weight(pair[1].relationship),
+                -self.get_importance_score(pair[0].node_id),
                 pair[0].label.upper(),
             )
         )
         return results
 
-    def related_ddic_chain(self, de_name: str) -> list[ResolvedLink]:
-        key = de_name.upper()
-        if key in self._chain_cache:
-            return self._chain_cache[key]
+    def _compute_degrees(self) -> None:
+        if not self.graph_store:
+            return
+        self._degrees = {}
+        for edge in self.graph_store.graph.edges.values():
+            self._degrees[edge.source_id] = self._degrees.get(edge.source_id, 0) + 1
+            self._degrees[edge.target_id] = self._degrees.get(edge.target_id, 0) + 1
+
+    def get_importance_score(self, stable_id: str) -> float:
+        if not self.graph_store or not stable_id:
+            return 0.0
+        if not self._degrees:
+            self._compute_degrees()
+        return float(self._degrees.get(stable_id, 0))
+
+    def _link_for_node(self, node: GraphNode) -> ResolvedLink:
+        kind = node.node_kind or ""
+        if kind == "artifact" and node.artifact_type:
+            art_type = node.artifact_type.lower()
+            from md_generator.sap.markdown.builders.renderer_context import ARTIFACT_TYPE_TO_PATH_KIND
+            if art_type in ARTIFACT_TYPE_TO_PATH_KIND:
+                kind = ARTIFACT_TYPE_TO_PATH_KIND[art_type]
+            elif art_type == "cds.view":
+                kind = "CDS_VIEW"
+            elif art_type == "odata.entity_set":
+                kind = "ODATA_ENTITY_SET"
+            elif art_type == "abap.program":
+                kind = "PROGRAM"
+            else:
+                kind = art_type.replace(".", "_").upper()
+        elif kind == "dataset" and node.namespace == "DDIC::":
+            if "::DE:" in node.node_id:
+                kind = "DATA_ELEMENT"
+            elif "::DOM:" in node.node_id:
+                kind = "DOMAIN"
+            elif "::TTYP:" in node.node_id:
+                kind = "TABLE_TYPE"
+            elif "::RSDT:" in node.node_id:
+                kind = "RANGE_TYPE"
+            elif "::REFT:" in node.node_id:
+                kind = "REFERENCE_TYPE"
+            else:
+                art = self.artifact_by_name.get(node.label.upper())
+                if art:
+                    from md_generator.sap.markdown.builders.renderer_context import ARTIFACT_TYPE_TO_PATH_KIND
+                    kind = ARTIFACT_TYPE_TO_PATH_KIND.get(art.artifact_type, kind)
+                else:
+                    kind = "TABLE"
+        
+        link = self.resolve_link(kind, node.label)
+        if not link.href:
+            art = self.artifact_by_name.get(node.label.upper())
+            if art:
+                from md_generator.sap.markdown.builders.renderer_context import _artifact_md_path
+                slug = art.name.lower().replace(" ", "-").replace("/", "-").replace("::", "-")
+                link.href = _artifact_md_path(art.artifact_type, slug)
+                link.stable_id = art.identity.stable_id
+            else:
+                link.stable_id = node.node_id
+        else:
+            link.stable_id = link.stable_id or node.node_id
+        return link
+
+    def walk_chain(
+        self,
+        start_name: str,
+        start_kind: str = "DATA_ELEMENT",
+        allowed_relationships: Iterable[RelationshipType] | None = None,
+        *,
+        max_depth: int = 5,
+    ) -> list[ResolvedLink]:
+        cache_key = f"chain:{start_kind}:{start_name.upper()}"
+        if cache_key in self._chain_cache:
+            return self._chain_cache[cache_key]
+
+        start_link = self.resolve_link(start_kind, start_name)
+        start_id = start_link.stable_id
+        if not start_id and self.graph_store:
+            for node in self.graph_store.graph.nodes.values():
+                if node.label.upper() == start_name.upper():
+                    start_id = node.node_id
+                    break
+
+        if not start_id or not self.graph_store:
+            chain = [start_link]
+            art = self.artifact_by_name.get(start_name.upper())
+            if art:
+                meta = art.metadata.get("data_element") or {}
+                type_kind = meta.get("type_kind", "")
+                type_name = meta.get("type_name", "")
+                if type_name:
+                    chain.append(self.resolve_type_reference(type_kind, type_name))
+            self._chain_cache[cache_key] = chain
+            return chain
+
+        store = self.graph_store
+        allowed = set(allowed_relationships) if allowed_relationships is not None else {
+            RelationshipType.REFERENCES,
+            RelationshipType.CONTAINS,
+            RelationshipType.READS_FROM,
+            RelationshipType.EXECUTES,
+            RelationshipType.CALLS,
+            RelationshipType.DEPENDS_ON,
+            RelationshipType.SERVES,
+            RelationshipType.EXPOSES,
+            RelationshipType.INCLUDES,
+            RelationshipType.DERIVES_FROM,
+        }
+
+        queue: deque[tuple[str, list[str]]] = deque([(start_id, [start_id])])
+        visited: set[str] = {start_id}
+        longest_path: list[str] = [start_id]
+
+        while queue:
+            current, path = queue.popleft()
+            if len(path) > len(longest_path):
+                longest_path = path
+
+            if len(path) >= max_depth:
+                continue
+
+            for edge in store.graph.edges.values():
+                if edge.relationship not in allowed:
+                    continue
+                
+                next_id = None
+                if edge.source_id == current:
+                    next_id = edge.target_id
+                elif edge.target_id == current:
+                    next_id = edge.source_id
+
+                if next_id and next_id not in visited:
+                    visited.add(next_id)
+                    queue.append((next_id, path + [next_id]))
+
         chain: list[ResolvedLink] = []
-        de_link = self.resolve_link("DATA_ELEMENT", de_name)
-        chain.append(de_link)
-        art = self.artifact_by_name.get(key)
-        if art:
-            meta = art.metadata.get("data_element") or {}
-            type_kind = meta.get("type_kind", "")
-            type_name = meta.get("type_name", "")
-            if type_name:
-                chain.append(self.resolve_type_reference(type_kind, type_name))
-        self._chain_cache[key] = chain
+        for nid in longest_path:
+            node = store.graph.nodes.get(nid)
+            if node:
+                chain.append(self._link_for_node(node))
+            else:
+                parts = nid.split("::")
+                label = parts[-1] if parts else nid
+                chain.append(ResolvedLink(target=label, href=None, stable_id=nid, strategy="unresolved"))
+
+        self._chain_cache[cache_key] = chain
         return chain
+
+    def related_ddic_chain(self, de_name: str) -> list[ResolvedLink]:
+        return self.walk_chain(de_name, "DATA_ELEMENT")
 
 
 def build_cross_link_registry(

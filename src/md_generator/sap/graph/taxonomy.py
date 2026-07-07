@@ -21,6 +21,7 @@ class RelationshipType(str, Enum):
     EXPOSES = "EXPOSES"
     SERVES = "SERVES"
     CALLS = "CALLS"
+    EXECUTES = "EXECUTES"
     INCLUDES = "INCLUDES"
     SAME_AS = "SAME_AS"
     EQUIVALENT_TO = "EQUIVALENT_TO"
