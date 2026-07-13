@@ -27,20 +27,20 @@ class CallGraphBuilder:
         k = kind.lower()
         n = name.upper()
         p = program.upper()
-        if k in ("event",):
+        if k in ("event", "raise_event", "wait_until"):
             return f"event://{p}/{n}"
         if k in ("form", "perform", "perform_in_program"):
             return f"form://{p}/{n}"
-        if k in ("method", "call_method"):
+        if k in ("method", "call_method", "set_handler"):
             if "=>" in n:
                 cls, _, meth = n.partition("=>")
                 return f"method://{cls.upper()}/{meth.upper()}"
             return f"method://{p}/{n}"
-        if k in ("function", "call_function"):
+        if k in ("function", "call_function", "call_customer_function"):
             return f"func://{n}"
-        if k in ("program", "submit"):
+        if k in ("program", "submit", "submit_via_job", "job"):
             return f"prog://{n}"
-        if k in ("transaction", "call_transaction"):
+        if k in ("transaction", "call_transaction", "leave_to_transaction"):
             return f"tcode://{n}"
         if k in ("screen", "call_screen"):
             return f"screen://{p}/{n}"
@@ -48,6 +48,22 @@ class CallGraphBuilder:
             return f"incl://{n}"
         if k in ("class", "create_object", "new"):
             return f"class://{n}"
+        if k in ("badi", "call_badi", "get_badi"):
+            return f"badi://{n}"
+        if k in ("enhancement", "call_enhancement"):
+            return f"enhancement://{n}"
+        if k in ("transformation", "call_transformation"):
+            return f"transformation://{n}"
+        if k in ("dialog", "call_dialog"):
+            return f"dialog://{n}"
+        if k in ("pf_status", "set_pf_status"):
+            return f"status://{p}/{n}"
+        if k in ("authority_check",):
+            return f"auth://{n}"
+        if k in ("message",):
+            return f"message://{n}"
+        if k in ("table", "select", "insert", "update", "modify", "delete"):
+            return f"table://{n}"
         if k == "standard_sap":
             return f"standard://{n}"
         return f"unknown://{n}"
@@ -177,10 +193,33 @@ class CallGraphBuilder:
             "CALL_METHOD": "METHOD",
             "INCLUDE": "INCLUDE",
             "SUBMIT": "PROGRAM",
+            "SUBMIT_VIA_JOB": "JOB",
             "CALL_TRANSACTION": "TRANSACTION",
+            "LEAVE_TO_TRANSACTION": "TRANSACTION",
             "CALL_SCREEN": "SCREEN",
             "CREATE_OBJECT": "CLASS",
             "NEW": "CLASS",
+            
+            # Phase 1 Transitions
+            "CALL_BADI": "BADI",
+            "GET_BADI": "BADI",
+            "CALL_CUSTOMER_FUNCTION": "FUNCTION",
+            "CALL_ENHANCEMENT": "ENHANCEMENT",
+            "CALL_TRANSFORMATION": "TRANSFORMATION",
+            "CALL_DIALOG": "DIALOG",
+            "SET_PF_STATUS": "PF_STATUS",
+            "SET_HANDLER": "METHOD",
+            "RAISE_EVENT": "EVENT",
+            "WAIT_UNTIL": "EVENT",
+            "AUTHORITY_CHECK": "AUTHORITY_CHECK",
+            "MESSAGE": "MESSAGE",
+            
+            # Phase 2 Database
+            "SELECT": "TABLE",
+            "INSERT": "TABLE",
+            "UPDATE": "TABLE",
+            "MODIFY": "TABLE",
+            "DELETE": "TABLE",
         }
         kind = call_type_to_kind.get(call.call_type, call.call_type)
         if is_sap and config.traversal.stop_at_sap_standard:
@@ -213,14 +252,22 @@ class CallGraphBuilder:
             ))
 
         rel = RelationshipType.CALLS
-        if call.call_type == "PERFORM" or call.call_type == "PERFORM_IN_PROGRAM":
+        if call.call_type in ("PERFORM", "PERFORM_IN_PROGRAM"):
             rel = RelationshipType.PERFORMS
         elif call.call_type == "INCLUDE":
             rel = RelationshipType.INCLUDES
         elif call.call_type in ("CREATE_OBJECT", "NEW"):
             rel = RelationshipType.CREATES
-        elif call.call_type == "SUBMIT":
+        elif call.call_type in ("SUBMIT", "SUBMIT_VIA_JOB"):
             rel = RelationshipType.SUBMITS
+        elif call.call_type == "RAISE_EVENT":
+            rel = RelationshipType.RAISES
+        elif call.call_type == "AUTHORITY_CHECK":
+            rel = RelationshipType.CHECKS
+        elif call.call_type == "SELECT":
+            rel = RelationshipType.READS
+        elif call.call_type in ("INSERT", "UPDATE", "MODIFY", "DELETE"):
+            rel = RelationshipType.WRITES
 
         # Dynamic call resolution status
         res_status = ResolutionStatus.STATIC

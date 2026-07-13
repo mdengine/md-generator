@@ -307,3 +307,72 @@ def test_graph_serializer():
     assert deserialized.nodes["prog://ZTEST"].line_start == 1
     assert len(deserialized.edges) == 1
     assert deserialized.edges[0].resolution_status == ResolutionStatus.DYNAMIC
+
+def test_abap_execution_transitions_and_data_lineage():
+    code_content = """REPORT ZTRANSITIONS.
+START-OF-SELECTION.
+CALL BADI lo_badi->run.
+AUTHORITY-CHECK OBJECT 'S_TCODE' ID 'TCD' FIELD 'SE38'.
+MESSAGE e001(zmsg).
+SUBMIT zjob VIA JOB 'MY_JOB' NUMBER '123'.
+SELECT * FROM kna1 INTO TABLE lt_kna1.
+UPDATE mara SET vp = 1.
+"""
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        tmp_path = Path(tmpdir)
+        prog_file = tmp_path / "ztransitions.abap"
+        prog_file.write_text(code_content, encoding="utf-8")
+
+        art = CanonicalArtifact(
+            identity={"stable_id": "ABAP::ZTRANSITIONS", "display_id": "ZTRANSITIONS"},
+            provenance={"source_files": [str(prog_file)]},
+            artifact_type="abap.program",
+            name="ZTRANSITIONS",
+            source_path=str(prog_file)
+        )
+
+        loader = SourceLoader({"ZTRANSITIONS": art})
+        cache = StatementCache()
+        repo = SymbolRepository(loader, cache)
+
+        config = AbapJourneySection(traversal=TraversalConfig(
+            stop_at_sap_standard=False,
+            customer_namespaces=["Z*"]
+        ))
+        graph = CallGraphBuilder.build_graph_for_program("ZTRANSITIONS", repo, config, prog_file)
+
+        # Check nodes
+        badi_node_id = "badi://LO_BADI->RUN"
+        auth_node_id = "auth://S_TCODE"
+        msg_node_id = "message://E001"
+        job_node_id = "prog://ZJOB"
+        kna1_node_id = "table://KNA1"
+        mara_node_id = "table://MARA"
+
+        assert badi_node_id in graph.nodes
+        assert auth_node_id in graph.nodes
+        assert msg_node_id in graph.nodes
+        assert job_node_id in graph.nodes
+        assert kna1_node_id in graph.nodes
+        assert mara_node_id in graph.nodes
+
+        # Check relationships
+        edges_from_event = [e for e in graph.edges if e.source == "event://ZTRANSITIONS/START-OF-SELECTION"]
+        
+        # CHECKS relationship
+        auth_edge = next(e for e in edges_from_event if e.destination == auth_node_id)
+        assert auth_edge.relationship == RelationshipType.CHECKS
+
+        # READS relationship
+        kna1_edge = next(e for e in edges_from_event if e.destination == kna1_node_id)
+        assert kna1_edge.relationship == RelationshipType.READS
+
+        # WRITES relationship
+        mara_edge = next(e for e in edges_from_event if e.destination == mara_node_id)
+        assert mara_edge.relationship == RelationshipType.WRITES
+
+        # SUBMITS relationship
+        job_edge = next(e for e in edges_from_event if e.destination == job_node_id)
+        assert job_edge.relationship == RelationshipType.SUBMITS
+
