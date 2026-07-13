@@ -129,6 +129,19 @@ class SymbolRepository:
         self.method_index: dict[tuple[str, str], AbapBlock] = {}    # (class, method) -> block
         self.function_index: dict[str, AbapBlock] = {}              # function -> block
         self.program_index: dict[str, Path] = {}                    # program -> source path
+        self.include_index: dict[str, Path] = {}
+
+        # Future indices scope placeholders
+        self.class_index: dict[str, Any] = {}
+        self.interface_index: dict[str, Any] = {}
+        self.cds_index: dict[str, Any] = {}
+        self.badi_index: dict[str, Any] = {}
+        self.transaction_index: dict[str, Any] = {}
+        self.screen_index: dict[str, Any] = {}
+        self.message_class_index: dict[str, Any] = {}
+        self.lock_object_index: dict[str, Any] = {}
+        self.table_index: dict[str, Any] = {}
+        self.view_index: dict[str, Any] = {}
 
     def index_program(self, program_name: str, parent_path: Path | None = None) -> ProgramContext | None:
         prog_upper = program_name.upper()

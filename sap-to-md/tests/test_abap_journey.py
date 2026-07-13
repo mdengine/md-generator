@@ -8,7 +8,14 @@ from md_generator.sap.abap_journey.resolver import (
     AbapBlockParser,
     SymbolRepository,
 )
-from md_generator.sap.abap_journey.models import CallGraph, Node, Edge, RelationshipType
+from md_generator.sap.abap_journey.models import (
+    CallGraph,
+    Node,
+    Edge,
+    RelationshipType,
+    ResolutionStatus,
+    GraphSerializer,
+)
 from md_generator.sap.abap_journey.graph_builder import CallGraphBuilder
 from md_generator.sap.abap_journey.journey_builder import JourneyBuilder
 from md_generator.sap.abap_journey.cache import IncrementalCache
@@ -16,7 +23,7 @@ from md_generator.sap.abap_journey.renderers.markdown import MarkdownRenderer
 from md_generator.sap.abap_journey.renderers.mermaid import MermaidRenderer
 from md_generator.sap.abap_journey.renderers.json_renderer import JsonRenderer
 from md_generator.sap.abap_journey.renderers.graphviz import GraphvizRenderer
-from md_generator.sap.core.run_config import AbapJourneySection
+from md_generator.sap.core.run_config import AbapJourneySection, TraversalConfig
 
 def test_block_parser_and_resolver():
     statements = [
@@ -130,10 +137,9 @@ ENDFORM.
         cache = StatementCache()
         repo = SymbolRepository(loader, cache)
         
-        config = AbapJourneySection(max_depth=50, stop_at_sap_standard=False)
+        config = AbapJourneySection(traversal=TraversalConfig(max_depth=50, stop_at_sap_standard=False))
         graph = CallGraphBuilder.build_graph_for_program("ZRECURSIVE", repo, config, prog_file)
         
-        # Verify cycles resolved and marked correctly on nodes
         node_a_id = "form://ZRECURSIVE/FORM_A"
         node_b_id = "form://ZRECURSIVE/FORM_B"
         
@@ -146,6 +152,7 @@ def test_sap_standard_stopping():
 START-OF-SELECTION.
 CALL FUNCTION 'BAPI_CUSTOMER_GETDETAIL'.
 CALL FUNCTION 'Z_MY_CUSTOM_FUNC'.
+CALL FUNCTION '/DEPT/MY_FUNC'.
 """
 
     with tempfile.TemporaryDirectory() as tmpdir:
@@ -165,18 +172,26 @@ CALL FUNCTION 'Z_MY_CUSTOM_FUNC'.
         cache = StatementCache()
         repo = SymbolRepository(loader, cache)
 
-        config = AbapJourneySection(stop_at_sap_standard=True, customer_namespaces=["Z*"])
+        # Configure custom namespaces list dynamically
+        config = AbapJourneySection(traversal=TraversalConfig(
+            stop_at_sap_standard=True,
+            customer_namespaces=["Z*", "/DEPT/*"]
+        ))
         graph = CallGraphBuilder.build_graph_for_program("ZSAP_STOP", repo, config, prog_file)
 
         bapi_node_id = "standard://BAPI_CUSTOMER_GETDETAIL"
         custom_node_id = "func://Z_MY_CUSTOM_FUNC"
+        dept_node_id = "func:///DEPT/MY_FUNC"
 
         assert bapi_node_id in graph.nodes
-        assert graph.nodes[bapi_node_id].is_sap is True
+        assert graph.nodes[bapi_node_id].is_standard is True
         assert graph.nodes[bapi_node_id].kind == "STANDARD_SAP"
 
         assert custom_node_id in graph.nodes
-        assert graph.nodes[custom_node_id].is_sap is False
+        assert graph.nodes[custom_node_id].is_standard is False
+
+        assert dept_node_id in graph.nodes
+        assert graph.nodes[dept_node_id].is_standard is False
 
 def test_end_to_end_journey_markdown():
     graph = CallGraph()
@@ -188,7 +203,7 @@ def test_end_to_end_journey_markdown():
     graph.add_node(Node(id=prog_id, kind="PROGRAM", name="ZMY_PROG", program="ZMY_PROG"))
     graph.add_node(Node(id=event_id, kind="EVENT", name="START-OF-SELECTION", program="ZMY_PROG"))
     graph.add_node(Node(id=form_id, kind="FORM", name="PROCESS_LOGIC", program="ZMY_PROG", line=12))
-    graph.add_node(Node(id=func_id, kind="CALL_FUNCTION", name="BAPI_USER_GET_DETAIL", program="ZMY_PROG", line=15, is_sap=True))
+    graph.add_node(Node(id=func_id, kind="CALL_FUNCTION", name="BAPI_USER_GET_DETAIL", program="ZMY_PROG", line=15, is_standard=True))
 
     graph.add_edge(Edge(source=prog_id, destination=event_id, relationship=RelationshipType.INCLUDES))
     graph.add_edge(Edge(source=event_id, destination=form_id, relationship=RelationshipType.PERFORMS, line_number=12))
@@ -243,3 +258,52 @@ def test_renderers():
 
     graphviz_out = GraphvizRenderer.render(graph)
     assert "digraph G {" in graphviz_out
+
+def test_graph_query_apis():
+    graph = CallGraph()
+    prog = Node(id="prog://ZTEST", kind="PROGRAM", name="ZTEST")
+    event = Node(id="event://ZTEST/START", kind="EVENT", name="START")
+    form = Node(id="form://ZTEST/MY_FORM", kind="FORM", name="MY_FORM")
+
+    graph.add_node(prog)
+    graph.add_node(event)
+    graph.add_node(form)
+
+    edge1 = Edge(source="prog://ZTEST", destination="event://ZTEST/START", relationship=RelationshipType.INCLUDES)
+    edge2 = Edge(source="event://ZTEST/START", destination="form://ZTEST/MY_FORM", relationship=RelationshipType.PERFORMS)
+    graph.add_edge(edge1)
+    graph.add_edge(edge2)
+
+    assert graph.find_node("prog://ZTEST") == prog
+    assert len(graph.successors("prog://ZTEST")) == 1
+    assert graph.successors("prog://ZTEST")[0] == event
+    assert graph.predecessors("form://ZTEST/MY_FORM")[0] == event
+    assert len(graph.roots()) == 1
+    assert graph.roots()[0] == prog
+    assert len(graph.leaf_nodes()) == 1
+    assert graph.leaf_nodes()[0] == form
+
+def test_graph_serializer():
+    graph = CallGraph()
+    node = Node(id="prog://ZTEST", kind="PROGRAM", name="ZTEST", line_start=1, line_end=10, is_standard=True)
+    graph.add_node(node)
+    
+    edge = Edge(
+        source="prog://ZTEST",
+        destination="form://ZTEST/XYZ",
+        relationship=RelationshipType.PERFORMS,
+        resolution_status=ResolutionStatus.DYNAMIC,
+        dynamic=True,
+        confidence=0.5
+    )
+    graph.add_edge(edge)
+
+    serialized = GraphSerializer.to_json(graph)
+    assert "resolution_status" in serialized
+    assert "is_standard" in serialized
+
+    deserialized = GraphSerializer.from_json(serialized)
+    assert "prog://ZTEST" in deserialized.nodes
+    assert deserialized.nodes["prog://ZTEST"].line_start == 1
+    assert len(deserialized.edges) == 1
+    assert deserialized.edges[0].resolution_status == ResolutionStatus.DYNAMIC

@@ -83,14 +83,35 @@ pipeline:
   event_bus: false
 
 abap_journey:
-  max_depth: 1000
-  expand_forms: true
-  expand_methods: true
-  expand_functions: true
-  expand_includes: true
-  expand_function_groups: true
-  stop_at_sap_standard: true
-  customer_namespaces:
-    - "Z*"
-    - "Y*"
-    - "/COMPANY/*"
+  traversal:
+    max_depth: 1000
+    expand_forms: true
+    expand_methods: true
+    expand_functions: true
+    expand_includes: true
+    expand_function_groups: true
+    stop_at_sap_standard: true
+    customer_namespaces:
+      - "Z*"
+      - "Y*"
+  renderers:
+    mermaid: true
+    json: true
+    graphviz: true
+    markdown: true
+  cache:
+    enabled: true
+    cache_dir: null
+  plugins:
+    extractors:
+      - "perform"
+      - "function"
+      - "method"
+      - "submit"
+      - "transaction"
+      - "screen"
+      - "include"
+      - "create_object"
+      - "new"
+  statistics:
+    enabled: true

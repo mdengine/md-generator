@@ -10,14 +10,14 @@ from md_generator.sap.abap_journey.resolver import (
     SymbolRepository,
     ProgramContext,
 )
-from md_generator.sap.abap_journey.models import CallGraph, Node, Edge, RelationshipType
+from md_generator.sap.abap_journey.models import CallGraph, Node, Edge, RelationshipType, ResolutionStatus
 from md_generator.sap.core.run_config import AbapJourneySection
 
 class CallGraphBuilder:
     @staticmethod
     def is_sap_standard_name(name: str, config: AbapJourneySection) -> bool:
         upper_name = name.upper()
-        for pat in config.customer_namespaces:
+        for pat in config.traversal.customer_namespaces:
             if fnmatch.fnmatch(upper_name, pat.upper()):
                 return False
         return True
@@ -164,6 +164,8 @@ class CallGraphBuilder:
         parent_path: Path | None = None
     ) -> None:
         target_upper = call.target.upper()
+        
+        # Check standard SAP
         is_sap = False
         if call.call_type in ("CALL_FUNCTION", "CALL_METHOD", "SUBMIT", "CALL_TRANSACTION"):
             is_sap = CallGraphBuilder.is_sap_standard_name(call.target, config)
@@ -181,7 +183,7 @@ class CallGraphBuilder:
             "NEW": "CLASS",
         }
         kind = call_type_to_kind.get(call.call_type, call.call_type)
-        if is_sap and config.stop_at_sap_standard:
+        if is_sap and config.traversal.stop_at_sap_standard:
             kind = "STANDARD_SAP"
 
         node_id = CallGraphBuilder.get_node_id(kind, call.target, prog_ctx.program_name)
@@ -206,7 +208,7 @@ class CallGraphBuilder:
                 namespace=namespace,
                 program=prog_ctx.program_name,
                 line=call.line,
-                is_sap=is_sap,
+                is_standard=is_sap,
                 is_external=(call.call_type == "PERFORM_IN_PROGRAM" or not is_sap and not prog_ctx.forms.get(target_upper))
             ))
 
@@ -220,16 +222,51 @@ class CallGraphBuilder:
         elif call.call_type == "SUBMIT":
             rel = RelationshipType.SUBMITS
 
+        # Dynamic call resolution status
+        res_status = ResolutionStatus.STATIC
+        is_resolved = True
+        confidence = 1.0
+
+        if call.dynamic:
+            res_status = ResolutionStatus.DYNAMIC
+            confidence = 0.5
+        else:
+            # Check static lookup status in indices
+            has_definition = False
+            if call.call_type == "PERFORM":
+                has_definition = repo.find_form(prog_ctx.program_name, call.target, parent_path) is not None
+            elif call.call_type == "PERFORM_IN_PROGRAM":
+                has_definition = repo.find_form(call.extra, call.target, parent_path) is not None
+            elif call.call_type == "CALL_FUNCTION":
+                has_definition = is_sap or repo.find_function(call.target, parent_path) is not None
+            elif call.call_type == "CALL_METHOD":
+                if "=>" in call.target:
+                    cls_name, _, meth_name = call.target.partition("=>")
+                    has_definition = repo.find_method(cls_name, meth_name, parent_path) is not None
+                else:
+                    has_definition = True  # Instance call fallback
+            else:
+                has_definition = True
+
+            if not has_definition:
+                res_status = ResolutionStatus.UNRESOLVED
+                is_resolved = False
+                confidence = 0.0
+
         graph.add_edge(Edge(
             source=parent_node_id,
             destination=node_id,
             relationship=rel,
-            line_number=call.line
+            line_number=call.line,
+            resolved=is_resolved,
+            dynamic=call.dynamic,
+            confidence=confidence,
+            resolution_status=res_status
         ))
 
-        if is_sap and config.stop_at_sap_standard:
+        if is_sap and config.traversal.stop_at_sap_standard:
             return
-        if current_depth > config.max_depth:
+        if current_depth > config.traversal.max_depth:
             return
 
         node_key = f"{call.call_type}:{target_upper}"
@@ -242,7 +279,7 @@ class CallGraphBuilder:
 
         path_visited.add(node_key)
 
-        if call.call_type == "PERFORM" and config.expand_forms:
+        if call.call_type == "PERFORM" and config.traversal.expand_forms:
             form_block = repo.find_form(prog_ctx.program_name, call.target, parent_path)
             if form_block:
                 for c in form_block.calls:
@@ -250,7 +287,7 @@ class CallGraphBuilder:
                         c, node_id, prog_ctx, repo, config, graph, path_visited, current_depth + 1, parent_path
                     )
 
-        elif call.call_type == "PERFORM_IN_PROGRAM" and config.expand_forms:
+        elif call.call_type == "PERFORM_IN_PROGRAM" and config.traversal.expand_forms:
             ext_prog = call.extra.upper()
             form_block = repo.find_form(ext_prog, call.target, parent_path)
             if form_block:
@@ -261,7 +298,7 @@ class CallGraphBuilder:
                             c, node_id, ext_ctx, repo, config, graph, path_visited, current_depth + 1, parent_path
                         )
 
-        elif call.call_type == "CALL_FUNCTION" and config.expand_functions:
+        elif call.call_type == "CALL_FUNCTION" and config.traversal.expand_functions:
             func_block = repo.find_function(call.target, parent_path)
             if func_block:
                 func_group = func_block.name.upper()
@@ -273,7 +310,7 @@ class CallGraphBuilder:
                         c, node_id, func_ctx, repo, config, graph, path_visited, current_depth + 1, parent_path
                     )
 
-        elif call.call_type == "CALL_METHOD" and config.expand_methods:
+        elif call.call_type == "CALL_METHOD" and config.traversal.expand_methods:
             if "=>" in call.target:
                 cls_name, _, meth_name = call.target.partition("=>")
                 meth_block = repo.find_method(cls_name, meth_name, parent_path)

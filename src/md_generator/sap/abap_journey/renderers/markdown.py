@@ -7,7 +7,6 @@ class MarkdownRenderer:
     @staticmethod
     def format_text_tree(nodes: list[Node], graph: CallGraph) -> str:
         lines: list[str] = []
-        global_visited = set()
 
         def _render(node: Node, prefix: str = "", is_last: bool = True, path_visited: set[str] = None):
             if path_visited is None:
@@ -15,7 +14,7 @@ class MarkdownRenderer:
                 
             connector = "└── " if is_last else "├── "
             extra = ""
-            if node.is_sap:
+            if node.is_standard:
                 extra = " (SAP Standard)"
             elif node.has_cycle or node.id in path_visited:
                 extra = " (Recursive Cycle 🔄)"
@@ -23,19 +22,13 @@ class MarkdownRenderer:
             line_info = f" @ line {node.line}" if node.line > 0 else ""
             lines.append(f"{prefix}{connector}{node.kind}: {node.name}{extra}{line_info}")
 
-            # Cycle check for rendering child elements
             if node.id in path_visited or node.has_cycle:
                 return
 
             path_visited.add(node.id)
 
-            # Find all outgoing edges from this node
-            out_edges = [e for e in graph.edges if e.source == node.id]
-            children = []
-            for edge in out_edges:
-                child = graph.nodes.get(edge.destination)
-                if child:
-                    children.append(child)
+            # Find all outgoing edges using new CallGraph API successors/outgoing
+            children = graph.successors(node.id)
 
             new_prefix = prefix + ("    " if is_last else "│   ")
             for i, child in enumerate(children):
@@ -64,7 +57,7 @@ class MarkdownRenderer:
         for node in graph.nodes.values():
             if node.has_cycle:
                 has_cycle = True
-            if node.is_sap:
+            if node.is_standard:
                 sap_standard_calls.add(node.name.upper())
 
             ukey = node.name.upper()
@@ -74,11 +67,11 @@ class MarkdownRenderer:
                     external_dependencies.add(f"Subroutine: {ukey} in Program {node.program.upper()}")
             elif node.kind == "CALL_FUNCTION":
                 total_functions.add(ukey)
-                if not node.is_sap:
+                if not node.is_standard:
                     external_dependencies.add(f"Function Module: {ukey}")
             elif node.kind == "CALL_METHOD":
                 total_methods.add(ukey)
-                if not node.is_sap:
+                if not node.is_standard:
                     external_dependencies.add(f"Method: {ukey}")
             elif node.kind == "INCLUDE":
                 total_includes.add(ukey)

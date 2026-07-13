@@ -19,7 +19,7 @@ class MermaidRenderer:
         for node in graph.nodes.values():
             node_id = get_id(node.id)
             extra = ""
-            if node.is_sap:
+            if node.is_standard:
                 extra = "\\n(SAP Standard)"
             elif node.has_cycle:
                 extra = "\\n(Recursive Cycle)"

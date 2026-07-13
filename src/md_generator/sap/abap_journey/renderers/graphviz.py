@@ -22,7 +22,7 @@ class GraphvizRenderer:
         for node in graph.nodes.values():
             nid = get_id(node.id)
             extra = ""
-            if node.is_sap:
+            if node.is_standard:
                 extra = " (SAP Standard)"
             elif node.has_cycle:
                 extra = " (Recursive)"
