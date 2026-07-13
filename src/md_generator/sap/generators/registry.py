@@ -581,7 +581,17 @@ def _generate_abap(
     md = output_dir / "abap" / "programs" / f"{slug}.md"
     md.parent.mkdir(parents=True, exist_ok=True)
     meta = artifact.metadata.get("abap", {})
-    md.write_text(build_abap_program_markdown(artifact.name, meta), encoding="utf-8")
+
+    program_md = build_abap_program_markdown(artifact.name, meta)
+    try:
+        from md_generator.sap.abap_journey.engine import build_journey_and_call_graph
+        journey_md = build_journey_and_call_graph(artifact, ctx)
+        if journey_md:
+            program_md = program_md.rstrip() + "\n\n" + journey_md.strip() + "\n"
+    except Exception as e:
+        logger.warning("Failed to generate ABAP execution journey for %s: %s", artifact.name, e)
+
+    md.write_text(program_md, encoding="utf-8")
     paths.append(md)
     paths.append(generate_lineage_json(artifact, store, output_dir / "abap" / "lineage" / f"{slug}.json"))
     return paths

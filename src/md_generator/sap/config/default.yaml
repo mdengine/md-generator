@@ -81,3 +81,16 @@ pipeline:
   cross_lineage: false
   semantic_chunks_jsonl: false
   event_bus: false
+
+abap_journey:
+  max_depth: 1000
+  expand_forms: true
+  expand_methods: true
+  expand_functions: true
+  expand_includes: true
+  expand_function_groups: true
+  stop_at_sap_standard: true
+  customer_namespaces:
+    - "Z*"
+    - "Y*"
+    - "/COMPANY/*"

@@ -81,6 +81,18 @@ class ODataSection:
 
 
 @dataclass
+class AbapJourneySection:
+    max_depth: int = 1000
+    expand_forms: bool = True
+    expand_methods: bool = True
+    expand_functions: bool = True
+    expand_includes: bool = True
+    expand_function_groups: bool = True
+    stop_at_sap_standard: bool = True
+    customer_namespaces: list[str] = field(default_factory=lambda: ["Z*", "Y*", "/COMPANY/*"])
+
+
+@dataclass
 class SapRunConfig:
     input_paths: list[Path] = field(default_factory=list)
     odata_urls: list[str] = field(default_factory=list)
@@ -95,6 +107,7 @@ class SapRunConfig:
     graph: GraphSection = field(default_factory=GraphSection)
     pipeline: PipelineSection = field(default_factory=PipelineSection)
     performance: PerformanceSection = field(default_factory=PerformanceSection)
+    abap_journey: AbapJourneySection = field(default_factory=AbapJourneySection)
     write_manifest: bool = True
     markdown_cross_links: bool = True
 
@@ -184,6 +197,7 @@ def load_run_config(path: Path | None, overrides: dict[str, Any] | None = None) 
         graph=_section(GraphSection, raw.get("graph")),
         pipeline=_section(PipelineSection, raw.get("pipeline")),
         performance=_section(PerformanceSection, perf_raw),
+        abap_journey=_section(AbapJourneySection, raw.get("abap_journey")),
         write_manifest=bool(out.get("write_manifest", True)),
         markdown_cross_links=bool(out.get("markdown_cross_links", True)),
     )
