@@ -345,7 +345,7 @@ UPDATE mara SET vp = 1.
         # Check nodes
         badi_node_id = "badi://LO_BADI->RUN"
         auth_node_id = "auth://S_TCODE"
-        msg_node_id = "message://E001"
+        msg_node_id = "message://ZMSG/001"
         job_node_id = "prog://ZJOB"
         kna1_node_id = "table://KNA1"
         mara_node_id = "table://MARA"
@@ -375,4 +375,162 @@ UPDATE mara SET vp = 1.
         # SUBMITS relationship
         job_edge = next(e for e in edges_from_event if e.destination == job_node_id)
         assert job_edge.relationship == RelationshipType.SUBMITS
+
+def test_abap_advanced_sap_coverage():
+    code_content = """REPORT ZADVANCED.
+START-OF-SELECTION.
+SELECT * FROM (lv_table) INTO TABLE lt_data.
+SELECT * FROM zi_customer INTO TABLE lt_cust.
+CALL TRANSACTION lv_tcode.
+MESSAGE ID lv_msgid TYPE 'E' NUMBER '001'.
+MESSAGE e002(zmsg_class).
+GET BADI lo_badi FILTERS country = 'US'.
+CALL FUNCTION 'ENQUEUE_EZ_LOCK'.
+CALL FUNCTION 'Z_MY_FUNC' DESTINATION 'NONE'.
+DEFINE BEHAVIOR FOR z_rap_entity.
+"""
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        tmp_path = Path(tmpdir)
+        prog_file = tmp_path / "zadvanced.abap"
+        prog_file.write_text(code_content, encoding="utf-8")
+
+        art = CanonicalArtifact(
+            identity={"stable_id": "ABAP::ZADVANCED", "display_id": "ZADVANCED"},
+            provenance={"source_files": [str(prog_file)]},
+            artifact_type="abap.program",
+            name="ZADVANCED",
+            source_path=str(prog_file)
+        )
+
+        loader = SourceLoader({"ZADVANCED": art})
+        cache = StatementCache()
+        repo = SymbolRepository(loader, cache)
+
+        config = AbapJourneySection(traversal=TraversalConfig(
+            stop_at_sap_standard=False,
+            customer_namespaces=["Z*"]
+        ))
+        graph = CallGraphBuilder.build_graph_for_program("ZADVANCED", repo, config, prog_file)
+
+        # 1. Dynamic SELECT table in parenthesis
+        dyn_table_node = "table://(LV_TABLE)"
+        assert dyn_table_node in graph.nodes
+        edges_to_dyn = [e for e in graph.edges if e.destination == dyn_table_node]
+        assert len(edges_to_dyn) == 1
+        assert edges_to_dyn[0].dynamic is True
+        assert edges_to_dyn[0].resolution_status == ResolutionStatus.DYNAMIC
+
+        # 2. CDS View ZI_CUSTOMER
+        cds_node = "cds://ZI_CUSTOMER"
+        assert cds_node in graph.nodes
+        assert graph.nodes[cds_node].kind == "CDS"
+
+        # 3. Dynamic transaction
+        dyn_tcode_node = "tcode://LV_TCODE"
+        assert dyn_tcode_node in graph.nodes
+        edges_to_tcode = [e for e in graph.edges if e.destination == dyn_tcode_node]
+        assert edges_to_tcode[0].dynamic is True
+
+        # 4. Dynamic message
+        dyn_msg_node = "message://DYNAMIC_MESSAGE"
+        assert dyn_msg_node in graph.nodes
+        edges_to_msg = [e for e in graph.edges if e.destination == dyn_msg_node]
+        assert edges_to_msg[0].dynamic is True
+
+        # 5. Message Class mapping
+        msg_node = "message://ZMSG_CLASS/002"
+        assert msg_node in graph.nodes
+
+        # 6. Lock Object
+        lock_node = "lock://EZ_LOCK"
+        assert lock_node in graph.nodes
+        assert graph.nodes[lock_node].kind == "LOCK_OBJECT"
+
+        # 7. RFC Destination 'NONE'
+        rfc_node = "rfc://Z_MY_FUNC"
+        assert rfc_node in graph.nodes
+        assert graph.nodes[rfc_node].kind == "RFC"
+        assert graph.nodes[rfc_node].metadata.get("destination") == "NONE"
+
+        # 8. RAP Behavior
+        rap_node = "behavior://Z_RAP_ENTITY"
+        assert rap_node in graph.nodes
+
+def test_abap_journey_fallback_phases():
+    graph = CallGraph()
+    prog_id = "prog://ZMY_CLASS"
+    meth1_id = "method://ZMY_CLASS/RUN"
+    meth2_id = "method://ZMY_CLASS/HELP"
+    
+    graph.add_node(Node(id=prog_id, kind="PROGRAM", name="ZMY_CLASS"))
+    graph.add_node(Node(id=meth1_id, kind="METHOD", name="RUN"))
+    graph.add_node(Node(id=meth2_id, kind="METHOD", name="HELP"))
+    
+    graph.add_edge(Edge(source=prog_id, destination=meth1_id, relationship=RelationshipType.CALLS))
+    graph.add_edge(Edge(source=prog_id, destination=meth2_id, relationship=RelationshipType.CALLS))
+    
+    phases = JourneyBuilder.build_phases(graph)
+    assert len(phases) == 1
+    assert phases[0].phase_name == "Entry Points (Methods / Subroutines / Functions)"
+    assert len(phases[0].root_nodes) == 2
+    assert any(n.name == "RUN" for n in phases[0].root_nodes)
+    assert any(n.name == "HELP" for n in phases[0].root_nodes)
+
+def test_abap_advanced_static_analysis_mappings():
+    code_content = """REPORT ZEXTENDED.
+START-OF-SELECTION.
+INTERFACE zif_test_interface.
+INTERFACES zif_test_interface.
+AUTHORITY-CHECK OBJECT 'S_TCODE' ID 'TCD' FIELD 'SE38' ID 'ACTVT' FIELD '03'.
+MESSAGE e001(zmsg_class).
+SUBMIT zjob VIA JOB 'MY_JOB' USING SELECTION-SET 'VAR_A'.
+"""
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        tmp_path = Path(tmpdir)
+        prog_file = tmp_path / "zextended.abap"
+        prog_file.write_text(code_content, encoding="utf-8")
+
+        art = CanonicalArtifact(
+            identity={"stable_id": "ABAP::ZEXTENDED", "display_id": "ZEXTENDED"},
+            provenance={"source_files": [str(prog_file)]},
+            artifact_type="abap.program",
+            name="ZEXTENDED",
+            source_path=str(prog_file)
+        )
+
+        loader = SourceLoader({"ZEXTENDED": art})
+        cache = StatementCache()
+        repo = SymbolRepository(loader, cache)
+
+        config = AbapJourneySection(traversal=TraversalConfig(
+            stop_at_sap_standard=False,
+            customer_namespaces=["Z*"]
+        ))
+        graph = CallGraphBuilder.build_graph_for_program("ZEXTENDED", repo, config, prog_file)
+
+        # 1. Interface node & edge
+        interface_node = "interface://ZIF_TEST_INTERFACE"
+        assert interface_node in graph.nodes
+        assert graph.nodes[interface_node].kind == "INTERFACE"
+
+        # 2. Authority object with multiple fields/values
+        auth_node = "auth://S_TCODE"
+        assert auth_node in graph.nodes
+        assert graph.nodes[auth_node].metadata.get("tcd") == "SE38"
+        assert graph.nodes[auth_node].metadata.get("actvt") == "03"
+
+        # 3. Message class mapping and severity
+        msg_node = "message://ZMSG_CLASS/001"
+        assert msg_node in graph.nodes
+        assert graph.nodes[msg_node].metadata.get("severity") == "E"
+
+        # 4. Job variant matching
+        job_node = "prog://ZJOB"
+        assert job_node in graph.nodes
+        assert graph.nodes[job_node].metadata.get("variant") == "VAR_A"
+
+
+
 

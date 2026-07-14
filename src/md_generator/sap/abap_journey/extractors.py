@@ -55,23 +55,64 @@ class FunctionExtractor(CallExtractor):
         if not upper.startswith("CALL FUNCTION"):
             return []
 
+        rfc_match = re.match(r"^CALL\s+FUNCTION\s+['\"]?([\w/]+)['\"]?\s+DESTINATION\s+(['\"]?[\w/()]+['\"]?)", upper)
         static_match = re.match(r"^CALL\s+FUNCTION\s+['\"]?([\w/]+)['\"]?", upper)
         dyn_match = re.match(r"^CALL\s+FUNCTION\s+\(([\w/]+)\)", upper)
 
+        if rfc_match:
+            func_name = rfc_match.group(1)
+            dest = rfc_match.group(2).strip("'\"")
+            is_dyn = "(" in rfc_match.group(2)
+            
+            if func_name.startswith("ENQUEUE_") or func_name.startswith("DEQUEUE_"):
+                suffix = func_name.split("_", 1)[1]
+                return [CallReference(
+                    call_type="LOCK_OBJECT",
+                    target=suffix,
+                    extra=func_name.split("_", 1)[0],
+                    line=line_no
+                )]
+                
+            return [CallReference(
+                call_type="CALL_RFC",
+                target=func_name,
+                extra=f"destination:{dest}",
+                line=line_no,
+                dynamic=is_dyn
+            )]
+
         if static_match:
+            func_name = static_match.group(1)
             raw_target = stmt.strip().split()[2]
             is_quoted = raw_target.startswith("'") or raw_target.startswith('"')
+            
+            if func_name.startswith("ENQUEUE_") or func_name.startswith("DEQUEUE_"):
+                suffix = func_name.split("_", 1)[1]
+                return [CallReference(
+                    call_type="LOCK_OBJECT",
+                    target=suffix,
+                    extra=func_name.split("_", 1)[0],
+                    line=line_no
+                )]
+            
+            if func_name == "MASTER_IDOC_DISTRIBUTE":
+                return [CallReference(
+                    call_type="IDOC",
+                    target=func_name,
+                    line=line_no
+                )]
+
             if is_quoted:
                 return [CallReference(
                     call_type="CALL_FUNCTION",
-                    target=static_match.group(1),
+                    target=func_name,
                     line=line_no,
                     dynamic=False
                 )]
             else:
                 return [CallReference(
                     call_type="CALL_FUNCTION",
-                    target=static_match.group(1),
+                    target=func_name,
                     line=line_no,
                     dynamic=True
                 )]
@@ -133,15 +174,29 @@ class SubmitExtractor(CallExtractor):
         upper = stmt.strip().upper()
         if not upper.startswith("SUBMIT"):
             return []
-        # Job submission check: SUBMIT ... VIA JOB
         is_job = "VIA JOB" in upper
         rep_match = re.match(r"^SUBMIT\s+([\w/()]+)", upper)
+        
+        # Parse variant info: USING SELECTION-SET variant
+        variant = ""
+        var_match = re.search(r"USING\s+SELECTION-SET\s+['\"]?([\w_]+)['\"]?", upper)
+        if var_match:
+            variant = var_match.group(1)
+
         if rep_match:
             target = rep_match.group(1)
             is_dyn = "(" in target
+            
+            extra_list = []
+            if is_job:
+                extra_list.append("job:true")
+            if variant:
+                extra_list.append(f"variant:{variant}")
+                
             return [CallReference(
                 call_type="SUBMIT_VIA_JOB" if is_job else "SUBMIT",
                 target=target,
+                extra=",".join(extra_list),
                 line=line_no,
                 dynamic=is_dyn
             )]
@@ -239,12 +294,20 @@ class NewExtractor(CallExtractor):
 class CallBadiExtractor(CallExtractor):
     def extract(self, stmt: str, line_no: int) -> list[CallReference]:
         upper = stmt.strip().upper()
+        
+        filters = ""
+        if "FILTERS" in upper:
+            filt_match = re.search(r"\bFILTERS\s+(.*)$", upper)
+            if filt_match:
+                filters = filt_match.group(1).strip()
+                
         if "CALL BADI" in upper:
             badi_match = re.search(r"CALL\s+BADI\s+([\w/=>\->()]+)", upper)
             if badi_match:
                 return [CallReference(
                     call_type="CALL_BADI",
                     target=badi_match.group(1),
+                    extra=f"filters:{filters}" if filters else "",
                     line=line_no,
                     dynamic="(" in badi_match.group(1)
                 )]
@@ -254,6 +317,7 @@ class CallBadiExtractor(CallExtractor):
                 return [CallReference(
                     call_type="GET_BADI",
                     target=badi_match.group(1),
+                    extra=f"filters:{filters}" if filters else "",
                     line=line_no,
                     dynamic="(" in badi_match.group(1)
                 )]
@@ -365,9 +429,17 @@ class AuthorityCheckExtractor(CallExtractor):
         if "AUTHORITY-CHECK" in upper:
             auth_match = re.search(r"AUTHORITY-CHECK\s+OBJECT\s+['\"]?([\w/]+)['\"]?", upper)
             if auth_match:
+                obj = auth_match.group(1)
+                
+                # Parse multiple ID '...' FIELD '...' pairs
+                pairs = re.findall(r"\bID\s+['\"]?([\w/]+)['\"]?\s+FIELD\s+['\"]?([\w/*]+)['\"]?", upper)
+                extra = ""
+                if pairs:
+                    extra = ",".join(f"{k}:{v}" for k, v in pairs)
                 return [CallReference(
                     call_type="AUTHORITY_CHECK",
-                    target=auth_match.group(1),
+                    target=obj,
+                    extra=extra,
                     line=line_no
                 )]
         return []
@@ -376,27 +448,59 @@ class MessageExtractor(CallExtractor):
     def extract(self, stmt: str, line_no: int) -> list[CallReference]:
         upper = stmt.strip().upper()
         if upper.startswith("MESSAGE"):
-            # Match MESSAGE e001 or MESSAGE ID msgid NUMBER num
+            # Determine type/severity (starts with E, I, W, S, A)
+            severity = ""
+            sev_match = re.search(r"\bTYPE\s+['\"]?([EISWA])['\"]?", upper)
+            
+            if "ID " in upper and not re.search(r"MESSAGE\s+ID\s+['']", upper):
+                return [CallReference(
+                    call_type="MESSAGE",
+                    target="DYNAMIC_MESSAGE",
+                    extra=f"severity:{severity}" if severity else "",
+                    line=line_no,
+                    dynamic=True
+                )]
+
+            class_match = re.search(r"\b([EISWA])(\d+)\(([\w/]+)\)", upper)
+            if class_match:
+                msg_class = class_match.group(3)
+                num = class_match.group(2)
+                sev = class_match.group(1)
+                return [CallReference(
+                    call_type="MESSAGE",
+                    target=f"{msg_class}/{num}",
+                    extra=f"severity:{sev}",
+                    line=line_no
+                )]
+
             id_match = re.search(r"MESSAGE\s+ID\s+['\"]?([\w/]+)['\"]?", upper)
             literal_match = re.match(r"^MESSAGE\s+['\"]([^'\"]+)['\"]", upper)
             code_match = re.match(r"^MESSAGE\s+([EISWA])(\d+)", upper)
+
+            extra_info = []
+            if severity:
+                extra_info.append(f"severity:{severity}")
 
             if id_match:
                 return [CallReference(
                     call_type="MESSAGE",
                     target=id_match.group(1),
+                    extra=",".join(extra_info),
                     line=line_no
                 )]
             if code_match:
+                extra_info.append(f"severity:{code_match.group(1)}")
                 return [CallReference(
                     call_type="MESSAGE",
                     target=f"{code_match.group(1)}{code_match.group(2)}",
+                    extra=",".join(extra_info),
                     line=line_no
                 )]
             if literal_match:
                 return [CallReference(
                     call_type="MESSAGE",
                     target=literal_match.group(1),
+                    extra=",".join(extra_info),
                     line=line_no
                 )]
         return []
@@ -408,52 +512,121 @@ class DatabaseStatementExtractor(CallExtractor):
         "ORDER", "BY", "UPTO", "ROWS", "SINGLE", "ALL", "ENTRIES", "FOR", "FIELD"
     }
 
+    CDS_PATTERN = re.compile(r"^(Z[IC]|I|C)_[\w_]+$")
+
     def extract(self, stmt: str, line_no: int) -> list[CallReference]:
         upper = stmt.strip().upper()
         
-        # 1. SELECT FROM
+        dyn_select = re.search(r"\bSELECT\s+.*?\bFROM\s+\(([\w/]+)\)", upper, re.DOTALL)
+        if dyn_select:
+            return [CallReference(
+                call_type="SELECT",
+                target=f"({dyn_select.group(1)})",
+                line=line_no,
+                dynamic=True
+            )]
+
         select_match = re.search(r"\bSELECT\s+.*?\bFROM\s+([\w/]+)", upper, re.DOTALL)
         if select_match:
             table = select_match.group(1)
             if table not in self.EXCLUDED_TABLE_NAMES and not table.isdigit():
-                return [CallReference(call_type="SELECT", target=table, line=line_no)]
+                is_cds = bool(self.CDS_PATTERN.match(table))
+                return [CallReference(
+                    call_type="SELECT_CDS" if is_cds else "SELECT",
+                    target=table,
+                    line=line_no
+                )]
 
-        # 2. INSERT INTO / INSERT
-        insert_match = re.search(r"\bINSERT\s+(?:INTO\s+)?([\w/]+)", upper)
+        insert_match = re.search(r"\bINSERT\s+(?:INTO\s+)?([\w/()]+)", upper)
         if insert_match:
-            table = insert_match.group(1)
+            table = insert_match.group(1).strip("()")
+            is_dyn = "(" in insert_match.group(1)
             if table not in self.EXCLUDED_TABLE_NAMES and not table.isdigit():
-                return [CallReference(call_type="INSERT", target=table, line=line_no)]
+                return [CallReference(call_type="INSERT", target=table, line=line_no, dynamic=is_dyn)]
 
-        # 3. UPDATE
-        update_match = re.search(r"\bUPDATE\s+([\w/]+)", upper)
+        update_match = re.search(r"\bUPDATE\s+([\w/()]+)", upper)
         if update_match:
-            table = update_match.group(1)
+            table = update_match.group(1).strip("()")
+            is_dyn = "(" in update_match.group(1)
             if table not in self.EXCLUDED_TABLE_NAMES and not table.isdigit():
-                return [CallReference(call_type="UPDATE", target=table, line=line_no)]
+                return [CallReference(call_type="UPDATE", target=table, line=line_no, dynamic=is_dyn)]
 
-        # 4. MODIFY
-        modify_match = re.search(r"\bMODIFY\s+([\w/]+)", upper)
+        modify_match = re.search(r"\bMODIFY\s+([\w/()]+)", upper)
         if modify_match:
-            table = modify_match.group(1)
+            table = modify_match.group(1).strip("()")
+            is_dyn = "(" in modify_match.group(1)
             if table not in self.EXCLUDED_TABLE_NAMES and not table.isdigit():
-                return [CallReference(call_type="MODIFY", target=table, line=line_no)]
+                return [CallReference(call_type="MODIFY", target=table, line=line_no, dynamic=is_dyn)]
 
-        # 5. DELETE FROM / DELETE
-        delete_match = re.search(r"\bDELETE\s+(?:FROM\s+)?([\w/]+)", upper)
+        delete_match = re.search(r"\bDELETE\s+(?:FROM\s+)?([\w/()]+)", upper)
         if delete_match:
-            table = delete_match.group(1)
+            table = delete_match.group(1).strip("()")
+            is_dyn = "(" in delete_match.group(1)
             if table not in self.EXCLUDED_TABLE_NAMES and not table.isdigit():
-                return [CallReference(call_type="DELETE", target=table, line=line_no)]
+                return [CallReference(call_type="DELETE", target=table, line=line_no, dynamic=is_dyn)]
 
-        # 6. OPEN CURSOR
-        if "OPEN CURSOR" in upper:
-            cursor_match = re.search(r"\bFROM\s+([\w/]+)", upper)
-            if cursor_match:
-                table = cursor_match.group(1)
-                if table not in self.EXCLUDED_TABLE_NAMES:
-                    return [CallReference(call_type="SELECT", target=table, line=line_no)]
+        return []
 
+class RapExtractor(CallExtractor):
+    def extract(self, stmt: str, line_no: int) -> list[CallReference]:
+        upper = stmt.strip().upper()
+        if upper.startswith("DEFINE BEHAVIOR FOR"):
+            rap_match = re.match(r"^DEFINE\s+BEHAVIOR\s+FOR\s+([\w_]+)", upper)
+            if rap_match:
+                return [CallReference(
+                    call_type="RAP_BEHAVIOR",
+                    target=rap_match.group(1),
+                    line=line_no
+                )]
+        return []
+
+class AmdpExtractor(CallExtractor):
+    def extract(self, stmt: str, line_no: int) -> list[CallReference]:
+        upper = stmt.strip().upper()
+        if "BY DATABASE PROCEDURE" in upper or "BY DATABASE FUNCTION" in upper:
+            amdp_match = re.search(r"METHOD\s+(\w+)\s+BY\s+DATABASE", upper)
+            if amdp_match:
+                return [CallReference(
+                    call_type="AMDP",
+                    target=amdp_match.group(1),
+                    line=line_no
+                )]
+        return []
+
+class SearchHelpExtractor(CallExtractor):
+    def extract(self, stmt: str, line_no: int) -> list[CallReference]:
+        upper = stmt.strip().upper()
+        if "MATCHCODE OBJECT" in upper:
+            help_match = re.search(r"MATCHCODE\s+OBJECT\s+([\w_]+)", upper)
+            if help_match:
+                return [CallReference(
+                    call_type="SEARCH_HELP",
+                    target=help_match.group(1),
+                    line=line_no
+                )]
+        return []
+
+class InterfaceExtractor(CallExtractor):
+    def extract(self, stmt: str, line_no: int) -> list[CallReference]:
+        upper = stmt.strip().upper()
+        
+        # INTERFACES <interface>
+        interfaces_match = re.match(r"^INTERFACES\s+([\w_]+)", upper)
+        if interfaces_match:
+            return [CallReference(
+                call_type="INTERFACE",
+                target=interfaces_match.group(1),
+                line=line_no
+            )]
+            
+        # INTERFACE <interface>
+        interface_match = re.match(r"^INTERFACE\s+([\w_]+)", upper)
+        if interface_match and "DEFERRED" not in upper and "LOAD" not in upper:
+            return [CallReference(
+                call_type="INTERFACE",
+                target=interface_match.group(1),
+                line=line_no
+            )]
         return []
 
 ALL_EXTRACTORS = [
@@ -477,6 +650,10 @@ ALL_EXTRACTORS = [
     AuthorityCheckExtractor(),
     MessageExtractor(),
     DatabaseStatementExtractor(),
+    RapExtractor(),
+    AmdpExtractor(),
+    SearchHelpExtractor(),
+    InterfaceExtractor(),
 ]
 
 def extract_all_calls(stmt: str, line_no: int) -> list[CallReference]:

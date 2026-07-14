@@ -64,6 +64,22 @@ class CallGraphBuilder:
             return f"message://{n}"
         if k in ("table", "select", "insert", "update", "modify", "delete"):
             return f"table://{n}"
+        if k in ("cds", "select_cds"):
+            return f"cds://{n}"
+        if k in ("rfc", "call_rfc"):
+            return f"rfc://{n}"
+        if k in ("idoc",):
+            return f"idoc://{n}"
+        if k in ("lock_object",):
+            return f"lock://{n}"
+        if k in ("behavior", "rap_behavior", "rap_behavior_impl"):
+            return f"behavior://{n}"
+        if k in ("amdp",):
+            return f"amdp://{n}"
+        if k in ("search_help",):
+            return f"help://{n}"
+        if k in ("interface",):
+            return f"interface://{n}"
         if k == "standard_sap":
             return f"standard://{n}"
         return f"unknown://{n}"
@@ -111,7 +127,6 @@ class CallGraphBuilder:
     ) -> CallGraph:
         graph = CallGraph()
 
-        # Resolve statements
         stmts = None
         if parent_path and parent_path.exists():
             stmts = repo.cache.get_statements(parent_path)
@@ -126,7 +141,6 @@ class CallGraphBuilder:
         blocks = AbapBlockParser.parse_statements(inlined)
         prog_ctx = ProgramContext(program_name, blocks)
 
-        # Populate SymbolRepository indexes for the program context
         repo.program_contexts[program_name.upper()] = prog_ctx
         for name, block in prog_ctx.forms.items():
             repo.form_index[(program_name.upper(), name)] = block
@@ -135,7 +149,6 @@ class CallGraphBuilder:
         for name, block in prog_ctx.functions.items():
             repo.function_index[name] = block
 
-        # Add program root node
         prog_node_id = f"prog://{program_name.upper()}"
         graph.add_node(Node(
             id=prog_node_id,
@@ -153,7 +166,6 @@ class CallGraphBuilder:
                 name=event.name,
                 program=program_name.upper()
             ))
-            # Link program to event block
             graph.add_edge(Edge(
                 source=prog_node_id,
                 destination=event_id,
@@ -181,9 +193,8 @@ class CallGraphBuilder:
     ) -> None:
         target_upper = call.target.upper()
         
-        # Check standard SAP
         is_sap = False
-        if call.call_type in ("CALL_FUNCTION", "CALL_METHOD", "SUBMIT", "CALL_TRANSACTION"):
+        if call.call_type in ("CALL_FUNCTION", "CALL_METHOD", "SUBMIT", "CALL_TRANSACTION", "CALL_RFC"):
             is_sap = CallGraphBuilder.is_sap_standard_name(call.target, config)
 
         call_type_to_kind = {
@@ -216,10 +227,21 @@ class CallGraphBuilder:
             
             # Phase 2 Database
             "SELECT": "TABLE",
+            "SELECT_CDS": "CDS",
             "INSERT": "TABLE",
             "UPDATE": "TABLE",
             "MODIFY": "TABLE",
             "DELETE": "TABLE",
+            
+            # Advanced SAP Coverage Extensions
+            "CALL_RFC": "RFC",
+            "IDOC": "IDOC",
+            "LOCK_OBJECT": "LOCK_OBJECT",
+            "RAP_BEHAVIOR": "BEHAVIOR",
+            "RAP_BEHAVIOR_IMPL": "BEHAVIOR",
+            "AMDP": "AMDP",
+            "SEARCH_HELP": "SEARCH_HELP",
+            "INTERFACE": "INTERFACE",
         }
         kind = call_type_to_kind.get(call.call_type, call.call_type)
         if is_sap and config.traversal.stop_at_sap_standard:
@@ -240,6 +262,19 @@ class CallGraphBuilder:
             namespace = "SAP"
 
         if node_id not in graph.nodes:
+            metadata_dict = {}
+            if call.extra:
+                # Differentiate authority pairs or job/severity details into metadata
+                if "," in call.extra or ":" in call.extra:
+                    for item in call.extra.split(","):
+                        if ":" in item:
+                            k_item, _, v_item = item.partition(":")
+                            metadata_dict[k_item.lower()] = v_item
+                        elif "=" in item:
+                            k_item, _, v_item = item.partition("=")
+                            metadata_dict[k_item.lower()] = v_item
+                else:
+                    metadata_dict["extra"] = call.extra
             graph.add_node(Node(
                 id=node_id,
                 kind=kind,
@@ -248,7 +283,8 @@ class CallGraphBuilder:
                 program=prog_ctx.program_name,
                 line=call.line,
                 is_standard=is_sap,
-                is_external=(call.call_type == "PERFORM_IN_PROGRAM" or not is_sap and not prog_ctx.forms.get(target_upper))
+                is_external=(call.call_type == "PERFORM_IN_PROGRAM" or not is_sap and not prog_ctx.forms.get(target_upper)),
+                metadata=metadata_dict
             ))
 
         rel = RelationshipType.CALLS
@@ -264,7 +300,7 @@ class CallGraphBuilder:
             rel = RelationshipType.RAISES
         elif call.call_type == "AUTHORITY_CHECK":
             rel = RelationshipType.CHECKS
-        elif call.call_type == "SELECT":
+        elif call.call_type in ("SELECT", "SELECT_CDS"):
             rel = RelationshipType.READS
         elif call.call_type in ("INSERT", "UPDATE", "MODIFY", "DELETE"):
             rel = RelationshipType.WRITES
@@ -278,7 +314,6 @@ class CallGraphBuilder:
             res_status = ResolutionStatus.DYNAMIC
             confidence = 0.5
         else:
-            # Check static lookup status in indices
             has_definition = False
             if call.call_type == "PERFORM":
                 has_definition = repo.find_form(prog_ctx.program_name, call.target, parent_path) is not None
@@ -291,7 +326,7 @@ class CallGraphBuilder:
                     cls_name, _, meth_name = call.target.partition("=>")
                     has_definition = repo.find_method(cls_name, meth_name, parent_path) is not None
                 else:
-                    has_definition = True  # Instance call fallback
+                    has_definition = True
             else:
                 has_definition = True
 
