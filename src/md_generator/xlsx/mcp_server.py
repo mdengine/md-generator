@@ -12,7 +12,7 @@ except (ImportError, ModuleNotFoundError):
     try:
         from fastmcp import FastMCP
     except (ImportError, ModuleNotFoundError):
-        from mcp.server.mcpserver import MCPServer as FastMCP
+        from mcp.server import FastMCP
 
 from md_generator.xlsx.convert_config import ConvertConfig
 from md_generator.xlsx.converter_core import convert_excel_to_markdown

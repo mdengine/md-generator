@@ -10,7 +10,7 @@ except (ImportError, ModuleNotFoundError):
     try:
         from fastmcp import FastMCP
     except (ImportError, ModuleNotFoundError):
-        from mcp.server.mcpserver import MCPServer as FastMCP
+        from mcp.server import FastMCP
 
 from md_generator.odata.core.extractor import extract_to_markdown
 from md_generator.odata.core.run_config import OdataRunConfig

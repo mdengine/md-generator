@@ -21,7 +21,7 @@ except (ImportError, ModuleNotFoundError):
     try:
         from fastmcp import FastMCP
     except (ImportError, ModuleNotFoundError):
-        from mcp.server.mcpserver import MCPServer as FastMCP
+        from mcp.server import FastMCP
 
 from md_generator.image.api.query_options import convert_options_from_query
 from md_generator.image.api.settings import max_upload_mb

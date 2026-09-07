@@ -10,7 +10,7 @@ except (ImportError, ModuleNotFoundError):
     try:
         from fastmcp import FastMCP
     except (ImportError, ModuleNotFoundError):
-        from mcp.server.mcpserver import MCPServer as FastMCP
+        from mcp.server import FastMCP
 
 from md_generator.graph.api.schemas import GraphToMdRunBody
 from md_generator.graph.core.markdown_writer import format_node_markdown, format_relationship_markdown

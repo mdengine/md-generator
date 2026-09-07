@@ -11,7 +11,7 @@ except (ImportError, ModuleNotFoundError):
     try:
         from fastmcp import FastMCP
     except (ImportError, ModuleNotFoundError):
-        from mcp.server.mcpserver import MCPServer as FastMCP
+        from mcp.server import FastMCP
 
 from md_generator.text.api.convert_runner import build_artifact_zip_bytes
 from md_generator.text.api.settings import ApiSettings

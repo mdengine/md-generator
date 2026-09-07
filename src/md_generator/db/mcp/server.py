@@ -10,7 +10,7 @@ except (ImportError, ModuleNotFoundError):
     try:
         from fastmcp import FastMCP
     except (ImportError, ModuleNotFoundError):
-        from mcp.server.mcpserver import MCPServer as FastMCP
+        from mcp.server import FastMCP
 
 from md_generator.db.api.schemas import DbToMdRunBody
 from md_generator.db.core.zip_export import build_markdown_zip_bytes

@@ -10,7 +10,7 @@ except (ImportError, ModuleNotFoundError):
     try:
         from fastmcp import FastMCP
     except (ImportError, ModuleNotFoundError):
-        from mcp.server.mcpserver import MCPServer as FastMCP
+        from mcp.server import FastMCP
 
 from md_generator.codeflow.api.schemas import AnalyzeOptions, merge_upload_options_json, options_to_scan_config
 from md_generator.codeflow.core.extractor import build_output_zip
