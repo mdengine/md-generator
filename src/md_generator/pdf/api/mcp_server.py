@@ -9,7 +9,13 @@ import tempfile
 import uuid
 from pathlib import Path
 
-from mcp.server.fastmcp import FastMCP
+try:
+    from mcp.server.fastmcp import FastMCP
+except (ImportError, ModuleNotFoundError):
+    try:
+        from fastmcp import FastMCP
+    except (ImportError, ModuleNotFoundError):
+        from mcp.server.mcpserver import MCPServer as FastMCP
 
 from md_generator.pdf.api.settings import max_upload_mb
 from md_generator.pdf.api.zip_bundle import zip_artifact_dir

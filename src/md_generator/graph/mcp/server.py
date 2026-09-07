@@ -4,7 +4,13 @@ import base64
 import json
 from pathlib import Path
 
-from mcp.server.fastmcp import FastMCP
+try:
+    from mcp.server.fastmcp import FastMCP
+except (ImportError, ModuleNotFoundError):
+    try:
+        from fastmcp import FastMCP
+    except (ImportError, ModuleNotFoundError):
+        from mcp.server.mcpserver import MCPServer as FastMCP
 
 from md_generator.graph.api.schemas import GraphToMdRunBody
 from md_generator.graph.core.markdown_writer import format_node_markdown, format_relationship_markdown
