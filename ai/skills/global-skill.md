@@ -1,7 +1,7 @@
 ---
 name: mdengine-global-architecture
 description: "Code-derived system view of mdengine: package boundaries, import relationships between md_generator top-level modules, and how CLIs/APIs/MCP routes relate. Use for cross-area questions; defer per-area details to mdengine-ai-<area> skills."
-version: 0.13.0
+version: 0.13.4
 ---
 # mdengine — global architecture (generated)
 

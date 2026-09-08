@@ -44,6 +44,9 @@ pip install "mdengine[audio, video, youtube]"
 
 ## Edge cases (heuristic)
 
+- `media/audio/api/mcp_setup.py`: optional imports / ImportError handling
+- `media/video/api/mcp_setup.py`: optional imports / ImportError handling
+- `media/youtube/api/mcp_setup.py`: optional imports / ImportError handling
 - `media/youtube/service.py`: optional imports / ImportError handling
 - `media/youtube/transcript.py`: optional imports / ImportError handling
 - Prefer **`--help`** on each CLI before guessing flags.

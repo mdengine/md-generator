@@ -36,6 +36,7 @@ pip install "mdengine[archive]"
 
 ## Edge cases (heuristic)
 
+- `archive/api/mcp_setup.py`: optional imports / ImportError handling
 - `archive/convert_impl.py`: optional imports / ImportError handling
 - `archive/extractors.py`: optional imports / ImportError handling
 - Prefer **`--help`** on each CLI before guessing flags.

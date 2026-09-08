@@ -36,6 +36,7 @@ pip install "mdengine[pdf]"
 
 ## Edge cases (heuristic)
 
+- `pdf/api/mcp_server.py`: optional imports / ImportError handling
 - `pdf/pdf_extract.py`: optional imports / ImportError handling
 - Prefer **`--help`** on each CLI before guessing flags.
 

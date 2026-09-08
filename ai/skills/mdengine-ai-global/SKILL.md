@@ -1,7 +1,7 @@
 ---
 name: mdengine-ai-global
 description: "Teaches use of the mdengine PyPI package after pip install: optional extras, console scripts, FastAPI and MCP entry points, and imports under md_generator. For architecture between packages, see ../global-skill.md."
-version: 0.13.0
+version: 0.13.4
 ---
 # mdengine — global skill (pip-installed library)
 

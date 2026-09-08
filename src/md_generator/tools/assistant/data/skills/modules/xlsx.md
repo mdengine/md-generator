@@ -37,6 +37,7 @@ pip install "mdengine[xlsx]"
 ## Edge cases (heuristic)
 
 - `xlsx/api/app.py`: optional imports / ImportError handling
+- `xlsx/mcp_server.py`: optional imports / ImportError handling
 - Prefer **`--help`** on each CLI before guessing flags.
 
 ## Prompt templates

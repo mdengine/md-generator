@@ -36,6 +36,7 @@ pip install "mdengine[image]"
 
 ## Edge cases (heuristic)
 
+- `image/api/mcp_server.py`: optional imports / ImportError handling
 - `image/backends/easy.py`: optional imports / ImportError handling
 - `image/backends/paddle.py`: optional imports / ImportError handling
 - `image/backends/tesseract.py`: optional imports / ImportError handling

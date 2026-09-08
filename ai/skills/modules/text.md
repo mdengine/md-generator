@@ -36,6 +36,7 @@ pip install "mdengine[text]"
 
 ## Edge cases (heuristic)
 
+- `text/api/mcp_setup.py`: optional imports / ImportError handling
 - `text/md_flatten.py`: optional imports / ImportError handling
 - `text/xml_parse.py`: optional imports / ImportError handling
 - Prefer **`--help`** on each CLI before guessing flags.

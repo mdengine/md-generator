@@ -1,7 +1,7 @@
 ---
 name: mdengine-ai-openapi
 description: "Documents pip-installed mdengine features for OpenAPI → Markdown: extras, CLIs, and public imports under md_generator.openapi. Use when the user mentions `md-openapi`, `md-openapi-api`, `md-openapi-mcp` or needs this capability after installing mdengine from PyPI. Package summary: OpenAPI (YAML/JSON) to deterministic Markdown, Mermaid, and graph outputs."
-version: 0.13.0
+version: 0.13.4
 ---
 # mdengine — OpenAPI → Markdown / docs bundle
 
@@ -41,7 +41,7 @@ pip install "mdengine[openapi]"
 
 ## Edge cases (heuristic)
 
-- Install the correct **optional extra** for this area; missing deps surface at import or first CLI use.
+- `openapi/mcp/server.py`: optional imports / ImportError handling
 - Prefer **`--help`** on each CLI before guessing flags.
 
 ## Prompt templates

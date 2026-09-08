@@ -38,7 +38,7 @@ pip install "mdengine[graph]"
 
 ## Edge cases (heuristic)
 
-- Install the correct **optional extra** for this area; missing deps surface at import or first CLI use.
+- `graph/mcp/server.py`: optional imports / ImportError handling
 - Prefer **`--help`** on each CLI before guessing flags.
 
 ## Prompt templates

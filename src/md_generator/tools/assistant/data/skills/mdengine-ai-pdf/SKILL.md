@@ -1,7 +1,7 @@
 ---
 name: mdengine-ai-pdf
 description: "Documents pip-installed mdengine features for PDF → Markdown: extras, CLIs, and public imports under md_generator.pdf. Use when the user mentions `md-pdf` or needs this capability after installing mdengine from PyPI. Package summary: pdf-to-md: PDF to Markdown conversion."
-version: 0.13.0
+version: 0.13.4
 ---
 # mdengine — PDF → Markdown
 
@@ -39,6 +39,7 @@ pip install "mdengine[pdf]"
 
 ## Edge cases (heuristic)
 
+- `pdf/api/mcp_server.py`: optional imports / ImportError handling
 - `pdf/pdf_extract.py`: optional imports / ImportError handling
 - Prefer **`--help`** on each CLI before guessing flags.
 

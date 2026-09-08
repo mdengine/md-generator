@@ -1,7 +1,7 @@
 ---
 name: mdengine-ai-ppt
 description: "Documents pip-installed mdengine features for PowerPoint → Markdown: extras, CLIs, and public imports under md_generator.ppt. Use when the user mentions `md-ppt` or needs this capability after installing mdengine from PyPI. Package summary: ppt-to-md: PowerPoint to Markdown conversion."
-version: 0.13.0
+version: 0.13.4
 ---
 # mdengine — PowerPoint (.pptx) → Markdown
 
@@ -39,7 +39,7 @@ pip install "mdengine[ppt]"
 
 ## Edge cases (heuristic)
 
-- Install the correct **optional extra** for this area; missing deps surface at import or first CLI use.
+- `ppt/api/mcp_setup.py`: optional imports / ImportError handling
 - Prefer **`--help`** on each CLI before guessing flags.
 
 ## Prompt templates

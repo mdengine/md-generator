@@ -1,7 +1,7 @@
 ---
 name: mdengine-ai-graph
 description: "Documents pip-installed mdengine features for Graph → Markdown: extras, CLIs, and public imports under md_generator.graph. Use when the user mentions `md-graph`, `md-graph-api`, `md-graph-mcp` or needs this capability after installing mdengine from PyPI. Package summary: Graph metadata to deterministic Markdown (graph-to-md)."
-version: 0.13.0
+version: 0.13.4
 ---
 # mdengine — Graph (Neo4j / NetworkX) → Markdown
 
@@ -41,7 +41,7 @@ pip install "mdengine[graph]"
 
 ## Edge cases (heuristic)
 
-- Install the correct **optional extra** for this area; missing deps surface at import or first CLI use.
+- `graph/mcp/server.py`: optional imports / ImportError handling
 - Prefer **`--help`** on each CLI before guessing flags.
 
 ## Prompt templates

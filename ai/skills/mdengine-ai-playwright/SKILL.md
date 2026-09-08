@@ -1,7 +1,7 @@
 ---
 name: mdengine-ai-playwright
 description: "Documents pip-installed mdengine features for Playwright URL → Markdown: extras, CLIs, and public imports under md_generator.playwright. Use when the user mentions `md-playwright`, `md-playwright-api`, `md-playwright-mcp` or needs this capability after installing mdengine from PyPI. Package summary: Playwright-based SPA render → Markdown pipeline."
-version: 0.13.0
+version: 0.13.4
 ---
 # mdengine — Playwright URL → Markdown
 
@@ -41,6 +41,7 @@ pip install "mdengine[playwright]"
 
 ## Edge cases (heuristic)
 
+- `playwright/api/mcp_setup.py`: optional imports / ImportError handling
 - `playwright/cli.py`: optional imports / ImportError handling
 - `playwright/playwright_fetcher.py`: optional imports / ImportError handling
 - Prefer **`--help`** on each CLI before guessing flags.

@@ -38,6 +38,7 @@ pip install "mdengine[playwright]"
 
 ## Edge cases (heuristic)
 
+- `playwright/api/mcp_setup.py`: optional imports / ImportError handling
 - `playwright/cli.py`: optional imports / ImportError handling
 - `playwright/playwright_fetcher.py`: optional imports / ImportError handling
 - Prefer **`--help`** on each CLI before guessing flags.

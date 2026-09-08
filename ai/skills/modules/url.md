@@ -36,6 +36,7 @@ pip install "mdengine[url]"
 
 ## Edge cases (heuristic)
 
+- `url/api/mcp_setup.py`: optional imports / ImportError handling
 - `url/post_convert_assets.py`: optional imports / ImportError handling
 - Prefer **`--help`** on each CLI before guessing flags.
 

@@ -1,6 +1,6 @@
 {
   "schemaVersion": "1.1.0",
-  "bundleVersion": "0.13.0",
+  "bundleVersion": "0.13.4",
   "description": "Maps mdengine distributable skill folders and agent files. Paths are relative to the directory containing this file (ai/).",
   "distribution": {
     "pypi": "mdengine",
