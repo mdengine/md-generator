@@ -30,3 +30,10 @@ Guide operators and integrators to the **published** commands and APIs for **Dat
 ## Primary skill
 
 See [Primary skill](../skills/mdengine-ai-db/SKILL.md).
+
+## Parameter & Execution Guidance
+
+- **CLI Operations:** Run `md-db --config <db-export.yaml>` or `md-db --type <engine> --schema <schema>`. Use `--write-combined-feature-markdown` and `--readme-feature-merge inline` for split outputs. Tune ERD thresholds via `--erd-max-tables` and `--erd-scope`.
+- **REST API:** Target `POST /db-to-md/run` (or `/run/sqlite`, `/run/access`, `/run/elasticsearch` for single-file uploads) on port `DB_TO_MD_PORT` (default 8010).
+- **MCP:** Target `md-db-mcp` (`db_export_metadata`, `db_export_sqlite_base64`) or streamable HTTP at `/mcp`.
+

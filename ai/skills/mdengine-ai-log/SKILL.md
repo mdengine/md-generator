@@ -13,30 +13,31 @@ log-to-md: parse and normalize application logs into structured Markdown (timeli
 
 ## Input / output
 
-- **Inputs:** Log files or directories (`--input`), YAML `--config`, optional `--preset` (e.g. `generic`, `springboot`). Async: `--async` with SQLite job store.
-- **Outputs:** Markdown bundle / ZIP per config; **`md-log --help`** for full flags.
+## CLI Parameter Specification (`md-log`)
 
-## Install
+| Parameter | Type | Default | Description / Choices |
+|-----------|------|---------|-----------------------|
+| `-i`, `--input` | `Path` | Positional / Flag | Path to log file or directory of logs |
+| `-o`, `--output` | `Path` | `./log-out` | Target output directory for normalized Markdown |
+| `--config` | `Path` | `None` | Path to YAML log export configuration file |
+| `--preset` | `str` | `generic` | Log format preset: `generic`, `springboot`, `syslog`, `nginx`, `json`, `otlp` |
+| `--async` | `flag` | `False` | Process log conversion asynchronously via SQLite job store |
 
-```bash
-pip install "mdengine[log]"
-```
+## YAML Configuration Schema (`log-export.yaml`)
 
-Optional capability extras:
-
-| Extra | Purpose |
-|-------|---------|
-| **`log-cluster`** | scikit-learn clustering helpers |
-| **`log-semantic`** | SentenceTransformers / semantic grouping (heavy) |
-| **`log-pretty`** | loguru pretty-print paths |
-| **`log-export-parquet`** | Parquet export (`pyarrow`) |
-| **`log-stream-kafka`** | Kafka ingest (`kafka-python`) |
-| **`log-stream-redis`** | Redis stream ingest |
-| **`log-stream-ws`** | WebSocket stream ingest |
-| **`log-otel-proto`** | OTLP protobuf (shared with `md-otel`) |
-
-```bash
-pip install "mdengine[log,log-cluster,api,mcp]"
+```yaml
+input:
+  path: ./logs
+  preset: springboot                    # generic, springboot, syslog, nginx, json
+  otel_path: ./otel-traces             # Directory of OTLP trace files for log-span correlation
+output:
+  path: ./log-out
+  split_files: true
+clustering:
+  enabled: true                        # Requires log-cluster extra (scikit-learn)
+  max_clusters: 20
+search_index:
+  build_index: true                    # Build BM25/vector search index for `mdengine search`
 ```
 
 ## Primary entry points (from pyproject)
@@ -45,29 +46,27 @@ pip install "mdengine[log,log-cluster,api,mcp]"
 - `md-log-api` — FastAPI (`md_generator.log.api.run:main`)
 - `md-log-mcp` — MCP (`md_generator.log.api.mcp_server:main`)
 - `mdengine log-to-md …` — meta-router alias
-- `mdengine search "query" [--index PATH]` — hybrid BM25/vector search over exported log Markdown index (default index dir: `./log-docs`)
+- `mdengine search "query" [--index PATH]` — search exported log Markdown index (default dir: `./log-docs`)
 
 ## Core layout
 
 - **Package:** `md_generator.log`
 - **Notable areas:** `cli`, `api`, `core`, `parser`, `config`, `search`, `streaming`, `incidents`, `chunking`
 
-## HTTP API (summary)
+## HTTP API & MCP Parameter Specifications
 
-Env prefix **`LOG_TO_MD_`**: `LOG_TO_MD_HOST`, `LOG_TO_MD_PORT` (default **8012**), `LOG_TO_MD_MAX_SYNC_ZIP_MB`, `LOG_TO_MD_MAX_LOG_UPLOAD_MB`, job SQLite / workspace paths.
+Env prefix **`LOG_TO_MD_`**: `LOG_TO_MD_HOST` (default `127.0.0.1`), `LOG_TO_MD_PORT` (default **8018** / **8012**), `LOG_TO_MD_MAX_SYNC_ZIP_MB` (default `64`), `LOG_TO_MD_MAX_LOG_UPLOAD_MB` (default `200`), job SQLite / workspace paths.
 
 Routes (`md_generator.log.api.main:app`):
 
 - `GET /health`
-- `POST /log-to-md/run` — JSON → sync ZIP
-- `POST /log-to-md/run/upload` — multipart log + optional `config` JSON
-- `POST /log-to-md/job` / `POST /log-to-md/job/upload` — async jobs
-- `GET /log-to-md/job/{job_id}` — status
-- `GET /log-to-md/job/{job_id}/download` — ZIP when complete
-- `GET /log-to-md/job/{job_id}/events` — SSE progress
-- MCP at **`/mcp`**
-
-Full tables: [http-api-mcp.md](../mdengine-reference/references/http-api-mcp.md).
+- `POST /log-to-md/run` — JSON body matching `LogToMdRunBody` → returns synchronous ZIP
+- `POST /log-to-md/run/upload` — Multipart `file` + optional `config` JSON string → returns synchronous ZIP
+- `POST /log-to-md/job` / `POST /log-to-md/job/upload` — Async job endpoints → `{ "job_id": "<id>" }`
+- `GET /log-to-md/job/{job_id}` — Status & progress metrics JSON
+- `GET /log-to-md/job/{job_id}/download` — Download ZIP artifact bundle
+- `GET /log-to-md/job/{job_id}/events` — SSE progress event stream
+- MCP endpoint at **`/mcp`** or stdio binary `md-log-mcp`
 
 ## See also
 
@@ -75,3 +74,4 @@ Full tables: [http-api-mcp.md](../mdengine-reference/references/http-api-mcp.md)
 - [Global architecture skill](../global-skill.md)
 - [Consumer global skill](../mdengine-ai-global/SKILL.md)
 - [CLI reference](../mdengine-reference/SKILL.md)
+

@@ -43,3 +43,10 @@ Help users and integrators succeed with **`pip install mdengine[...]`**: correct
 ## Tooling
 
 Standard shell and HTTP clients; forward slashes in examples. No IDE-specific steps.
+
+## Parameter & Execution Guidance
+
+- **Meta-Router CLI:** Use `mdengine <area> ...` (e.g. `mdengine sap-to-md ...`, `mdengine db-to-md ...`, `mdengine odata-to-md generate ...`, `mdengine codeflow-to-md scan ...`).
+- **AI Assistant CLI:** Use `mdengine ai assist "<query>"` for stdout context or `mdengine ai export --format <openai|claude|cursor> --query "<query>" -o <output>` for formatted LLM project prompts.
+- **Skill Builder:** Run `mdengine skill build` to refresh generated AI skill trees and assistant context bundles.
+

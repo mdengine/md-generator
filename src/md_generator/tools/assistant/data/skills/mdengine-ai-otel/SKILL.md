@@ -13,22 +13,23 @@ otel-to-md: load OTLP export files (JSON or protobuf) and write a concise Markdo
 
 ## Input / output
 
-- **Inputs:** `--input` OTLP file; `--protobuf` when the file is protobuf-encoded OTLP.
-- **Outputs:** `--output` directory (default `./otel-docs`) containing **`trace.md`**. **`md-otel --help`** for flags.
+## CLI Parameter Specification (`md-otel`)
 
-## Examples
-
-Concrete commands: [references/example.md](references/example.md).
+| Parameter | Type | Default | Description / Choices |
+|-----------|------|---------|-----------------------|
+| `-i`, `--input` | `Path` | Positional / Flag | Path to OTLP trace export file (JSON or binary protobuf) |
+| `-o`, `--output` | `Path` | `./otel-docs` | Target output directory for generated `trace.md` |
+| `--protobuf` | `flag` | `False` | Decode input as binary OTLP protobuf format (requires `log-otel-proto` extra) |
 
 ## Install
 
-JSON OTLP (uses shared log I/O helpers):
+JSON OTLP trace ingest:
 
 ```bash
 pip install mdengine
 ```
 
-Protobuf OTLP requires the optional extra:
+Protobuf OTLP ingest requires the protobuf extra:
 
 ```bash
 pip install "mdengine[log-otel-proto]"
@@ -39,16 +40,12 @@ pip install "mdengine[log-otel-proto]"
 - `md-otel` — CLI (`md_generator.otel.cli.main:main`)
 - `mdengine otel-to-md …` — meta-router alias
 
-There is **no** separate `md-otel-api` / `md-otel-mcp` script in `pyproject.toml`; integration is CLI-only today.
+There is **no** separate `md-otel-api` / `md-otel-mcp` script in `pyproject.toml`; trace export is handled via CLI or correlated with logs via `input.otel_path` in `md-log`.
 
 ## Core layout
 
 - **Package:** `md_generator.otel`
-- **Modules:** `otel_parser` (load OTLP JSON/bytes), `otel_spans` (span extraction)
-
-## Related extras
-
-- **`log-otel-proto`** — `opentelemetry-proto` + `protobuf` for `--protobuf` ingest (shared with log pipeline tooling).
+- **Modules:** `otel_parser` (`load_otlp_json`, `load_otlp_protobuf`), `otel_spans` (`parse_otlp_spans`)
 
 ## See also
 
@@ -56,3 +53,4 @@ There is **no** separate `md-otel-api` / `md-otel-mcp` script in `pyproject.toml
 - [Global architecture skill](../global-skill.md)
 - [Consumer global skill](../mdengine-ai-global/SKILL.md)
 - [CLI reference](../mdengine-reference/SKILL.md)
+

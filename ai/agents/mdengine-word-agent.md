@@ -30,3 +30,10 @@ Guide operators and integrators to the **published** commands and APIs for **Wor
 ## Primary skill
 
 See [Primary skill](../skills/mdengine-ai-word/SKILL.md).
+
+## Parameter & Execution Guidance
+
+- **CLI Operations:** Run `md-word letter.docx body.md --images-dir ./letter-images`.
+- **REST API:** Target `POST /convert/sync` or `POST /convert/jobs` on port `WORD_TO_MD_PORT` (default 8002).
+- **MCP:** Target `python -m md_generator.word.api.mcp_server --transport stdio` or streamable HTTP at `/mcp`.
+

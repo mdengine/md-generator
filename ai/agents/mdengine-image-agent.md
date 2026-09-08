@@ -30,3 +30,10 @@ Guide operators and integrators to the **published** commands and APIs for **Ima
 ## Primary skill
 
 See [Primary skill](../skills/mdengine-ai-image/SKILL.md).
+
+## Parameter & Execution Guidance
+
+- **CLI Operations:** Run `md-image <input_scans> <out.md>`. Set `--engines tess,paddle` and `--strategy best` for multi-engine OCR accuracy.
+- **REST API:** Target `POST /convert/sync` on port `IMAGE_TO_MD_PORT` (default 8004/8012).
+- **MCP:** Target `python -m md_generator.image.api.mcp_server --transport stdio` or streamable HTTP at `/mcp`.
+

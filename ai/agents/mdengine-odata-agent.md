@@ -33,3 +33,10 @@ Guide operators and integrators to the **published** commands and APIs for **oda
 ## Primary skill
 
 See [Primary skill](../skills/mdengine-ai-odata/SKILL.md).
+
+## Parameter & Execution Guidance
+
+- **CLI Operations:** Run `md-odata generate -f metadata.xml -o ./odata-out` or `md-odata generate -u "https://host/service/$metadata" -o ./odata-out --graph --chunk`.
+- **REST API:** Target `POST /odata-to-md/generate` on port `ODATA_TO_MD_PORT` (default 8017).
+- **MCP:** Target `md-odata-mcp` or streamable HTTP at `/mcp` (`odata_validate_metadata`, `odata_generate_readme_markdown`, `odata_run_sync_zip_base64`).
+

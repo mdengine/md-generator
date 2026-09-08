@@ -32,3 +32,10 @@ Guide operators and integrators to the **published** commands and APIs for **log
 ## Primary skill
 
 See [Primary skill](../skills/mdengine-ai-log/SKILL.md).
+
+## Parameter & Execution Guidance
+
+- **CLI Operations:** Run `md-log -i <log_file> -o <log_out>`. Use `--preset springboot` or `--config log-export.yaml`. Specify `input.otel_path` in YAML to correlate logs with OTLP trace files. Search index: `mdengine search "query"`.
+- **REST API:** Target `POST /log-to-md/run` or `POST /log-to-md/run/upload` on port `LOG_TO_MD_PORT` (default 8018/8012).
+- **MCP:** Target `md-log-mcp --transport stdio` or streamable HTTP at `/mcp`.
+

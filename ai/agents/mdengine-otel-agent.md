@@ -31,3 +31,9 @@ Guide operators to **md-otel** and optional **`log-otel-proto`** after `pip inst
 ## Primary skill
 
 See [Primary skill](../skills/mdengine-ai-otel/SKILL.md).
+
+## Parameter & Execution Guidance
+
+- **CLI Operations:** Run `md-otel -i otlp-traces.json -o ./otel-docs`. Use `--protobuf` for binary OTLP protobuf files (requires `mdengine[log-otel-proto]` extra).
+- **Log Integration:** Set `input.otel_path` in `md-log` configuration YAML to correlate log lines with OTLP trace spans.
+

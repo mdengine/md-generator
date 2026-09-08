@@ -30,3 +30,10 @@ Guide operators and integrators to the **published** commands and APIs for **Ope
 ## Primary skill
 
 See [Primary skill](../skills/mdengine-ai-openapi/SKILL.md).
+
+## Parameter & Execution Guidance
+
+- **CLI Operations:** Run `md-openapi generate -f openapi.yaml -o ./openapi-out --graph --chunk`. Handles automatic in-process conversion of Swagger 2.0 to OpenAPI 3.0.3.
+- **REST API:** Target `POST /openapi-to-md/generate` on port `OPENAPI_TO_MD_PORT` (default 8015).
+- **MCP:** Target `md-openapi-mcp` or streamable HTTP at `/mcp` (`api_validate_openapi_yaml`, `api_generate_readme_markdown`, `api_run_sync_zip_base64`).
+

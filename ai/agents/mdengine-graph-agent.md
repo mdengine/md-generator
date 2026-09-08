@@ -30,3 +30,10 @@ Guide operators and integrators to the **published** commands and APIs for **Gra
 ## Primary skill
 
 See [Primary skill](../skills/mdengine-ai-graph/SKILL.md).
+
+## Parameter & Execution Guidance
+
+- **CLI Operations:** Run `md-graph --source neo4j --uri bolt://... --user ... --password ... -o ./graph-out`. For file sources: `md-graph --source networkx --graph-file file.graphml`. Use `--viz` for Graphviz DOT rendering.
+- **REST API:** Target `POST /graph-to-md/run` or `POST /graph-to-md/job` on port `GRAPH_TO_MD_PORT` (default 8012/8020).
+- **MCP:** Target `md-graph-mcp` (`graph_export_metadata`) or streamable HTTP at `/mcp`.
+

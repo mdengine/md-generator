@@ -31,3 +31,10 @@ Guide operators and integrators to the **published** commands and APIs for **sap
 ## Primary skill
 
 See [Primary skill](../skills/mdengine-ai-sap/SKILL.md).
+
+## Parameter & Execution Guidance
+
+- **CLI Operations:** Always specify required input paths and explicit output directory (`-o ./sap-out`). Use `--pipeline-version 2` for canonical graph output and `navigation/index.json`. Use `--abap-journey --journey-depth N --journey-format md,mermaid` for execution call graphs.
+- **REST API:** Target `POST /sap-to-md/run` for sync ZIPs or `POST /sap-to-md/job` for background jobs on port `SAP_TO_MD_PORT` (default 8020).
+- **MCP:** Use streamable HTTP endpoint at `/mcp` on `md-sap-api` or stdio transport with `md-sap-mcp`.
+

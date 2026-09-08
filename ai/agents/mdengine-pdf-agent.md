@@ -30,3 +30,10 @@ Guide operators and integrators to the **published** commands and APIs for **PDF
 ## Primary skill
 
 See [Primary skill](../skills/mdengine-ai-pdf/SKILL.md).
+
+## Parameter & Execution Guidance
+
+- **CLI Operations:** Run `md-pdf manual.pdf ./out-dir --artifact-layout`. Use `--images-dir` to save extracted images.
+- **REST API:** Target `POST /convert/sync` or `POST /convert/jobs` on port `PDF_TO_MD_PORT` (default 8001).
+- **MCP:** Target `python -m md_generator.pdf.api.mcp_server --transport stdio` or streamable HTTP at `/mcp`.
+

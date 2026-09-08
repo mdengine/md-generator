@@ -30,3 +30,10 @@ Guide operators and integrators to the **published** commands and APIs for **Pow
 ## Primary skill
 
 See [Primary skill](../skills/mdengine-ai-ppt/SKILL.md).
+
+## Parameter & Execution Guidance
+
+- **CLI Operations:** Run `md-ppt slides.pptx ./ppt-artifact --artifact-layout`. Use `--extract-embedded-deep` for embedded documents.
+- **REST API:** Target `POST /convert/sync` or `POST /convert/jobs` on port `PPT_TO_MD_PORT` (default 8003/8012).
+- **MCP:** Target `python -m md_generator.ppt.api.mcp_server --transport stdio` or streamable HTTP at `/mcp`.
+

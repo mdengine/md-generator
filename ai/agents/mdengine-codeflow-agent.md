@@ -32,3 +32,10 @@ Guide operators and integrators to the **published** commands and APIs for **Cod
 ## Primary skill
 
 See [Primary skill](../skills/mdengine-ai-codeflow/SKILL.md).
+
+## Parameter & Execution Guidance
+
+- **CLI Operations:** Run `md-codeflow scan <project_root> -o <output_dir>`. Specify `--journey-format md,json,dot,graphml,gexf` for multi-file journey exports. Use `--parser-mode treesitter` when scanning multi-language repositories.
+- **REST API:** Target `POST /codeflow-to-md/scan` or `POST /codeflow-to-md/job` on port `CODEFLOW_TO_MD_PORT` (default 8016).
+- **MCP:** Use stdio binary `md-codeflow-mcp` or streamable HTTP at `/mcp`.
+

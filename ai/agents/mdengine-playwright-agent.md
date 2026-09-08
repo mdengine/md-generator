@@ -30,3 +30,10 @@ Guide operators and integrators to the **published** commands and APIs for **Pla
 ## Primary skill
 
 See [Primary skill](../skills/mdengine-ai-playwright/SKILL.md).
+
+## Parameter & Execution Guidance
+
+- **CLI Operations:** Run `md-playwright https://spa.example/app ./spa-out`. Set `--wait-until networkidle`, `--navigation-timeout-seconds 60`, `--max-scroll-rounds 12`.
+- **REST API:** Target `POST /convert/sync` or `POST /convert/jobs` on port `PLAYWRIGHT_TO_MD_API_PORT` (default 8014).
+- **MCP:** Target tool `convert_spa_url_to_artifact_zip` via stdio `md-playwright-mcp` or streamable HTTP at `/mcp`.
+

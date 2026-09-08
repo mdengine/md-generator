@@ -13,24 +13,43 @@ odata-to-md: ingest OData **$metadata** (CSDL XML/JSON, local files, folders, ZI
 
 ## Input / output
 
-- **Inputs:** `--file`, `--folder`, or `--zip` for on-disk metadata; repeatable `--url` to fetch `$metadata`; optional YAML `--config`. Subcommand: **`generate`**.
-- **Outputs:** Markdown directory (default under configured `output_path`); API returns a **ZIP** bundle. Flags: `--graph`, `--chunk`. **`md-odata generate --help`** for full flags.
+## CLI Parameter Specification (`md-odata generate`)
 
-## Examples
+| Parameter | Type | Default | Description / Choices |
+|-----------|------|---------|-----------------------|
+| `-f`, `--file` | `Path` | `None` | Path to single OData CSDL `$metadata` file (`.xml`, `.json`, `.edmx`) |
+| `-d`, `--folder` | `Path` | `None` | Directory path containing OData CSDL files |
+| `-z`, `--zip` | `Path` | `None` | ZIP archive path containing CSDL metadata files |
+| `-u`, `--url` | `str` | `None` | Repeatable live `$metadata` URL to fetch OData specifications |
+| `-o`, `--output` | `Path` | `./odata-out` | Output destination directory for generated Markdown catalogs |
+| `--graph` | `flag` | `False` | Generate entity set relationship Mermaid diagrams & JSON graphs |
+| `--chunk` | `flag` | `False` | Produce semantic JSONL chunks for RAG embedding pipelines |
+| `--config` | `Path` | `None` | Path to single YAML configuration file |
 
-Concrete commands: [references/example.md](references/example.md).
+## YAML Configuration Schema (`odata-export.yaml`)
 
-## Install
-
-```bash
-pip install "mdengine[odata]"
+```yaml
+input:
+  folder: ./metadata-exports
+  urls: ["https://host/service/$metadata"]
+output:
+  path: ./odata-out
+graph: true                            # Generate entity set relationship diagrams
+chunk: true                            # Generate JSONL semantic chunks
 ```
 
-For HTTP API and MCP:
+## HTTP API & MCP Parameter Specifications
 
-```bash
-pip install "mdengine[odata,api,mcp]"
-```
+Env prefix **`ODATA_TO_MD_`**: `ODATA_TO_MD_HOST` (default `127.0.0.1`), `ODATA_TO_MD_PORT` (default **8017**), `ODATA_TO_MD_MAX_SYNC_ZIP_MB` (default `80`), `ODATA_TO_MD_CORS_ORIGINS`.
+
+Routes (`md_generator.odata.api.main:app`):
+
+- `GET /health`
+- `POST /odata-to-md/generate` — Multipart `file` (CSDL `.xml`, `.json`, `.edmx`) + optional `options_json` form string → returns synchronous ZIP
+- MCP tools (mounted at `/mcp` or stdio `md-odata-mcp`):
+  - `odata_validate_metadata`: Validate CSDL V1-V4 XML/JSON schema
+  - `odata_generate_readme_markdown`: Generate service catalog summary README
+  - `odata_run_sync_zip_base64`: Execute full conversion and return base64 ZIP
 
 ## Primary entry points (from pyproject)
 
@@ -42,24 +61,11 @@ pip install "mdengine[odata,api,mcp]"
 ## Core layout
 
 - **Package:** `md_generator.odata`
-- **Notable areas:** `cli`, `api` (FastAPI + MCP mount `/mcp`), `core` (extractor, run config, zip export), `parser` (XML V1–V4, JSON V4), `writers`, `generators`, `chunking`, `fetch`
+- **Notable areas:** `cli`, `api`, `core`, `parser` (XML V1–V4, JSON V4), `writers`, `generators`, `chunking`, `fetch`
 
-## HTTP API (summary)
+## Examples
 
-Env prefix **`ODATA_TO_MD_`** (see `OdataToMdSettings`): `ODATA_TO_MD_HOST`, `ODATA_TO_MD_PORT` (default **8017**), `ODATA_TO_MD_MAX_SYNC_ZIP_MB` (default **80**), `ODATA_TO_MD_CORS_ORIGINS`.
-
-Routes (FastAPI app `md_generator.odata.api.main:app`):
-
-- `GET /health`
-- `POST /odata-to-md/generate` — multipart **`file`** (`.xml`, `.json`, `.edmx`) + optional **`options_json`** (form field) → synchronous ZIP (`application/zip`)
-
-MCP is mounted at **`/mcp`** on the same app. Standalone MCP tools: `odata_validate_metadata`, `odata_generate_readme_markdown`, `odata_run_sync_zip_base64`.
-
-Full tables alongside other services: [http-api-mcp.md](../mdengine-reference/references/http-api-mcp.md).
-
-## APIs / MCP
-
-See [http-api-mcp.md](../mdengine-reference/references/http-api-mcp.md). Install **`mdengine[api,mcp]`** plus **`mdengine[odata]`**.
+Concrete commands: [references/example.md](references/example.md).
 
 ## See also
 
@@ -67,3 +73,4 @@ See [http-api-mcp.md](../mdengine-reference/references/http-api-mcp.md). Install
 - [Consumer global skill](../mdengine-ai-global/SKILL.md)
 - [OpenAPI skill](../mdengine-ai-openapi/SKILL.md) — OpenAPI specs (distinct from OData CSDL)
 - [CLI reference](../mdengine-reference/SKILL.md)
+

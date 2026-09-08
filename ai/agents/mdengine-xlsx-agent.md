@@ -30,3 +30,10 @@ Guide operators and integrators to the **published** commands and APIs for **Exc
 ## Primary skill
 
 See [Primary skill](../skills/mdengine-ai-xlsx/SKILL.md).
+
+## Parameter & Execution Guidance
+
+- **CLI Operations:** Run `md-xlsx -i data.xlsx -o ./excel-out --split` (also supports `.csv`).
+- **REST API:** Target `POST /convert/sync` on port `XLSX_TO_MD_PORT` (default 8003).
+- **MCP:** Target `python xlsx-to-md/run.py mcp --transport stdio` or streamable HTTP at `/mcp`.
+

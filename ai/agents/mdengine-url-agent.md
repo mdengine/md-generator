@@ -30,3 +30,10 @@ Guide operators and integrators to the **published** commands and APIs for **URL
 ## Primary skill
 
 See [Primary skill](../skills/mdengine-ai-url/SKILL.md).
+
+## Parameter & Execution Guidance
+
+- **CLI Operations:** Run `md-url https://example.com/doc ./web-out --artifact-layout`. Use `--max-depth` and `--max-pages` for site crawling.
+- **REST API:** Target `POST /convert/sync` (JSON `{"url": "..."}`) or `POST /convert/jobs` on port `URL_TO_MD_PORT` (default 8017/8012).
+- **MCP:** Target `python -m md_generator.url.api.mcp_server --transport stdio` or streamable HTTP at `/mcp`.
+

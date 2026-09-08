@@ -2,6 +2,12 @@
 
 All versions align with **mdengine** package versioning in `pyproject.toml` unless noted.
 
+## 0.13.4 — 2026-09-08
+
+- **Parameter Precision & Execution Guidance**: Enhanced all 19 module skills (`skills/mdengine-ai-*/SKILL.md`) and 17 area agents (`agents/mdengine-*-agent.md`) with explicit parameter specifications, CLI flag tables, YAML config schemas, REST API route definitions, MCP tool declarations, and execution guidance.
+- **ABAP Journey & Codeflow Exports**: Documented SAP `abap_journey` engine options and Codeflow `--journey-format` export options (`dot`, `graphml`, `gexf`).
+- **Synchronized Assistant Bundles**: Re-built AI skill registry `ai/registry.json`, `ai/dependency-graph.json`, and synced bundled assets to `src/md_generator/tools/assistant/data/`.
+
 ## 0.7.0 — 2026-04-28
 
 - **Skill generator:** `PYTHONPATH=src python -m md_generator.tools.skill_builder` (or **`mdengine skill build`**) regenerates code-derived `skills/mdengine-ai-*/SKILL.md`, `skills/global-skill.md`, `skills/modules/*.md`, `dependency-graph.json`, and syncs bundled skill data to `src/md_generator/tools/assistant/data/` (Python: **`md_generator.tools.assistant`**; CLI: **`mdengine ai assist`** / **`mdengine ai export`** on the **`mdengine`** distribution).

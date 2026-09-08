@@ -30,3 +30,10 @@ Guide operators and integrators to the **published** commands and APIs for **Arc
 ## Primary skill
 
 See [Primary skill](../skills/mdengine-ai-archive/SKILL.md).
+
+## Parameter & Execution Guidance
+
+- **CLI Operations:** Run `md-zip <archive.zip> <output_dir>`. Toggle `--enable-office` for nested document conversion and `--use-image-to-md` for image OCR.
+- **REST API:** Target `POST /convert/sync` for synchronous ZIP response or `POST /convert/jobs` on port `ZIP_TO_MD_PORT` (default 8008/8012).
+- **MCP:** Target `python -m md_generator.archive.api.mcp_server --transport stdio` or streamable HTTP at `/mcp`.
+

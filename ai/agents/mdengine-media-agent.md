@@ -30,3 +30,10 @@ Guide operators and integrators to the **published** commands and APIs for **Aud
 ## Primary skill
 
 See [Primary skill](../skills/mdengine-ai-media/SKILL.md).
+
+## Parameter & Execution Guidance
+
+- **Audio CLI:** Run `md-audio clip.mp3 transcript.md --model base --language en`. Port: `MD_AUDIO_API_PORT` (8011). MCP tools: `transcribe_audio_path`, `transcribe_audio_base64`.
+- **Video CLI:** Run `md-video clip.mp4 transcript.md --model base`. Port: `MD_VIDEO_API_PORT` (8012). MCP tools: `transcribe_video_path`, `transcribe_video_base64`.
+- **YouTube CLI:** Run `md-youtube "https://youtu.be/..." out.md --transcript-lang en`. Port: `MD_YOUTUBE_API_PORT` (8013). MCP tool: `youtube_url_to_markdown`.
+

@@ -30,3 +30,10 @@ Guide operators and integrators to the **published** commands and APIs for **Tex
 ## Primary skill
 
 See [Primary skill](../skills/mdengine-ai-text/SKILL.md).
+
+## Parameter & Execution Guidance
+
+- **CLI Operations:** Run `md-text config.xml out.md` or `md-text data.json data.md --artifact-layout`.
+- **REST API:** Target `POST /convert/sync` on port `TXT_JSON_XML_TO_MD_PORT` (default 8005/8012).
+- **MCP:** Target `python -m md_generator.text.api.mcp_server --transport stdio` or streamable HTTP at `/mcp`.
+
