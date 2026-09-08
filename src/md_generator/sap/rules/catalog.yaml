@@ -7,3 +7,27 @@ rules:
     artifact_type: hana.calculation_view
     severity: warning
     description: Warn when join count exceeds threshold
+  - id: bw-adso-missing-key
+    artifact_type: bw.adso
+    severity: warning
+    description: ADSO has no key fields defined
+  - id: bw-dtp-no-filter
+    artifact_type: bw.dtp
+    severity: info
+    description: DTP has no delta filter — may cause full load every run
+  - id: bw-composite-provider-many-parts
+    artifact_type: bw.composite_provider
+    severity: info
+    description: Composite provider has many parts — check for performance impact
+  - id: datasphere-dataflow-no-target
+    artifact_type: datasphere.data_flow
+    severity: warning
+    description: Data flow has no defined target entity
+  - id: abap-dynamic-sql-risk
+    artifact_type: abap.program
+    severity: warning
+    description: Program contains dynamic SQL — lineage may be incomplete
+  - id: abap-high-complexity-query
+    artifact_type: abap.program
+    severity: info
+    description: Program has high SQL complexity score

@@ -139,7 +139,7 @@ def _build_hana_cv_markdown(artifact: CanonicalArtifact) -> str:
         f"# {artifact.name}",
         "",
         f"**Type:** HANA Calculation View",
-        f"**Schema:** {artifact.schema or '—'}",
+        f"**Schema:** {artifact.artifact_schema or '—'}",
         f"**Package:** {artifact.package or '—'}",
     ]
     if semantics.get("description"):
@@ -342,7 +342,7 @@ def _write_hana_sql(artifact: CanonicalArtifact, path: Path) -> Path:
                     lines.append(f"-- PROJECTION {nid} WHERE {filt}")
                 lines.append(f"SELECT {', '.join(cols)} FROM {nid};")
     else:
-        schema = artifact.schema or "_SYS_BIC"
+        schema = artifact.artifact_schema or "_SYS_BIC"
         lines.append(f'SELECT * FROM "{schema}"."{artifact.package}/{artifact.name}";')
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")
@@ -581,7 +581,17 @@ def _generate_abap(
     md = output_dir / "abap" / "programs" / f"{slug}.md"
     md.parent.mkdir(parents=True, exist_ok=True)
     meta = artifact.metadata.get("abap", {})
-    md.write_text(build_abap_program_markdown(artifact.name, meta), encoding="utf-8")
+
+    program_md = build_abap_program_markdown(artifact.name, meta)
+    try:
+        from md_generator.sap.abap_journey.engine import build_journey_and_call_graph
+        journey_md = build_journey_and_call_graph(artifact, ctx)
+        if journey_md:
+            program_md = program_md.rstrip() + "\n\n" + journey_md.strip() + "\n"
+    except Exception as e:
+        logger.warning("Failed to generate ABAP execution journey for %s: %s", artifact.name, e)
+
+    md.write_text(program_md, encoding="utf-8")
     paths.append(md)
     paths.append(generate_lineage_json(artifact, store, output_dir / "abap" / "lineage" / f"{slug}.json"))
     return paths

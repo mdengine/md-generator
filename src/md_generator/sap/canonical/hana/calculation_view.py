@@ -10,7 +10,7 @@ from md_generator.sap.canonical.transformation.graph import TransformationGraph
 
 class DataSource(BaseModel):
     name: str
-    schema: str = ""
+    db_schema: str = ""
     object_type: str = "table"
 
 

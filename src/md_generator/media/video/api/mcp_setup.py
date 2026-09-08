@@ -6,7 +6,13 @@ import re
 import tempfile
 from pathlib import Path
 
-from mcp.server.fastmcp import FastMCP
+try:
+    from mcp.server.fastmcp import FastMCP
+except (ImportError, ModuleNotFoundError):
+    try:
+        from fastmcp import FastMCP
+    except (ImportError, ModuleNotFoundError):
+        from mcp.server import FastMCP
 
 from md_generator.media.video.api.settings import VideoApiSettings
 from md_generator.media.video.service import VideoToMarkdownService

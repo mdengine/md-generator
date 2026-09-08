@@ -64,6 +64,22 @@ def build_sap_graph(objects: list[SapObject]) -> nx.MultiDiGraph:
                             confidence=res.get("confidence", vr.get("confidence")),
                             resolution_strategy=res.get("resolution_strategy"),
                         )
+                for stmt in abap.get("sql_statements", []) or []:
+                    fp = (stmt.get("fingerprint") or "")[:8]
+                    if not fp and stmt.get("text"):
+                        import hashlib
+                        fp = hashlib.sha256(str(stmt["text"]).encode(errors="ignore")).hexdigest()[:8]
+                    stmt_id = stmt.get("stable_id") or f"SQL::{src}::{fp or 'unknown'}::{stmt.get('line', 0)}"
+                    g.add_node(
+                        stmt_id,
+                        kind="sql_statement",
+                        name=f"{stmt.get('statement_kind','SQL')} @ line {stmt.get('line',0)}",
+                    )
+                    g.add_edge(src, stmt_id, relation=rel.EXECUTES)
+                    for t in stmt.get("objects", []) or []:
+                        tgt = _resolve_table_node(by_name, t)
+                        if tgt:
+                            g.add_edge(stmt_id, _node_id(tgt), relation=rel.READS_TABLE)
 
         if obj.kind == SapObjectKind.CDS_VIEW and "cds" in meta:
             cds = meta["cds"]

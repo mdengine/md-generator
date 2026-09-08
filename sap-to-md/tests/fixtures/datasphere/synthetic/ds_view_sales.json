@@ -1,1 +1,1 @@
-{"name": "DS_VIEW_SALES", "source": "SNWD_SO", "columns": ["ORDER_ID", "AMOUNT"], "package": "DATASPHERE"}
+{"name": "VIEW_SALES", "source": "AM_SALES", "columns": ["REVENUE", "CUSTOMER"]}

@@ -42,6 +42,66 @@ class DeterministicRuleEngine:
                             "message": f"Unused columns in projection {nid}: {', '.join(unused)}",
                             "artifact_id": artifact.identity.stable_id,
                         }
+        elif rule_id == "bw-adso-missing-key" and artifact.artifact_type == "bw.adso":
+            fields = getattr(artifact, "fields", [])
+            has_key = any("key" in str(f).lower() or "id" in str(f).lower() for f in fields)
+            if not fields or not has_key:
+                return {
+                    "rule_id": rule_id,
+                    "severity": rule.get("severity", "warning"),
+                    "message": f"ADSO {artifact.name} has no key fields defined",
+                    "artifact_id": artifact.identity.stable_id,
+                }
+        elif rule_id == "bw-dtp-no-filter" and artifact.artifact_type == "bw.dtp":
+            meta = artifact.metadata.get("bw", {}) or artifact.metadata
+            filter_val = meta.get("filter") or meta.get("delta_filter")
+            if not filter_val:
+                return {
+                    "rule_id": rule_id,
+                    "severity": rule.get("severity", "info"),
+                    "message": f"DTP {artifact.name} has no delta filter — may cause full load every run",
+                    "artifact_id": artifact.identity.stable_id,
+                }
+        elif rule_id == "bw-composite-provider-many-parts" and artifact.artifact_type == "bw.composite_provider":
+            members = getattr(artifact, "members", [])
+            if len(members) > 3:
+                return {
+                    "rule_id": rule_id,
+                    "severity": rule.get("severity", "info"),
+                    "message": f"Composite provider {artifact.name} has {len(members)} parts — check for performance impact",
+                    "artifact_id": artifact.identity.stable_id,
+                }
+        elif rule_id == "datasphere-dataflow-no-target" and artifact.artifact_type == "datasphere.data_flow":
+            steps = getattr(artifact, "steps", [])
+            has_target = any(step.get("kind") in ("target", "sink") for step in steps if isinstance(step, dict))
+            if not has_target:
+                return {
+                    "rule_id": rule_id,
+                    "severity": rule.get("severity", "warning"),
+                    "message": f"Data flow {artifact.name} has no defined target entity",
+                    "artifact_id": artifact.identity.stable_id,
+                }
+        elif rule_id == "abap-dynamic-sql-risk" and artifact.artifact_type == "abap.program":
+            abap_meta = artifact.metadata.get("abap", {})
+            signals = abap_meta.get("dynamic_sql_signals", [])
+            if signals:
+                return {
+                    "rule_id": rule_id,
+                    "severity": rule.get("severity", "warning"),
+                    "message": f"Program {artifact.name} contains dynamic SQL — lineage may be incomplete",
+                    "artifact_id": artifact.identity.stable_id,
+                }
+        elif rule_id == "abap-high-complexity-query" and artifact.artifact_type == "abap.program":
+            abap_meta = artifact.metadata.get("abap", {})
+            sql_stmts = abap_meta.get("sql_statements", [])
+            high_complexity = any(stmt.get("complexity", {}).get("complexity_score", 0) > 5.0 for stmt in sql_stmts if isinstance(stmt, dict))
+            if high_complexity:
+                return {
+                    "rule_id": rule_id,
+                    "severity": rule.get("severity", "info"),
+                    "message": f"Program {artifact.name} has high SQL complexity score",
+                    "artifact_id": artifact.identity.stable_id,
+                }
         return None
 
     def _builtin_rules(self, artifact: CanonicalArtifact, graph_store: object) -> list[dict[str, Any]]:

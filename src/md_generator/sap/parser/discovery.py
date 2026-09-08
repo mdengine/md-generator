@@ -55,6 +55,12 @@ def _is_candidate(p: Path) -> bool:
     if name_lower in ODATA_NAMES or name_lower.endswith(".edmx"):
         return True
     if suf == ".json" and "bapi" not in name_lower:
+        if any(kw in name_lower for kw in (
+            "adso", "dtp", "composite", "provider", "transformation",
+            "infoobject", "analytical", "dataflow", "data_flow", "dsview", "ds_view",
+            "datasphere", "bw"
+        )):
+            return True
         try:
             raw = p.read_text(encoding="utf-8", errors="replace")[:4096]
             if "@odata.context" in raw or "$EntityType" in raw:

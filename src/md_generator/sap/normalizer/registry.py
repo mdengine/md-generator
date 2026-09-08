@@ -466,6 +466,64 @@ def _normalize_abap(obj: SapObject) -> tuple[CanonicalArtifact, ArtifactGraph]:
                 properties={"view_kind": vr.get("kind"), "confidence": vr.get("confidence", 0.5)},
             )
         )
+    for stmt in meta.get("sql_statements", []) or []:
+        fp = (stmt.get("fingerprint") or "")[:8]
+        if not fp and stmt.get("text"):
+            import hashlib
+            fp = hashlib.sha256(str(stmt["text"]).encode(errors="ignore")).hexdigest()[:8]
+        stmt_id = stmt.get("stable_id") or f"SQL::{obj.object_id}::{fp or 'unknown'}::{stmt.get('line', 0)}"
+
+        graph.add_node(
+            GraphNode(
+                node_id=stmt_id,
+                node_kind="sql_statement",
+                label=f"{stmt.get('statement_kind','SQL')} @ line {stmt.get('line',0)}",
+                namespace="ABAP::SQL",
+                artifact_type="abap.sql_statement",
+                properties={
+                    "fingerprint": stmt.get("fingerprint", ""),
+                    "source_type": stmt.get("source_type", "OPEN_SQL"),
+                    "complexity_score": stmt.get("complexity", {}).get("complexity_score", 0) if isinstance(stmt.get("complexity"), dict) else 0,
+                    "dynamic_sql_risk": stmt.get("dynamic_sql_risk", False),
+                    "lineage_completeness": stmt.get("lineage_completeness", "complete"),
+                },
+            )
+        )
+
+        graph.add_edge(
+            GraphEdge(
+                edge_id=f"{obj.object_id}->executes->{stmt_id}",
+                source_id=obj.object_id,
+                target_id=stmt_id,
+                relationship=RelationshipType.EXECUTES,
+            )
+        )
+
+        for t in stmt.get("objects", []) or []:
+            target_name = str(t).upper()
+            resolved_id = None
+            for vr in meta.get("view_references", []) or []:
+                if isinstance(vr, dict) and vr.get("name", "").upper() == target_name and vr.get("source_sql_line") == stmt.get("line"):
+                    res = vr.get("resolution") or {}
+                    resolved_id = res.get("resolved_stable_id") or vr.get("resolved_stable_id")
+                    if resolved_id:
+                        break
+            if not resolved_id:
+                resolved_id = f"DDIC::{target_name}"
+
+            if resolved_id.startswith("DDIC::"):
+                graph.add_node(GraphNode(node_id=resolved_id, node_kind="dataset", label=target_name, namespace="DDIC::"))
+
+            graph.add_edge(
+                GraphEdge(
+                    edge_id=f"{stmt_id}->reads->{resolved_id}",
+                    source_id=stmt_id,
+                    target_id=resolved_id,
+                    relationship=RelationshipType.READS_FROM,
+                    properties={"confidence": stmt.get("confidence", 1.0)},
+                )
+            )
+
     artifact = CanonicalArtifact(
         identity=_identity_for(obj, "ABAP::"),
         provenance=_base_provenance(obj, "abap", "1.0.0"),

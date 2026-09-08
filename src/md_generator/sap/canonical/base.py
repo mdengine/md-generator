@@ -13,7 +13,7 @@ class CanonicalArtifact(BaseModel):
     provenance: ProvenanceBundle
     artifact_type: str
     name: str
-    schema: str = ""
+    artifact_schema: str = ""
     package: str = ""
     source_path: str = ""
     source_system: str = "sap"

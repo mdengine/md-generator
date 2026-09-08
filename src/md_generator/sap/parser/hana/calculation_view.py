@@ -268,7 +268,7 @@ def _parse_data_source(elem: object, tag: str) -> DataSource:
     name = text(elem, "name") or _child_attr(elem, "columnObject", "columnObjectName") or ds_id
     if not schema and tag == "dataSource":
         schema = text(elem, "schema")
-    return DataSource(name=name or ds_id, schema=schema, object_type=ds_type)
+    return DataSource(name=name or ds_id, db_schema=schema, object_type=ds_type)
 
 
 def _link_graph_nodes(
@@ -344,7 +344,7 @@ def parse_calculation_view_xml(path: Path) -> tuple[CalculationView, ArtifactGra
             name = parsed_name
             package = package or parsed_pkg
             if not schema and data_sources:
-                schema = data_sources[0].schema
+                schema = data_sources[0].db_schema
             stable_id = f"HANA::{schema or '_'}::{package or '_'}::{name}".replace(" ", "_")
 
         elif tag in ("DataSource", "dataSource"):
@@ -353,9 +353,9 @@ def parse_calculation_view_xml(path: Path) -> tuple[CalculationView, ArtifactGra
             if key and key not in data_source_keys:
                 data_sources.append(ds)
                 data_source_keys.add(key)
-                if not schema and ds.schema:
-                    schema = ds.schema
-                src_id = f"{ds.schema}.{ds.name}" if ds.schema else ds.name
+                if not schema and ds.db_schema:
+                    schema = ds.db_schema
+                src_id = f"{ds.db_schema}.{ds.name}" if ds.db_schema else ds.name
                 node_id = f"src:{key}"
                 tg.add_node(
                     HanaSourceNode(
@@ -490,7 +490,7 @@ def parse_calculation_view_xml(path: Path) -> tuple[CalculationView, ArtifactGra
     _fill_attributes_measures(path, attributes, measures, calculated, attribute_names, measure_names, calculated_names)
 
     if not schema and data_sources:
-        schema = next((ds.schema for ds in data_sources if ds.schema), "")
+        schema = next((ds.db_schema for ds in data_sources if ds.db_schema), "")
 
     parsed_name, parsed_pkg = _parse_path_identity(path, name)
     name = parsed_name
@@ -564,7 +564,7 @@ def parse_calculation_view_xml(path: Path) -> tuple[CalculationView, ArtifactGra
         identity=identity,
         provenance=provenance,
         name=name,
-        schema=schema,
+        artifact_schema=schema,
         package=package,
         source_path=str(path),
         source_system="hana",

@@ -4,7 +4,13 @@ import base64
 import json
 from pathlib import Path
 
-from mcp.server.fastmcp import FastMCP
+try:
+    from mcp.server.fastmcp import FastMCP
+except (ImportError, ModuleNotFoundError):
+    try:
+        from fastmcp import FastMCP
+    except (ImportError, ModuleNotFoundError):
+        from mcp.server import FastMCP
 
 from md_generator.db.api.schemas import DbToMdRunBody
 from md_generator.db.core.zip_export import build_markdown_zip_bytes

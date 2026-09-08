@@ -20,6 +20,7 @@ class PipelineSection:
     cross_lineage: bool = False
     semantic_chunks_jsonl: bool = False
     semantic_narrative: bool = False
+    event_bus: bool = False
 
 
 @dataclass
@@ -80,6 +81,53 @@ class ODataSection:
 
 
 @dataclass
+class TraversalConfig:
+    max_depth: int = 1000
+    expand_forms: bool = True
+    expand_methods: bool = True
+    expand_functions: bool = True
+    expand_includes: bool = True
+    expand_function_groups: bool = True
+    stop_at_sap_standard: bool = True
+    customer_namespaces: list[str] = field(default_factory=lambda: ["Z*", "Y*"])
+
+
+@dataclass
+class RenderersConfig:
+    mermaid: bool = True
+    json: bool = True
+    graphviz: bool = True
+    markdown: bool = True
+
+
+@dataclass
+class CacheConfig:
+    enabled: bool = True
+    cache_dir: str | None = None
+
+
+@dataclass
+class PluginsConfig:
+    extractors: list[str] = field(default_factory=lambda: [
+        "perform", "function", "method", "submit", "transaction", "screen", "include", "create_object", "new"
+    ])
+
+
+@dataclass
+class StatisticsConfig:
+    enabled: bool = True
+
+
+@dataclass
+class AbapJourneySection:
+    traversal: TraversalConfig = field(default_factory=TraversalConfig)
+    renderers: RenderersConfig = field(default_factory=RenderersConfig)
+    cache: CacheConfig = field(default_factory=CacheConfig)
+    plugins: PluginsConfig = field(default_factory=PluginsConfig)
+    statistics: StatisticsConfig = field(default_factory=StatisticsConfig)
+
+
+@dataclass
 class SapRunConfig:
     input_paths: list[Path] = field(default_factory=list)
     odata_urls: list[str] = field(default_factory=list)
@@ -94,6 +142,7 @@ class SapRunConfig:
     graph: GraphSection = field(default_factory=GraphSection)
     pipeline: PipelineSection = field(default_factory=PipelineSection)
     performance: PerformanceSection = field(default_factory=PerformanceSection)
+    abap_journey: AbapJourneySection = field(default_factory=AbapJourneySection)
     write_manifest: bool = True
     markdown_cross_links: bool = True
 
@@ -183,6 +232,13 @@ def load_run_config(path: Path | None, overrides: dict[str, Any] | None = None) 
         graph=_section(GraphSection, raw.get("graph")),
         pipeline=_section(PipelineSection, raw.get("pipeline")),
         performance=_section(PerformanceSection, perf_raw),
+        abap_journey=AbapJourneySection(
+            traversal=_section(TraversalConfig, (raw.get("abap_journey") or {}).get("traversal")),
+            renderers=_section(RenderersConfig, (raw.get("abap_journey") or {}).get("renderers")),
+            cache=_section(CacheConfig, (raw.get("abap_journey") or {}).get("cache")),
+            plugins=_section(PluginsConfig, (raw.get("abap_journey") or {}).get("plugins")),
+            statistics=_section(StatisticsConfig, (raw.get("abap_journey") or {}).get("statistics")),
+        ),
         write_manifest=bool(out.get("write_manifest", True)),
         markdown_cross_links=bool(out.get("markdown_cross_links", True)),
     )

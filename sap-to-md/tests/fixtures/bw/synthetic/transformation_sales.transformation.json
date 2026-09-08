@@ -1,0 +1,1 @@
+{"name": "TR_SALES", "source": "ADSO_SALES", "rules": [{"target": "CUSTOMER", "source": "CUST_ID"}], "package": "BW"}

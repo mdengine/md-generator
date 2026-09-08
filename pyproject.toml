@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "mdengine"
-version = "0.13.3"
+version = "0.13.4"
 description = "Convert PDF, Office, images, audio, video, text/JSON/XML, ZIP archives, web URLs, databases, graphs, and OpenAPI specs to Markdown."
 readme = "README.md"
 requires-python = ">=3.10"
@@ -203,7 +203,7 @@ api = [
   "httpx>=0.27.0",
   "pydantic-settings>=2.0.0",
 ]
-mcp = ["mcp>=1.2.0", "fastmcp>=2.3.0"]
+mcp = ["mcp>=1.2.0,<2.0.0", "fastmcp>=2.3.0"]
 docs = [
   "mkdocs-material",
   "mkdocstrings",
@@ -254,7 +254,7 @@ all = [
   "python-multipart>=0.0.12",
   "httpx>=0.27.0",
   "pydantic-settings>=2.0.0",
-  "mcp>=1.2.0",
+  "mcp>=1.2.0,<2.0.0",
   "fastmcp>=2.3.0",
   "beautifulsoup4>=4.12.0",
   "lxml_html_clean>=0.4.0",
@@ -353,3 +353,11 @@ testpaths = [
   "sap-to-md/tests",
 ]
 markers = ["integration: optional dependency or slower checks"]
+
+[tool.coverage.run]
+source = ["src/md_generator/sap", "src/md_generator/odata"]
+omit = ["*/tests/*"]
+
+[tool.coverage.report]
+fail_under = 75
+show_missing = true

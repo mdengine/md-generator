@@ -5,7 +5,13 @@ import re
 import tempfile
 from pathlib import Path
 
-from mcp.server.fastmcp import FastMCP
+try:
+    from mcp.server.fastmcp import FastMCP
+except (ImportError, ModuleNotFoundError):
+    try:
+        from fastmcp import FastMCP
+    except (ImportError, ModuleNotFoundError):
+        from mcp.server import FastMCP
 
 from md_generator.archive.api.convert_runner import build_artifact_zip_bytes
 from md_generator.archive.api.query_options import convert_options_from_query

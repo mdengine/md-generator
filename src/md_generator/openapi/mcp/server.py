@@ -1,10 +1,16 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import base64
 import tempfile
 from pathlib import Path
 
-from mcp.server.fastmcp import FastMCP
+try:
+    from mcp.server.fastmcp import FastMCP
+except (ImportError, ModuleNotFoundError):
+    try:
+        from fastmcp import FastMCP
+    except (ImportError, ModuleNotFoundError):
+        from mcp.server import FastMCP
 
 from md_generator.openapi.core.extractor import extract_to_markdown
 from md_generator.openapi.core.run_config import ApiRunConfig
