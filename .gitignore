@@ -221,7 +221,8 @@ __marimo__/
 # Cursor (local IDE state) — keep versioned agent skills under .cursor/skills/
 .cursor/*
 .antigravity/*
-
+.agents/*
+.claude/*
 # Example sample inputs / CLI batch folder (local)
 example
 
@@ -232,4 +233,4 @@ run_all_projects_codeflow.py
 # Artifacts and benchmark outputs
 artifacts/
 codeflow_go_dump
-codeflow_go_dump.exe
+codeflow_go_dump.exe
