@@ -1,5 +1,6 @@
 """MDSearchTool adapter for CrewAI agents with bound tenant isolation and score filtering."""
 
+import importlib.util
 import math
 from typing import Any, Optional, Type
 from pydantic import BaseModel, ConfigDict, PrivateAttr
@@ -13,25 +14,73 @@ from md_generator.adapters.crewai.schema import MDSearchInput
 from md_generator.adapters.langchain.context import PromptContextBuilder
 from md_generator.adapters.langchain.retriever import MDVectorStoreRetriever
 
-__all__ = ["MDSearchTool"]
+__all__ = ["MDSearchTool", "detect_crewai_base_tool"]
 
-# Dynamic dependency detection (P2B-V03)
-CrewAIBaseTool: Optional[Type[Any]] = None
-try:
-    from crewai.tools import BaseTool as _DetectedBaseTool
-    CrewAIBaseTool = _DetectedBaseTool
-except ImportError as err:
-    if err.name in ("crewai", "crewai.tools", None):
+
+def detect_crewai_base_tool() -> Optional[Type[Any]]:
+    """Detects BaseTool from crewai or crewai_tools without masking broken installations.
+    
+    Supported Version Range:
+        - CrewAI >= 0.11.0 to current: imports from `crewai.tools.BaseTool`
+        - CrewAI tool packages: imports from `crewai_tools.BaseTool`
+        
+    Resolution Logic (P2B-R03):
+        1. Genuine Absence: If neither `crewai` nor `crewai_tools` can be located by
+           importlib.util.find_spec, returns None to activate `_FallbackBaseTool`.
+        2. Installed Package: If either package is located on disk, attempts to import BaseTool.
+           A failure indicates a broken installation (missing internal dependencies, syntax
+           errors, or version incompatibilities) and raises CrewAIDependencyError.
+    """
+    has_crewai = False
+    has_crewai_tools = False
+
+    try:
+        has_crewai = importlib.util.find_spec("crewai") is not None
+    except (ImportError, AttributeError, ValueError) as err:
+        raise CrewAIDependencyError(f"Corrupted crewai package metadata: {err}") from err
+
+    try:
+        has_crewai_tools = importlib.util.find_spec("crewai_tools") is not None
+    except (ImportError, AttributeError, ValueError) as err:
+        raise CrewAIDependencyError(f"Corrupted crewai_tools package metadata: {err}") from err
+
+    # Case 1: Genuinely absent
+    if not has_crewai and not has_crewai_tools:
+        return None
+
+    # Case 2: crewai package located
+    if has_crewai:
         try:
-            from crewai_tools import BaseTool as _DetectedToolsBaseTool
-            CrewAIBaseTool = _DetectedToolsBaseTool
-        except ImportError as err_tools:
-            if err_tools.name in ("crewai_tools", None):
-                CrewAIBaseTool = None
-            else:
-                raise CrewAIDependencyError(f"Broken crewai_tools installation: {err_tools}") from err_tools
-    else:
-        raise CrewAIDependencyError(f"Broken crewai installation: {err}") from err
+            from crewai.tools import BaseTool as DetectedBaseTool
+            return DetectedBaseTool
+        except ImportError as err:
+            if has_crewai_tools:
+                try:
+                    from crewai_tools import BaseTool as DetectedToolsBaseTool
+                    return DetectedToolsBaseTool
+                except ImportError as err_tools:
+                    raise CrewAIDependencyError(
+                        f"CrewAI packages installed but BaseTool could not be imported: "
+                        f"crewai: {err}; crewai_tools: {err_tools}"
+                    ) from err_tools
+            raise CrewAIDependencyError(
+                f"crewai is installed but BaseTool cannot be imported: {err}"
+            ) from err
+
+    # Case 3: only crewai_tools package located
+    if has_crewai_tools:
+        try:
+            from crewai_tools import BaseTool as DetectedToolsBaseTool
+            return DetectedToolsBaseTool
+        except ImportError as err:
+            raise CrewAIDependencyError(
+                f"crewai_tools is installed but BaseTool cannot be imported: {err}"
+            ) from err
+
+    return None
+
+
+CrewAIBaseTool: Optional[Type[Any]] = detect_crewai_base_tool()
 
 
 class _FallbackBaseTool(BaseModel):
@@ -145,19 +194,41 @@ class MDSearchTool(_ToolBase):
         super().__setattr__(name, value)
 
     def _run(self, *args: Any, **kwargs: Any) -> str:
-        """Executes tenant-isolated retrieval, document validation, score filtering, and context synthesis."""
-        # 1. Parse arguments and enforce Pydantic v2 schema validation (P2B-V01, P2B-V06)
+        """Executes tenant-isolated retrieval, document validation, score filtering, and context synthesis.
+        
+        Invocation Signatures (P2B-R01):
+            - Keyword: run(query="...") or _run(query="...")
+            - Positional: run("...") or _run("...")
+            
+        Schema Enforcement:
+            All inputs (positional or keyword) are validated through MDSearchInput:
+            - Missing arguments -> pydantic.ValidationError
+            - Non-string or whitespace queries -> pydantic.ValidationError
+            - Extra fields (e.g. tenant_id) -> pydantic.ValidationError
+            - Multiple or ambiguous positional arguments -> pydantic.ValidationError
+        """
+        # 1. Parse arguments and normalize into kwargs for MDSearchInput validation
+        call_kwargs = dict(kwargs)
         if args:
-            if len(args) == 1 and isinstance(args[0], str) and "query" not in kwargs:
-                kwargs["query"] = args[0]
+            if len(args) == 1:
+                if "query" in call_kwargs:
+                    call_kwargs["__duplicate_positional_query__"] = args[0]
+                else:
+                    call_kwargs["query"] = args[0]
             else:
-                raise ValueError("Positional argument must be a single query string.")
+                for idx, arg in enumerate(args):
+                    call_kwargs[f"__positional_{idx}__"] = arg
 
-        validated = MDSearchInput.model_validate(kwargs)
+        validated = MDSearchInput.model_validate(call_kwargs)
         query_str = validated.query
 
         # 2. Invoke retriever
-        raw_docs = self._retriever.invoke(query_str) or []
+        try:
+            raw_docs = self._retriever.invoke(query_str) or []
+        except TenantBoundaryError:
+            raise
+        except Exception as err:
+            raise CrewAIToolExecutionError(f"Retriever invocation failed for query '{query_str}': {err}") from err
 
         # 3. Deep document tenant ownership validation (P2B-V04)
         for i, doc in enumerate(raw_docs):
@@ -173,7 +244,7 @@ class MDSearchTool(_ToolBase):
                     f"conflicting with bound tool tenant '{self._tenant_id}'."
                 )
 
-        # 4. Document score validation & threshold filtering (P2B-V05)
+        # 4. Document score validation & threshold filtering (P2B-V05, P2B-R04)
         qualifying_docs = []
         for i, doc in enumerate(raw_docs):
             meta = doc.metadata if hasattr(doc, "metadata") else (doc.get("metadata", {}) if isinstance(doc, dict) else {})
@@ -201,7 +272,12 @@ class MDSearchTool(_ToolBase):
             return f"No relevant documents found for query: '{query_str}'."
 
         # 6. Context synthesis via PromptContextBuilder
-        return self._builder.build_context(qualifying_docs)
+        try:
+            return self._builder.build_context(qualifying_docs)
+        except TenantBoundaryError:
+            raise
+        except Exception as err:
+            raise CrewAIToolExecutionError(f"Context synthesis failed: {err}") from err
 
     def run(self, *args: Any, **kwargs: Any) -> str:
         """Public execution entry point conforming to CrewAI tool invocation protocol."""

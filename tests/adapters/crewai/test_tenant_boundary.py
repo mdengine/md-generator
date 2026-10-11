@@ -90,3 +90,21 @@ def test_tool_execution_rejects_mixed_tenant_documents():
     tool = MDSearchTool(retriever=mock_retriever, tenant_id="tenant-A")
     with pytest.raises(TenantBoundaryError, match="belongs to tenant 'tenant-B'"):
         tool.run(query="search")
+
+
+def test_tenant_boundary_error_not_wrapped_in_execution_error():
+    """Validates TenantBoundaryError is raised directly and is uncoupled from CrewAIAdapterError (P2B-R02)."""
+    from md_generator.adapters.crewai import CrewAIAdapterError
+
+    mock_retriever = MagicMock()
+    mock_retriever.tenant_id = "tenant-A"
+    mock_retriever.invoke.return_value = [
+        Document(page_content="Foreign Text", metadata={"tenant_id": "tenant-B", "score": 0.95}),
+    ]
+
+    tool = MDSearchTool(retriever=mock_retriever, tenant_id="tenant-A")
+    try:
+        tool.run(query="search")
+    except Exception as exc:
+        assert isinstance(exc, TenantBoundaryError)
+        assert not isinstance(exc, CrewAIAdapterError)
