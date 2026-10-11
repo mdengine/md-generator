@@ -68,7 +68,9 @@ def test_jobs_flow(api_client: TestClient, monkeypatch: pytest.MonkeyPatch) -> N
     r = api_client.post("/convert/jobs", json={"url": "https://example.com/z"})
     assert r.status_code == 200, r.text
     job_id = r.json()["job_id"]
+    import time
     for _ in range(50):
+        time.sleep(0.05)
         st = api_client.get(f"/convert/jobs/{job_id}")
         if st.json()["status"] == "done":
             break
