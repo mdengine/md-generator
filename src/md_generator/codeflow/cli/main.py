@@ -59,7 +59,7 @@ def _normalize_include(raw: str | None) -> str | None:
 
 
 def build_parser() -> argparse.ArgumentParser:
-    p = argparse.ArgumentParser(description="Analyze source code execution flows → Markdown/Mermaid/graph.")
+    p = argparse.ArgumentParser(description="Analyze source code execution flows -> Markdown/Mermaid/graph.")
     sub = p.add_subparsers(dest="cmd", required=True)
     scan = sub.add_parser("scan", help="Scan a folder, file, .zip archive, or Git remote URL")
     scan.add_argument(
@@ -77,7 +77,7 @@ def build_parser() -> argparse.ArgumentParser:
         help=(
             "mixed | python | java | javascript | typescript | tsx | cpp | go | php | "
             "rust | kotlin | csharp | swift | ruby | lua | scala | zig | "
-            "comma-separated (e.g. python,javascript). Aliases: js→javascript, ts→typescript."
+            "comma-separated (e.g. python,javascript). Aliases: js->javascript, ts->typescript."
         ),
     )
     scan.add_argument("--formats", "--output-formats", dest="formats", default=None, help="Comma-separated: md,html,mermaid,json")
@@ -211,7 +211,7 @@ def build_parser() -> argparse.ArgumentParser:
         "--cfg-max-paths",
         type=int,
         default=100,
-        help="Max enumerated START→END paths when using --emit-cfg (default: 100)",
+        help="Max enumerated START->END paths when using --emit-cfg (default: 100)",
     )
     scan.add_argument(
         "--cfg-path-max-depth",
@@ -586,7 +586,7 @@ def build_parser() -> argparse.ArgumentParser:
         "--cross-repo-hints",
         default=None,
         metavar="JSON",
-        help='JSON object: package prefix → repo label (used with --resolve-cross-repo after --multi-repo)',
+        help='JSON object: package prefix -> repo label (used with --resolve-cross-repo after --multi-repo)',
     )
     scan.add_argument(
         "--resolve-cross-repo",
@@ -598,13 +598,13 @@ def build_parser() -> argparse.ArgumentParser:
         "--cross-repo-tsconfig",
         action=argparse.BooleanOptionalAction,
         default=False,
-        help="With --resolve-cross-repo, load tsconfig/jsconfig paths per repo for @… modules",
+        help="With --resolve-cross-repo, load tsconfig/jsconfig paths per repo for @... modules",
     )
     scan.add_argument(
         "--cross-repo-maven-hints",
         action=argparse.BooleanOptionalAction,
         default=False,
-        help="With --resolve-cross-repo, add Maven pom.xml groupId→repo label hints",
+        help="With --resolve-cross-repo, add Maven pom.xml groupId->repo label hints",
     )
     scan.add_argument(
         "--cache-ttl",

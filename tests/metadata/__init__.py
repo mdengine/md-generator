@@ -1,0 +1,1 @@
+"""Metadata package contract tests."""

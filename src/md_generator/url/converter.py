@@ -94,7 +94,7 @@ def _build_parser() -> argparse.ArgumentParser:
         "--convert-downloaded-image-to-md-title",
         type=str,
         default="",
-        help='Markdown title inside the bundled OCR file (default: empty → "Downloaded images (OCR)")',
+        help='Markdown title inside the bundled OCR file (default: empty -> "Downloaded images (OCR)")',
     )
     p.add_argument(
         "--post-convert-pdf-ocr",
