@@ -17,6 +17,18 @@ class UnsupportedSourceError(Exception):
     pass
 
 
+class MissingDependencyError(Exception):
+    """Raised when an optional dependency required for format extraction is missing."""
+
+    pass
+
+
+class IngestionDiscoveryError(Exception):
+    """Raised when recursive file discovery fails due to I/O or permission errors."""
+
+    pass
+
+
 @dataclass
 class ExtractionOutput:
     """Raw extraction payload produced by a ConverterAdapter."""
@@ -63,6 +75,161 @@ class BaseTextAdapter:
             content = path.read_text(encoding="utf-8", errors="replace")
         except Exception as e:
             content = f"<!-- Error reading file {path.name}: {e} -->"
+
+        return ExtractionOutput(
+            raw_markdown=content,
+            source_uri=path.as_uri(),
+            source_type=self._source_type,
+            metadata={"file_name": path.name, "file_size_bytes": path.stat().st_size if path.exists() else 0},
+        )
+
+
+class PDFConverterAdapter:
+    """Specialized adapter for PDF documents wrapping md_generator.pdf."""
+
+    def __init__(self, source_type: str = "doc.pdf") -> None:
+        self._source_type = source_type
+
+    def supports(self, source_type: str) -> bool:
+        return source_type == self._source_type
+
+    def extract(self, source_path: str) -> ExtractionOutput:
+        path = Path(source_path)
+        try:
+            from md_generator.pdf.pdf_extract import ConvertOptions, convert_pdf
+            from md_generator.pdf.utils import resolve_output
+        except ImportError as e:
+            raise MissingDependencyError(
+                f"Cannot extract PDF {path.name}: required optional dependency missing ({e}). "
+                "Install with: pip install 'mdengine[pdf]'"
+            ) from e
+
+        import tempfile
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            tmp_out = Path(tmp_dir) / f"{path.stem}.md"
+            resolved = resolve_output(tmp_out, artifact_layout=False, images_dir=None)
+            opts = ConvertOptions(use_ocr=False, verbose=False)
+            try:
+                convert_pdf(path, resolved, opts)
+                content = resolved.markdown_path.read_text(encoding="utf-8")
+            except Exception as e:
+                raise UnsupportedSourceError(f"PDF extraction failed for {path.name}: {e}") from e
+
+        return ExtractionOutput(
+            raw_markdown=content,
+            source_uri=path.as_uri(),
+            source_type=self._source_type,
+            metadata={"file_name": path.name, "file_size_bytes": path.stat().st_size if path.exists() else 0},
+        )
+
+
+class WordConverterAdapter:
+    """Specialized adapter for Word documents (.docx) wrapping md_generator.word."""
+
+    def __init__(self, source_type: str = "doc.word") -> None:
+        self._source_type = source_type
+
+    def supports(self, source_type: str) -> bool:
+        return source_type == self._source_type
+
+    def extract(self, source_path: str) -> ExtractionOutput:
+        path = Path(source_path)
+        try:
+            from md_generator.word.converter import convert_docx_to_markdown
+        except ImportError as e:
+            raise MissingDependencyError(
+                f"Cannot extract Word document {path.name}: required optional dependency missing ({e}). "
+                "Install with: pip install 'mdengine[word]'"
+            ) from e
+
+        import tempfile
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            tmp_out = Path(tmp_dir) / f"{path.stem}.md"
+            try:
+                res = convert_docx_to_markdown(path, tmp_out, verbose=False)
+                content = res.markdown
+            except Exception as e:
+                raise UnsupportedSourceError(f"Word extraction failed for {path.name}: {e}") from e
+
+        return ExtractionOutput(
+            raw_markdown=content,
+            source_uri=path.as_uri(),
+            source_type=self._source_type,
+            metadata={"file_name": path.name, "file_size_bytes": path.stat().st_size if path.exists() else 0},
+        )
+
+
+class PPTConverterAdapter:
+    """Specialized adapter for PowerPoint presentations (.pptx) wrapping md_generator.ppt."""
+
+    def __init__(self, source_type: str = "doc.ppt") -> None:
+        self._source_type = source_type
+
+    def supports(self, source_type: str) -> bool:
+        return source_type == self._source_type
+
+    def extract(self, source_path: str) -> ExtractionOutput:
+        path = Path(source_path)
+        try:
+            from md_generator.ppt.convert_impl import convert_pptx
+            from md_generator.ppt.options import ConvertOptions
+        except ImportError as e:
+            raise MissingDependencyError(
+                f"Cannot extract PowerPoint presentation {path.name}: required optional dependency missing ({e}). "
+                "Install with: pip install 'mdengine[ppt]'"
+            ) from e
+
+        import tempfile
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            tmp_out = Path(tmp_dir) / f"{path.stem}.md"
+            opts = ConvertOptions(artifact_layout=False, verbose=False)
+            try:
+                convert_pptx(path, tmp_out, opts)
+                content = tmp_out.read_text(encoding="utf-8") if tmp_out.exists() else ""
+            except Exception as e:
+                raise UnsupportedSourceError(f"PowerPoint extraction failed for {path.name}: {e}") from e
+
+        return ExtractionOutput(
+            raw_markdown=content,
+            source_uri=path.as_uri(),
+            source_type=self._source_type,
+            metadata={"file_name": path.name, "file_size_bytes": path.stat().st_size if path.exists() else 0},
+        )
+
+
+class ExcelConverterAdapter:
+    """Specialized adapter for Excel spreadsheets (.xlsx) wrapping md_generator.xlsx."""
+
+    def __init__(self, source_type: str = "doc.xlsx") -> None:
+        self._source_type = source_type
+
+    def supports(self, source_type: str) -> bool:
+        return source_type == self._source_type
+
+    def extract(self, source_path: str) -> ExtractionOutput:
+        path = Path(source_path)
+        try:
+            from md_generator.xlsx.converter_core import convert_excel_to_markdown
+            from md_generator.xlsx.convert_config import ConvertConfig
+        except ImportError as e:
+            raise MissingDependencyError(
+                f"Cannot extract Excel spreadsheet {path.name}: required optional dependency missing ({e}). "
+                "Install with: pip install 'mdengine[xlsx]'"
+            ) from e
+
+        import tempfile
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            tmp_dir_path = Path(tmp_dir)
+            cfg = ConvertConfig()
+            try:
+                res = convert_excel_to_markdown(path, tmp_dir_path, cfg)
+                chunks = []
+                for p in res.paths_written:
+                    if p.exists() and p.is_file():
+                        chunks.append(p.read_text(encoding="utf-8"))
+                content = "\n\n".join(chunks)
+            except Exception as e:
+                raise UnsupportedSourceError(f"Excel extraction failed for {path.name}: {e}") from e
 
         return ExtractionOutput(
             raw_markdown=content,
@@ -236,25 +403,25 @@ class ConverterRegistry:
             extensions={".sql", ".db", ".sqlite"},
         )
 
-        # Document Formats (Text fallback in 0C; specialized converters when present)
+        # Document Formats (Specialized Adapters with fail-closed binary handling)
         registry.register(
             source_type="doc.pdf",
-            adapter=BaseTextAdapter("doc.pdf"),
+            adapter=PDFConverterAdapter("doc.pdf"),
             extensions={".pdf"},
         )
         registry.register(
             source_type="doc.word",
-            adapter=BaseTextAdapter("doc.word"),
+            adapter=WordConverterAdapter("doc.word"),
             extensions={".docx", ".doc"},
         )
         registry.register(
             source_type="doc.ppt",
-            adapter=BaseTextAdapter("doc.ppt"),
+            adapter=PPTConverterAdapter("doc.ppt"),
             extensions={".pptx", ".ppt"},
         )
         registry.register(
             source_type="doc.xlsx",
-            adapter=BaseTextAdapter("doc.xlsx"),
+            adapter=ExcelConverterAdapter("doc.xlsx"),
             extensions={".xlsx", ".xls"},
         )
 

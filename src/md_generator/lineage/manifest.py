@@ -72,11 +72,13 @@ class ManifestEntry:
 
 @dataclass
 class VersionedManifest:
-    manifest_schema_version: str = "1.0"
+    manifest_schema_version: str = "1.1"
     pipeline_version: str = "1.0"
     semantic_schema_version: str = "1.0"
     chunker_version: str = "1.0"
     security_policy_version: str = "1.0"
+    config_fingerprint: str = ""
+    tenant_id: str = ""
     embedding_provider: str = ""
     embedding_model: str = ""
     embedding_dimension: int = 0
@@ -91,6 +93,8 @@ class VersionedManifest:
             "semantic_schema_version": self.semantic_schema_version,
             "chunker_version": self.chunker_version,
             "security_policy_version": self.security_policy_version,
+            "config_fingerprint": self.config_fingerprint,
+            "tenant_id": self.tenant_id,
             "embedding_provider": self.embedding_provider,
             "embedding_model": self.embedding_model,
             "embedding_dimension": self.embedding_dimension,
@@ -103,12 +107,20 @@ class VersionedManifest:
     def from_dict(cls, data: Dict[str, Any]) -> VersionedManifest:
         if not isinstance(data, dict):
             raise InvalidSchemaError("Input to from_dict must be a dictionary.")
+        data_copy = dict(data)
+        schema_ver = str(data_copy.get("manifest_schema_version", "1.0"))
+        # Backward-compatible v1.0 migration: mark legacy configs as unknown
+        if schema_ver == "1.0" and "config_fingerprint" not in data_copy:
+            data_copy["config_fingerprint"] = "__unknown__"
+        if "config_fingerprint" not in data_copy:
+            data_copy["config_fingerprint"] = ""
+        if "tenant_id" not in data_copy:
+            data_copy["tenant_id"] = ""
         allowed = set(cls.__dataclass_fields__.keys())
-        _check_no_unknown_fields(data, allowed, "VersionedManifest")
+        _check_no_unknown_fields(data_copy, allowed, "VersionedManifest")
         try:
-            entries_data = data.get("entries", {})
+            entries_data = data_copy.get("entries", {})
             entries = {k: ManifestEntry.from_dict(v) for k, v in entries_data.items()}
-            data_copy = dict(data)
             data_copy["entries"] = entries
             return cls(**data_copy)
         except (TypeError, ValueError) as e:
@@ -128,12 +140,23 @@ class VersionedManifest:
 def evaluate_delta(
     previous_manifest: Optional[VersionedManifest],
     current_files: Dict[str, Dict[str, Any]],
-    current_config_hash: str = ""
+    current_config_hash: str = "",
+    reprocess_unknown_config: bool = True,
+    current_tenant: str = "",
 ) -> Dict[str, ManifestEntry]:
     """Evaluate 5-state delta lifecycle across current files vs previous manifest.
 
     current_files maps source_uri -> {"document_id": str, "content_hash": str, "revision_id": str}
     """
+    # Tenant boundary enforcement: Cross-tenant operations are strictly prohibited
+    if previous_manifest and previous_manifest.tenant_id and current_tenant:
+        if previous_manifest.tenant_id.strip() != current_tenant.strip():
+            from md_generator.vector.exceptions import TenantBoundaryError
+            raise TenantBoundaryError(
+                f"Cross-tenant operation rejected: Manifest belongs to tenant '{previous_manifest.tenant_id}', "
+                f"but current execution is tenant '{current_tenant}'."
+            )
+
     results: Dict[str, ManifestEntry] = {}
     prev_entries = previous_manifest.entries if previous_manifest else {}
 
@@ -153,15 +176,50 @@ def evaluate_delta(
             processed_prev_uris.add(uri)
             prev_entry = prev_entries[uri]
             if prev_entry.content_hash == content_hash:
-                results[uri] = ManifestEntry(
-                    document_id=doc_id,
-                    revision_id=rev_id,
-                    source_uri=uri,
-                    content_hash=content_hash,
-                    chunk_ids=prev_entry.chunk_ids,
-                    state=DeltaState.UNCHANGED,
-                    reason=None,
-                )
+                prev_cfg = getattr(previous_manifest, "config_fingerprint", "") if previous_manifest else ""
+                if prev_cfg == "__unknown__":
+                    # Legacy v1.0 manifest with unknown config: trigger one-time reconciliation
+                    if reprocess_unknown_config:
+                        results[uri] = ManifestEntry(
+                            document_id=doc_id,
+                            revision_id=rev_id,
+                            source_uri=uri,
+                            content_hash=content_hash,
+                            chunk_ids=prev_entry.chunk_ids,
+                            state=DeltaState.MODIFIED,
+                            reason=DeltaReason.CONFIG_CHANGED,
+                        )
+                    else:
+                        results[uri] = ManifestEntry(
+                            document_id=doc_id,
+                            revision_id=rev_id,
+                            source_uri=uri,
+                            content_hash=content_hash,
+                            chunk_ids=prev_entry.chunk_ids,
+                            state=DeltaState.UNCHANGED,
+                            reason=None,
+                        )
+                elif current_config_hash and prev_cfg and current_config_hash != prev_cfg:
+                    # Verified configuration changed: trigger full re-extraction/re-indexing
+                    results[uri] = ManifestEntry(
+                        document_id=doc_id,
+                        revision_id=rev_id,
+                        source_uri=uri,
+                        content_hash=content_hash,
+                        chunk_ids=prev_entry.chunk_ids,
+                        state=DeltaState.MODIFIED,
+                        reason=DeltaReason.CONFIG_CHANGED,
+                    )
+                else:
+                    results[uri] = ManifestEntry(
+                        document_id=doc_id,
+                        revision_id=rev_id,
+                        source_uri=uri,
+                        content_hash=content_hash,
+                        chunk_ids=prev_entry.chunk_ids,
+                        state=DeltaState.UNCHANGED,
+                        reason=None,
+                    )
             else:
                 results[uri] = ManifestEntry(
                     document_id=doc_id,

@@ -232,5 +232,5 @@ def test_lossless_roundtrip_serialization():
 def test_base_import_isolation():
     import md_generator
     from md_generator.semantic.model import SCHEMA_VERSION, SemanticDocument
-    assert md_generator.__version__ == "0.13.4"
+    assert md_generator.__version__ == "0.14.1"
     assert SCHEMA_VERSION == "1.0"
