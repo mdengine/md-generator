@@ -1,6 +1,7 @@
 """Security tests for deep document-level tenant ownership and state tenant boundaries (P2A-R01)."""
 
 import pytest
+pytest.importorskip("langchain_core")
 from langchain_core.documents import Document
 from md_generator.adapters.langgraph.state import DocumentStateDTO, validate_graph_state
 from md_generator.vector.exceptions import TenantBoundaryError

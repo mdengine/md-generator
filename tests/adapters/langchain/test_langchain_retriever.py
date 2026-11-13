@@ -1,6 +1,7 @@
 """Tests for MDVectorStoreRetriever adapter component."""
 
 import pytest
+pytest.importorskip("langchain_core")
 from langchain_core.retrievers import BaseRetriever
 from langchain_core.documents import Document
 

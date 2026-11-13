@@ -2,6 +2,7 @@
 
 import copy
 import pytest
+pytest.importorskip("langchain_core")
 from langchain_core.document_loaders import BaseLoader
 from langchain_core.documents import Document
 

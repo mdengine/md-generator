@@ -1,6 +1,8 @@
 """Tests for real MemorySaver checkpoint execution and 10-step tenant tampering sequence (P2A-R08)."""
 
 import pytest
+pytest.importorskip("langchain_core")
+pytest.importorskip("langgraph")
 from unittest.mock import MagicMock
 from langchain_core.documents import Document
 from langgraph.checkpoint.memory import MemorySaver

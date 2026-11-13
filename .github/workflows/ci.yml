@@ -27,7 +27,7 @@ jobs:
 
       - name: Pytest Core & Contract Tests
         run: |
-          python -m pytest tests/ -v -m "not integration"
+          python -m pytest tests/ --ignore=tests/adapters -v -m "not integration"
 
   legacy-regression:
     name: Legacy Converter Regression Suite

@@ -2,6 +2,7 @@
 
 from unittest.mock import MagicMock
 import pytest
+pytest.importorskip("langchain_core")
 from pydantic import ValidationError
 from langchain_core.documents import Document
 

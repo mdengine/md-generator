@@ -3,6 +3,7 @@
 import math
 from unittest.mock import MagicMock
 import pytest
+pytest.importorskip("langchain_core")
 from langchain_core.documents import Document
 
 from md_generator.adapters.crewai import MDSearchTool

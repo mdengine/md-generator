@@ -1,6 +1,7 @@
 """Tests for DocumentStateDTO compatibility and in-adapter conversion (P2A-R03)."""
 
 import pytest
+pytest.importorskip("langchain_core")
 from langchain_core.documents import Document
 from md_generator.adapters.langchain.context import PromptContextBuilder
 from md_generator.adapters.langgraph.exceptions import GraphStateValidationError
