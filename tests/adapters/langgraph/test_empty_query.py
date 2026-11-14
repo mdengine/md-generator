@@ -1,6 +1,7 @@
 """Tests for empty query handling and error preservation across fallback (P2A-R07)."""
 
 import pytest
+pytest.importorskip("langchain_core")
 from unittest.mock import MagicMock
 from langchain_core.documents import Document
 from md_generator.adapters.langgraph.nodes import create_fallback_node, create_retrieval_node

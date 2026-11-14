@@ -6,11 +6,12 @@ on:
   pull_request:
 
 jobs:
-  test:
+  core-matrix:
+    name: Core Unit & Contract Tests
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.10", "3.11", "3.12"]
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
 
     steps:
       - uses: actions/checkout@v4
@@ -22,13 +23,79 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install -U pip
-          pip install ".[db,api,mcp,dev]"
+          pip install ".[dev,pdf,ppt,word,xlsx]"
 
-      - name: Pytest
+      - name: Pytest Core & Contract Tests
         run: |
-          python -m pytest db-to-md/tests log-to-md/tests -v -m "not integration"
+          python -m pytest tests/ --ignore=tests/adapters -v -m "not integration"
+
+  legacy-regression:
+    name: Legacy Converter Regression Suite
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install dependencies
+        run: |
+          python -m pip install -U pip
+          pip install ".[all,playwright,dev]"
+
+      - name: Pytest Legacy Converters
+        run: |
+          python -m pytest tool-assistant/tests pdf-to-md/tests word-to-md/tests \
+                           ppt-to-md/tests xlsx-to-md/tests image-to-md/tests \
+                           txt-json-xml-to-md/tests zip-to-md/tests url-to-md/tests \
+                           audio-to-md/tests video-to-md/tests youtube-to-md/tests \
+                           playwright-to-md/tests db-to-md/tests graph-to-md/tests \
+                           openapi-to-md/tests odata-to-md/tests codeflow-to-md/tests \
+                           log-to-md/tests sap-to-md/tests -v -m "not integration"
+
+  optional-integrations:
+    name: Optional Framework Integrations
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install dependencies
+        run: |
+          python -m pip install -U pip
+          pip install ".[integrations,dev]"
+
+      - name: Pytest Optional Integrations
+        run: |
+          python -m pytest tests/adapters/ tests/vector/ -v
+
+  package-validation:
+    name: Distribution Build & Install Validation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
 
       - name: Build distribution
         run: |
-          pip install build
+          python -m pip install -U pip build twine
           python -m build
+          twine check dist/*
+
+      - name: Test wheel installation
+        run: |
+          pip install dist/*.whl
+          python -c "import md_generator; print('Installed md_generator version:', md_generator.__version__)"

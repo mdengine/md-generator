@@ -8,12 +8,14 @@ construction, manifest tombstone updating, and error isolation.
 """
 
 from pathlib import Path
+import os
 import time
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, Union
 import uuid
 
 from md_generator.lineage.ids import (
     compute_content_hash,
+    compute_file_content_hash,
     generate_document_id,
     generate_revision_id,
     normalize_source_uri,
@@ -25,13 +27,14 @@ from md_generator.lineage.manifest import (
     VersionedManifest,
     evaluate_delta,
 )
-from md_generator.metadata.schema import EnterpriseMetadata
 from md_generator.pipeline.config import PipelineConfig
 from md_generator.pipeline.registry import (
     ConverterAdapter,
     ConverterRegistry,
     ExtractionOutput,
     UnsupportedSourceError,
+    MissingDependencyError,
+    IngestionDiscoveryError,
 )
 from md_generator.pipeline.result import (
     IngestionError,
@@ -58,10 +61,19 @@ class MDPipeline:
         self,
         config: Optional[PipelineConfig] = None,
         registry: Optional[ConverterRegistry] = None,
+        chunker: Optional[Any] = None,
+        embedding_processor: Optional[Any] = None,
+        graph_store: Optional[Any] = None,
     ) -> None:
         self.config = config or PipelineConfig()
+        if not self.config.tenant or not isinstance(self.config.tenant, str) or not self.config.tenant.strip():
+            from md_generator.vector.exceptions import TenantBoundaryError
+            raise TenantBoundaryError("A valid non-empty tenant identifier is mandatory for MDPipeline.")
         self.registry = registry or ConverterRegistry.create_default()
         self.redactor = SecurityRedactor(policy=self.config.security_policy)
+        self.chunker = chunker
+        self.embedding_processor = embedding_processor
+        self.graph_store = graph_store
 
     def process_file(
         self, file_path: str, source_type: Optional[str] = None
@@ -72,6 +84,10 @@ class MDPipeline:
         """
         start_time = time.time()
         path = Path(file_path).resolve()
+        if not path.exists():
+            raise FileNotFoundError(f"Target file does not exist: {path}")
+        if not path.is_file():
+            raise IsADirectoryError(f"Target is a directory, not a regular file: {path}")
         source_uri = normalize_source_uri(str(path))
         config_fp = self.config.compute_fingerprint()
 
@@ -82,9 +98,8 @@ class MDPipeline:
         except Exception:
             resolved_source_type = source_type or "text.plain"
 
-        # Build current file entry for delta engine
-        content_text = path.read_text(encoding="utf-8", errors="ignore") if path.exists() else ""
-        c_hash = compute_content_hash(content_text)
+        # Build current file entry for delta engine using deterministic byte-based hashing
+        c_hash = compute_file_content_hash(path)
         doc_id = generate_document_id(source_uri, resolved_source_type, self.config.repository)
         raw_rev_id = generate_revision_id(doc_id, c_hash, self.config.commit, config_fp)
 
@@ -97,7 +112,12 @@ class MDPipeline:
         }
 
         # Run Delta Engine against input manifest
-        delta_map = evaluate_delta(self.config.manifest, current_files, config_fp)
+        delta_map = evaluate_delta(
+            self.config.manifest,
+            current_files,
+            current_config_hash=config_fp,
+            current_tenant=self.config.tenant,
+        )
 
         documents: List[SemanticDocument] = []
         errors: List[IngestionError] = []
@@ -141,20 +161,7 @@ class MDPipeline:
                     final_doc_id, final_content_hash, self.config.commit, config_fp
                 )
 
-                # Create Enterprise Metadata
-                ent_meta = EnterpriseMetadata(
-                    tenant=self.config.tenant,
-                    repository=self.config.repository,
-                    source_uri=norm_extracted_uri,
-                    source_type=extraction.source_type,
-                )
-                meta_dict = ent_meta.to_dict()
-                if self.config.commit:
-                    meta_dict["commit"] = self.config.commit
-                if self.config.extra_metadata:
-                    meta_dict["extra_metadata"] = self.config.extra_metadata
-
-                # Build SemanticDocument v1.0
+                # Build SemanticDocument v1.0 (Phase 0A schema preserved intact)
                 canon_meta = CanonicalMetadata(
                     source_uri=norm_extracted_uri,
                     source_type=extraction.source_type,
@@ -227,14 +234,16 @@ class MDPipeline:
         )
 
         out_manifest = VersionedManifest(
+            config_fingerprint=config_fp,
+            tenant_id=self.config.tenant,
             timestamp=time.time(),
             entries=out_manifest_entries,
         )
 
-        # Stage hooks (disabled/no-op in 0C)
+        # Stage hooks with dependency injection & error isolation
         chunks = self._chunking_stage(documents)
-        entities, relationships = self._graph_stage(chunks)
-        self._embedding_stage(chunks)
+        self._embedding_stage(chunks, documents, errors=errors, out_manifest_entries=out_manifest_entries)
+        entities, relationships = self._graph_stage(chunks, documents, errors=errors, out_manifest_entries=out_manifest_entries)
 
         return IngestionResult(
             run_id=uuid.uuid4().hex,
@@ -256,15 +265,29 @@ class MDPipeline:
         """
         start_time = time.time()
         dir_path = Path(directory_path).resolve()
+        if not dir_path.exists():
+            raise FileNotFoundError(f"Target directory does not exist: {dir_path}")
+        if not dir_path.is_dir():
+            raise NotADirectoryError(f"Target path is not a directory: {dir_path}")
+
         source_root_uri = normalize_source_uri(str(dir_path))
         config_fp = self.config.compute_fingerprint()
 
-        # Discover all files in target directory
+        # Discover all files in target directory with traversal integrity check
+        def _on_walk_error(err: OSError):
+            raise IngestionDiscoveryError(f"Directory traversal failed at {err.filename}: {err}") from err
+
         discovered_files: List[Path] = []
-        if dir_path.exists() and dir_path.is_dir():
-            for p in dir_path.rglob("*"):
-                if p.is_file() and not p.name.startswith("."):
-                    discovered_files.append(p.resolve())
+        try:
+            for root, dirs, files in os.walk(dir_path, onerror=_on_walk_error):
+                for f in files:
+                    if not f.startswith("."):
+                        p = Path(root) / f
+                        discovered_files.append(p.resolve())
+        except IngestionDiscoveryError:
+            raise
+        except Exception as e:
+            raise IngestionDiscoveryError(f"Directory discovery failed for {dir_path}: {e}") from e
 
         current_files: Dict[str, Dict[str, Any]] = {}
         file_adapters: Dict[str, Tuple[Path, str]] = {}
@@ -277,8 +300,7 @@ class MDPipeline:
             except Exception:
                 src_type = "text.plain"
 
-            content_text = p.read_text(encoding="utf-8", errors="ignore") if p.exists() else ""
-            c_hash = compute_content_hash(content_text)
+            c_hash = compute_file_content_hash(p)
             d_id = generate_document_id(uri, src_type, self.config.repository)
             r_id = generate_revision_id(d_id, c_hash, self.config.commit, config_fp)
 
@@ -290,7 +312,12 @@ class MDPipeline:
             file_adapters[uri] = (p, src_type)
 
         # Run Delta Engine
-        delta_map = evaluate_delta(self.config.manifest, current_files, config_fp)
+        delta_map = evaluate_delta(
+            self.config.manifest,
+            current_files,
+            current_config_hash=config_fp,
+            current_tenant=self.config.tenant,
+        )
 
         documents: List[SemanticDocument] = []
         errors: List[IngestionError] = []
@@ -343,18 +370,7 @@ class MDPipeline:
                         final_doc_id, final_content_hash, self.config.commit, config_fp
                     )
 
-                    ent_meta = EnterpriseMetadata(
-                        tenant=self.config.tenant,
-                        repository=self.config.repository,
-                        source_uri=norm_extracted_uri,
-                        source_type=extraction.source_type,
-                    )
-                    meta_dict = ent_meta.to_dict()
-                    if self.config.commit:
-                        meta_dict["commit"] = self.config.commit
-                    if self.config.extra_metadata:
-                        meta_dict["extra_metadata"] = self.config.extra_metadata
-
+                    # Build SemanticDocument v1.0 (Phase 0A schema preserved intact)
                     canon_meta = CanonicalMetadata(
                         source_uri=norm_extracted_uri,
                         source_type=extraction.source_type,
@@ -425,13 +441,15 @@ class MDPipeline:
         )
 
         out_manifest = VersionedManifest(
+            config_fingerprint=config_fp,
+            tenant_id=self.config.tenant,
             timestamp=time.time(),
             entries=out_manifest_entries,
         )
 
         chunks = self._chunking_stage(documents)
-        entities, relationships = self._graph_stage(chunks)
-        self._embedding_stage(chunks)
+        self._embedding_stage(chunks, documents, errors=errors, out_manifest_entries=out_manifest_entries)
+        entities, relationships = self._graph_stage(chunks, documents, errors=errors, out_manifest_entries=out_manifest_entries)
 
         return IngestionResult(
             run_id=uuid.uuid4().hex,
@@ -447,19 +465,148 @@ class MDPipeline:
         )
 
     # ------------------------------------------------------------------
-    # Extension Stage Hooks (Disabled / No-Op in Phase 0C)
+    # Extension Stage Hooks & Atomic Manifest Persistence
     # ------------------------------------------------------------------
 
     def _chunking_stage(self, documents: List[SemanticDocument]) -> List[SemanticChunk]:
-        """Disabled / pass-through in 0C; populated in Phase 1A with Tree-sitter chunkers."""
+        """Orchestrate Phase 1A semantic chunking if chunker is configured."""
+        if self.chunker is not None and documents:
+            if hasattr(self.chunker, "process_documents"):
+                res = self.chunker.process_documents(documents)
+                return getattr(res, "chunks", [])
+            elif hasattr(self.chunker, "chunk_document"):
+                all_chunks: List[SemanticChunk] = []
+                for doc in documents:
+                    all_chunks.extend(self.chunker.chunk_document(doc))
+                return all_chunks
         return []
 
-    def _embedding_stage(self, chunks: List[SemanticChunk]) -> None:
-        """Disabled / pass-through in 0C; populated in Phase 1B with Vector Providers."""
-        pass
+    def _embedding_stage(
+        self,
+        chunks: List[SemanticChunk],
+        documents: Optional[List[SemanticDocument]] = None,
+        errors: Optional[List[IngestionError]] = None,
+        out_manifest_entries: Optional[Dict[str, ManifestEntry]] = None,
+    ) -> None:
+        """Orchestrate Phase 1B vector synchronization if embedding processor is configured."""
+        if self.embedding_processor is not None and chunks:
+            if hasattr(self.embedding_processor, "sync_semantic_result"):
+                from md_generator.semantic.processor import SemanticProcessingResult
+                sem_res = SemanticProcessingResult(
+                    chunks=chunks,
+                    entities=[],
+                    relationships=[],
+                    diagnostics=[],
+                    semantic_processing_fingerprint="",
+                )
+                try:
+                    self.embedding_processor.sync_semantic_result(sem_res, tenant_id=self.config.tenant)
+                except Exception as e:
+                    if errors is not None:
+                        errors.append(
+                            IngestionError(
+                                source_uri="vector_sync",
+                                error_type=type(e).__name__,
+                                message=f"Vector sync failed: {e}",
+                                traceback="",
+                            )
+                        )
+                    if out_manifest_entries is not None and documents:
+                        for doc in documents:
+                            uri = doc.metadata.source_uri if doc.metadata else ""
+                            if uri in out_manifest_entries:
+                                entry = out_manifest_entries[uri]
+                                out_manifest_entries[uri] = ManifestEntry(
+                                    document_id=entry.document_id,
+                                    revision_id=entry.revision_id,
+                                    source_uri=entry.source_uri,
+                                    content_hash=entry.content_hash,
+                                    state=DeltaState.FAILED,
+                                    reason=DeltaReason.EXTRACTION_FAILED,
+                                    error_details={"stage": "embedding", "error": str(e)},
+                                )
 
     def _graph_stage(
-        self, chunks: List[SemanticChunk]
+        self,
+        chunks: List[SemanticChunk],
+        documents: Optional[List[SemanticDocument]] = None,
+        errors: Optional[List[IngestionError]] = None,
+        out_manifest_entries: Optional[Dict[str, ManifestEntry]] = None,
     ) -> Tuple[List[Entity], List[Relationship]]:
-        """Disabled / pass-through in 0C; populated in Phase 2C with GraphRAG."""
-        return ([], [])
+        """Orchestrate Phase 2C Knowledge Graph extraction if graph store is configured."""
+        entities: List[Entity] = []
+        relationships: List[Relationship] = []
+        if self.graph_store is not None and documents:
+            from md_generator.graph.extractor import extract
+            for doc in documents:
+                try:
+                    doc_chunks = [c for c in chunks if getattr(c, "document_id", None) == doc.document_id]
+                    kg = extract(doc, doc_chunks, tenant_id=self.config.tenant)
+                    if hasattr(self.graph_store, "upsert_graph"):
+                        self.graph_store.upsert_graph(kg, tenant_id=self.config.tenant)
+                except Exception as e:
+                    # Compensating rollback in vector store for already-synced document records
+                    if self.embedding_processor is not None and hasattr(self.embedding_processor, "store"):
+                        try:
+                            if hasattr(self.embedding_processor.store, "delete_records_by_document_id"):
+                                self.embedding_processor.store.delete_records_by_document_id(doc.document_id, self.config.tenant)
+                        except Exception:
+                            pass
+                    if errors is not None:
+                        errors.append(
+                            IngestionError(
+                                source_uri=doc.metadata.source_uri if doc.metadata else "unknown",
+                                error_type=type(e).__name__,
+                                message=f"Graph indexing failed: {e}",
+                                traceback="",
+                            )
+                        )
+                    if out_manifest_entries is not None:
+                        uri = doc.metadata.source_uri if doc.metadata else ""
+                        if uri in out_manifest_entries:
+                            entry = out_manifest_entries[uri]
+                            out_manifest_entries[uri] = ManifestEntry(
+                                document_id=entry.document_id,
+                                revision_id=entry.revision_id,
+                                source_uri=entry.source_uri,
+                                content_hash=entry.content_hash,
+                                state=DeltaState.FAILED,
+                                reason=DeltaReason.EXTRACTION_FAILED,
+                                error_details={"stage": "graph", "error": str(e)},
+                            )
+        return (entities, relationships)
+
+    @staticmethod
+    def save_manifest_atomically(manifest: VersionedManifest, target_path: Union[Path, str]) -> None:
+        """Atomically persist VersionedManifest to disk via temporary file rename."""
+        p = Path(target_path).resolve()
+        p.parent.mkdir(parents=True, exist_ok=True)
+        tmp_file = p.with_name(f".{p.name}.tmp.{uuid.uuid4().hex}")
+        try:
+            tmp_file.write_text(manifest.to_json(), encoding="utf-8")
+            os.replace(tmp_file, p)
+        except Exception:
+            if tmp_file.exists():
+                try:
+                    tmp_file.unlink()
+                except OSError:
+                    pass
+            raise
+
+    @staticmethod
+    def clean_orphaned_manifest_tmps(dir_path: Union[Path, str], max_age_seconds: float = 3600.0) -> int:
+        """Clean up orphaned temporary manifest files left by aborted processes."""
+        d = Path(dir_path).resolve()
+        if not d.exists() or not d.is_dir():
+            return 0
+        cleaned = 0
+        now = time.time()
+        for f in d.glob(".*.tmp.*"):
+            if f.is_file():
+                try:
+                    if now - f.stat().st_mtime > max_age_seconds:
+                        f.unlink()
+                        cleaned += 1
+                except OSError:
+                    pass
+        return cleaned

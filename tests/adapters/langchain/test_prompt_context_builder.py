@@ -2,6 +2,7 @@
 
 import math
 import pytest
+pytest.importorskip("langchain_core")
 from langchain_core.documents import Document
 
 from md_generator.adapters.langchain.context import (

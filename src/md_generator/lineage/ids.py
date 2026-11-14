@@ -6,10 +6,11 @@ Phase 0B-2 Implementation: Standard library only deterministic SHA-256 ID genera
 cross-platform URI normalization, and Phase 0A canonical JSON serialization rules.
 """
 
-from typing import Any, Dict
+from typing import Any, Dict, Union
 import hashlib
 import json
 import os
+from pathlib import Path
 import re
 
 from md_generator.semantic.model.schema import InvalidSchemaError, _validate_hex_id
@@ -36,6 +37,25 @@ def compute_content_hash(content: str) -> str:
     if not isinstance(content, str):
         raise InvalidSchemaError("content must be a string.")
     return hashlib.sha256(content.encode("utf-8")).hexdigest()
+
+
+def compute_file_content_hash(path: Union[Path, str]) -> str:
+    """Compute deterministic SHA-256 byte hash for a file.
+
+    Streams raw bytes in 64 KiB chunks. Fails fast with explicit exceptions
+    if file does not exist or is a directory. Never returns empty-content hash for missing files.
+    """
+    p = Path(path)
+    if not p.exists():
+        raise FileNotFoundError(f"Target file does not exist: {p}")
+    if not p.is_file():
+        raise IsADirectoryError(f"Target is a directory, not a regular file: {p}")
+
+    hasher = hashlib.sha256()
+    with open(p, "rb") as f:
+        while chunk := f.read(65536):
+            hasher.update(chunk)
+    return hasher.hexdigest()
 
 
 def generate_document_id(source_uri: str, source_type: str, repository: str = "") -> str:

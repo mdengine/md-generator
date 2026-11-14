@@ -12,7 +12,7 @@ def test_ffprobe_json_success(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -
     p.write_bytes(b"x")
     monkeypatch.setattr(
         "md_generator.media.document_converter.shutil.which",
-        lambda name: "ffprobe" if name == "ffprobe" else None,
+        lambda name: name if name in ("ffprobe", "ffmpeg") else None,
     )
 
     def fake_run(cmd, **kwargs):  # noqa: ANN001
@@ -41,7 +41,7 @@ def test_ffprobe_json_falls_back_to_ffmpeg_stderr(monkeypatch: pytest.MonkeyPatc
     p.write_bytes(b"x")
     monkeypatch.setattr(
         "md_generator.media.document_converter.shutil.which",
-        lambda name: "ffprobe" if name == "ffprobe" else None,
+        lambda name: name if name in ("ffprobe", "ffmpeg") else None,
     )
 
     def fake_run(cmd, **kwargs):  # noqa: ANN001

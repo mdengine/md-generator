@@ -157,7 +157,13 @@ def test_audit_2_extractor_boundary_cases():
 
 def test_audit_3_hybrid_disconnect_and_tie_breaking():
     """Verifies graceful handling of vector candidates absent from graph and deterministic tie-breaking."""
-    from langchain_core.documents import Document
+    try:
+        from langchain_core.documents import Document
+    except ImportError:
+        class Document:  # type: ignore[no-redef]
+            def __init__(self, page_content: str, metadata: dict):
+                self.page_content = page_content
+                self.metadata = metadata
     mock_vec = MagicMock()
     mock_vec.tenant_id = "tenant-hybrid"
     
