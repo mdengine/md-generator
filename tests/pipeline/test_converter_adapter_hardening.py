@@ -39,6 +39,10 @@ def test_pdf_adapter_with_real_fixture():
     fixture_path = Path("pdf-to-md/tests/fixtures/minimal.pdf").resolve()
     if not fixture_path.exists():
         pytest.skip("minimal.pdf fixture not found")
+    try:
+        import fitz  # noqa: F401
+    except ImportError:
+        pytest.skip("pymupdf not installed; skipping real PDF extraction fixture test")
 
     adapter = PDFConverterAdapter()
     output = adapter.extract(str(fixture_path))
@@ -51,6 +55,10 @@ def test_ppt_adapter_with_real_fixture():
     fixture_path = Path("ppt-to-md/tests/fixtures/minimal.pptx").resolve()
     if not fixture_path.exists():
         pytest.skip("minimal.pptx fixture not found")
+    try:
+        import pptx  # noqa: F401
+    except ImportError:
+        pytest.skip("python-pptx not installed; skipping real PPTX extraction fixture test")
 
     adapter = PPTConverterAdapter()
     output = adapter.extract(str(fixture_path))

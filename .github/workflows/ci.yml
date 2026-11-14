@@ -23,7 +23,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install -U pip
-          pip install ".[dev]"
+          pip install ".[dev,pdf,ppt,word,xlsx]"
 
       - name: Pytest Core & Contract Tests
         run: |
