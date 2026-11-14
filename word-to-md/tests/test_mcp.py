@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import inspect
 
 import pytest
 
@@ -12,15 +13,19 @@ def test_mcp_server_defines_tools() -> None:
 
     async def _names() -> set[str]:
         m = mcp_server.mcp
-        if hasattr(m, "get_tools"):
-            res = m.get_tools()
-            if asyncio.iscoroutine(res):
-                tools = await res
-            else:
-                tools = res
+        if hasattr(m, "list_tools"):
+            res = m.list_tools()
+            tools = await res if inspect.isawaitable(res) else res
             if isinstance(tools, dict):
                 return set(tools.keys())
-            elif isinstance(tools, (list, set)):
+            elif isinstance(tools, (list, set, tuple)):
+                return {getattr(t, "name", str(t)) for t in tools}
+        if hasattr(m, "get_tools"):
+            res = m.get_tools()
+            tools = await res if inspect.isawaitable(res) else res
+            if isinstance(tools, dict):
+                return set(tools.keys())
+            elif isinstance(tools, (list, set, tuple)):
                 return {getattr(t, "name", str(t)) for t in tools}
         if hasattr(m, "_tool_manager") and hasattr(m._tool_manager, "_tools"):
             return set(m._tool_manager._tools.keys())
