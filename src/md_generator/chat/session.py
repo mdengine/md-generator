@@ -190,7 +190,9 @@ class FileSessionStore(BaseSessionStore):
             session.updated_at = time.time()
 
             file_path = self._tenant_dir(clean_tenant) / f"{session.session_id}.json"
-            file_path.write_text(json.dumps(session.to_dict(), indent=2), encoding="utf-8")
+            tmp_file = self._tenant_dir(clean_tenant) / f"{session.session_id}.json.tmp"
+            tmp_file.write_text(json.dumps(session.to_dict(), indent=2), encoding="utf-8")
+            tmp_file.replace(file_path)
             return copy.deepcopy(session)
 
     def get_session(self, session_id: str, tenant_id: str) -> Optional[ChatSession]:
@@ -213,7 +215,9 @@ class FileSessionStore(BaseSessionStore):
                 raise KeyError(f"Session '{session.session_id}' not found.")
             if touch:
                 session.updated_at = time.time()
-            file_path.write_text(json.dumps(session.to_dict(), indent=2), encoding="utf-8")
+            tmp_file = self._tenant_dir(clean_tenant) / f"{session.session_id}.json.tmp"
+            tmp_file.write_text(json.dumps(session.to_dict(), indent=2), encoding="utf-8")
+            tmp_file.replace(file_path)
 
     def delete_session(self, session_id: str, tenant_id: str) -> bool:
         clean_tenant = _validate_tenant_id(tenant_id, "FileSessionStore.delete_session.tenant_id")
