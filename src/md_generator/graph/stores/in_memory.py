@@ -104,6 +104,56 @@ class InMemoryGraphStore(GraphStore):
         node = self._nodes[clean_tenant].get(node_id)
         return copy.deepcopy(node) if node is not None else None
 
+    def get_all_nodes(self, tenant_id: str) -> List[EntityNode]:
+        """Retrieves all entity nodes within tenant boundary."""
+        clean_tenant = _validate_tenant_id(tenant_id, "InMemoryGraphStore.get_all_nodes.tenant_id")
+        return [copy.deepcopy(n) for n in self._nodes[clean_tenant].values()]
+
+    def get_all_edges(self, tenant_id: str) -> List[RelationEdge]:
+        """Retrieves all relation edges within tenant boundary."""
+        clean_tenant = _validate_tenant_id(tenant_id, "InMemoryGraphStore.get_all_edges.tenant_id")
+        return [copy.deepcopy(e) for e in self._edges[clean_tenant].values()]
+
+    def delete_nodes(self, node_ids: List[str], tenant_id: str) -> int:
+        """Deletes specified nodes and their incident edges within tenant boundary."""
+        clean_tenant = _validate_tenant_id(tenant_id, "InMemoryGraphStore.delete_nodes.tenant_id")
+        count = 0
+        for nid in node_ids:
+            if nid in self._nodes[clean_tenant]:
+                self._nodes[clean_tenant].pop(nid, None)
+                # Purge incident outgoing edges
+                for eid in list(self._out_edges[clean_tenant].get(nid, [])):
+                    if eid in self._edges[clean_tenant]:
+                        e = self._edges[clean_tenant].pop(eid)
+                        if eid in self._in_edges[clean_tenant].get(e.target_id, []):
+                            self._in_edges[clean_tenant][e.target_id].remove(eid)
+                self._out_edges[clean_tenant].pop(nid, None)
+
+                # Purge incident incoming edges
+                for eid in list(self._in_edges[clean_tenant].get(nid, [])):
+                    if eid in self._edges[clean_tenant]:
+                        e = self._edges[clean_tenant].pop(eid)
+                        if eid in self._out_edges[clean_tenant].get(e.source_id, []):
+                            self._out_edges[clean_tenant][e.source_id].remove(eid)
+                self._in_edges[clean_tenant].pop(nid, None)
+
+                count += 1
+        return count
+
+    def delete_edges(self, edge_ids: List[str], tenant_id: str) -> int:
+        """Deletes specified relation edges within tenant boundary."""
+        clean_tenant = _validate_tenant_id(tenant_id, "InMemoryGraphStore.delete_edges.tenant_id")
+        count = 0
+        for eid in edge_ids:
+            if eid in self._edges[clean_tenant]:
+                e = self._edges[clean_tenant].pop(eid)
+                if eid in self._out_edges[clean_tenant].get(e.source_id, []):
+                    self._out_edges[clean_tenant][e.source_id].remove(eid)
+                if eid in self._in_edges[clean_tenant].get(e.target_id, []):
+                    self._in_edges[clean_tenant][e.target_id].remove(eid)
+                count += 1
+        return count
+
     def contains_nodes(self, node_ids: List[str], tenant_id: str) -> Set[str]:
         """Returns the subset of node_ids that currently exist within tenant boundary."""
         clean_tenant = _validate_tenant_id(tenant_id, "InMemoryGraphStore.contains_nodes.tenant_id")

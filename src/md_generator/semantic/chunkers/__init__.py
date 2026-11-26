@@ -17,6 +17,7 @@ from md_generator.semantic.chunkers.code import CodeChunker
 from md_generator.semantic.chunkers.openapi import OpenAPIChunker
 from md_generator.semantic.chunkers.sap import SAPChunker
 from md_generator.semantic.chunkers.db import DBChunker
+from md_generator.semantic.chunkers.document import ContextualDocumentChunker, DocumentChunkerConfig
 
 __all__ = [
     "BaseChunker",
@@ -33,4 +34,6 @@ __all__ = [
     "OpenAPIChunker",
     "SAPChunker",
     "DBChunker",
+    "ContextualDocumentChunker",
+    "DocumentChunkerConfig",
 ]

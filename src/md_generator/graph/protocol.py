@@ -81,6 +81,14 @@ class GraphStore(Protocol):
         """Reconciles and purges graph entities and edges associated with document_id."""
         ...
 
+    def delete_nodes(self, node_ids: List[str], tenant_id: str) -> int:
+        """Deletes specified nodes and their incident edges within tenant boundary."""
+        ...
+
+    def delete_edges(self, edge_ids: List[str], tenant_id: str) -> int:
+        """Deletes specified relation edges within tenant boundary."""
+        ...
+
     def contains_nodes(self, node_ids: List[str], tenant_id: str) -> Set[str]:
         """Returns the subset of node_ids that currently exist within tenant boundary."""
         ...

@@ -6,6 +6,7 @@ from md_generator.semantic.chunkers.code import CodeChunker
 from md_generator.semantic.chunkers.openapi import OpenAPIChunker
 from md_generator.semantic.chunkers.sap import SAPChunker
 from md_generator.semantic.chunkers.db import DBChunker
+from md_generator.semantic.chunkers.document import ContextualDocumentChunker
 
 
 class AmbiguousChunkerError(Exception):
@@ -74,5 +75,6 @@ class ChunkerRegistry:
         registry.register(OpenAPIChunker())
         registry.register(SAPChunker())
         registry.register(DBChunker())
+        registry.register(ContextualDocumentChunker())
         registry.register(CodeChunker())
         return registry

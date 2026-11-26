@@ -6,7 +6,7 @@ from md_generator.vector.providers.base import BaseEmbeddingProvider, ProviderRe
 
 
 class SentenceTransformersEmbeddingProvider(BaseEmbeddingProvider):
-    """Optional adapter for local SentenceTransformers embedding models."""
+    """Optional adapter for local SentenceTransformers embedding models with offline support."""
 
     def __init__(
         self,
@@ -15,11 +15,21 @@ class SentenceTransformersEmbeddingProvider(BaseEmbeddingProvider):
         dimension: int = 384,
         max_batch_size: int = 64,
         device: str = "cpu",
+        offline_mode: bool = False,
+        local_files_only: bool = False,
     ) -> None:
+        self._offline_mode = offline_mode or local_files_only
         try:
             from sentence_transformers import SentenceTransformer  # type: ignore
-            self._model = SentenceTransformer(model_name, device=device)
+            model_kwargs = {}
+            if self._offline_mode:
+                model_kwargs["local_files_only"] = True
+            self._model = SentenceTransformer(model_name, device=device, **model_kwargs)
         except Exception as e:
+            if self._offline_mode:
+                raise EmbeddingProviderError(
+                    f"Model '{model_name}' is not available in local cache and offline mode is enabled: {e}"
+                ) from e
             raise EmbeddingProviderError(
                 f"sentence_transformers package is not available or failed to load: {e}"
             ) from e
@@ -28,6 +38,7 @@ class SentenceTransformersEmbeddingProvider(BaseEmbeddingProvider):
         self._model_version = model_version
         self._dimension = dimension
         self._max_batch_size = max_batch_size
+        self._device = device
 
     @property
     def provider_name(self) -> str:

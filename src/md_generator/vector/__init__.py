@@ -26,6 +26,13 @@ from md_generator.vector.processor import (
     compute_embedding_processing_fingerprint,
     compute_embedding_id,
 )
+from md_generator.vector.registry import (
+    ModelSpec,
+    EmbeddingModelRegistry,
+    validate_dimension_compatibility,
+    EmbeddingCache,
+    IndexMigrationManager,
+)
 
 __all__ = [
     "VectorError",
@@ -48,4 +55,9 @@ __all__ = [
     "VectorSyncResult",
     "compute_embedding_processing_fingerprint",
     "compute_embedding_id",
+    "ModelSpec",
+    "EmbeddingModelRegistry",
+    "validate_dimension_compatibility",
+    "EmbeddingCache",
+    "IndexMigrationManager",
 ]

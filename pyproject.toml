@@ -1,15 +1,14 @@
 [build-system]
-requires = ["setuptools>=77", "wheel"]
+requires = ["setuptools>=65", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "mdengine"
-version = "0.14.1"
+version = "0.15.0"
 description = "Convert PDF, Office, images, audio, video, text/JSON/XML, ZIP archives, web URLs, databases, graphs, and OpenAPI specs to Markdown."
 readme = "README.md"
 requires-python = ">=3.10"
-license = "MIT"
-license-files = ["LICENSE"]
+license = { text = "MIT" }
 authors = [{ name = "mdengine contributors" }]
 keywords = ["markdown", "pdf", "docx", "pptx", "xlsx", "ocr", "zip", "url", "html", "youtube", "playwright", "database", "openapi", "codeflow"]
 classifiers = [

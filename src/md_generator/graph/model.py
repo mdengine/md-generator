@@ -64,6 +64,114 @@ def canonical_document_node_id(tenant_id: str, document_id: str) -> str:
     return f"tenant:{urllib.parse.quote(clean_tenant, safe='')}:doc:{urllib.parse.quote(document_id.strip(), safe='')}"
 
 
+def canonical_page_node_id(tenant_id: str, document_id: str, page_number: int) -> str:
+    """Authoritative PDF page structural node identity."""
+    clean_tenant = _validate_tenant_id(tenant_id, "canonical_page_node_id.tenant_id")
+    if not isinstance(document_id, str) or not document_id or not document_id.strip():
+        raise ValueError(f"document_id must be a non-empty string. Got: {document_id!r}")
+    if isinstance(page_number, bool) or not isinstance(page_number, int) or page_number < 1:
+        raise ValueError(f"page_number must be a positive integer >= 1. Got: {page_number!r}")
+    return f"tenant:{urllib.parse.quote(clean_tenant, safe='')}:doc:{urllib.parse.quote(document_id.strip(), safe='')}:page:{page_number}"
+
+
+def canonical_slide_node_id(tenant_id: str, document_id: str, slide_number: int) -> str:
+    """Authoritative PPTX slide structural node identity."""
+    clean_tenant = _validate_tenant_id(tenant_id, "canonical_slide_node_id.tenant_id")
+    if not isinstance(document_id, str) or not document_id or not document_id.strip():
+        raise ValueError(f"document_id must be a non-empty string. Got: {document_id!r}")
+    if isinstance(slide_number, bool) or not isinstance(slide_number, int) or slide_number < 1:
+        raise ValueError(f"slide_number must be a positive integer >= 1. Got: {slide_number!r}")
+    return f"tenant:{urllib.parse.quote(clean_tenant, safe='')}:doc:{urllib.parse.quote(document_id.strip(), safe='')}:slide:{slide_number}"
+
+
+def canonical_section_node_id(tenant_id: str, document_id: str, section_name: str) -> str:
+    """Authoritative DOCX or markdown section structural node identity."""
+    clean_tenant = _validate_tenant_id(tenant_id, "canonical_section_node_id.tenant_id")
+    if not isinstance(document_id, str) or not document_id or not document_id.strip():
+        raise ValueError(f"document_id must be a non-empty string. Got: {document_id!r}")
+    if not isinstance(section_name, str) or not section_name or not section_name.strip():
+        raise ValueError(f"section_name must be a non-empty string. Got: {section_name!r}")
+    return f"tenant:{urllib.parse.quote(clean_tenant, safe='')}:doc:{urllib.parse.quote(document_id.strip(), safe='')}:section:{urllib.parse.quote(section_name.strip(), safe='')}"
+
+
+def canonical_table_node_id(tenant_id: str, document_id: str, table_key: str) -> str:
+    """Authoritative table structural node identity."""
+    clean_tenant = _validate_tenant_id(tenant_id, "canonical_table_node_id.tenant_id")
+    if not isinstance(document_id, str) or not document_id or not document_id.strip():
+        raise ValueError(f"document_id must be a non-empty string. Got: {document_id!r}")
+    if not isinstance(table_key, str) or not table_key or not table_key.strip():
+        raise ValueError(f"table_key must be a non-empty string. Got: {table_key!r}")
+    return f"tenant:{urllib.parse.quote(clean_tenant, safe='')}:doc:{urllib.parse.quote(document_id.strip(), safe='')}:table:{urllib.parse.quote(table_key.strip(), safe='')}"
+
+
+def canonical_image_node_id(tenant_id: str, document_id: str, image_key: str) -> str:
+    """Authoritative image / OCR structural node identity."""
+    clean_tenant = _validate_tenant_id(tenant_id, "canonical_image_node_id.tenant_id")
+    if not isinstance(document_id, str) or not document_id or not document_id.strip():
+        raise ValueError(f"document_id must be a non-empty string. Got: {document_id!r}")
+    if not isinstance(image_key, str) or not image_key or not image_key.strip():
+        raise ValueError(f"image_key must be a non-empty string. Got: {image_key!r}")
+    return f"tenant:{urllib.parse.quote(clean_tenant, safe='')}:doc:{urllib.parse.quote(document_id.strip(), safe='')}:image:{urllib.parse.quote(image_key.strip(), safe='')}"
+
+
+def canonical_tombstone_node_id(tenant_id: str, target_type: str, target_id: str) -> str:
+    """Authoritative tombstone identifier for deleted graph elements."""
+    clean_tenant = _validate_tenant_id(tenant_id, "canonical_tombstone_node_id.tenant_id")
+    if not isinstance(target_type, str) or not target_type or not target_type.strip():
+        raise ValueError(f"target_type must be a non-empty string. Got: {target_type!r}")
+    if not isinstance(target_id, str) or not target_id or not target_id.strip():
+        raise ValueError(f"target_id must be a non-empty string. Got: {target_id!r}")
+    return f"tenant:{urllib.parse.quote(clean_tenant, safe='')}:tombstone:{urllib.parse.quote(target_type.strip(), safe='')}:{urllib.parse.quote(target_id.strip(), safe='')}"
+
+
+@dataclass
+class GraphTombstone:
+    """Canonical tombstone record marking deleted documents, chunks, nodes, or edges."""
+    tenant_id: str
+    target_type: str  # "document", "chunk", "node", "edge"
+    target_id: str
+    timestamp: float = 0.0
+    version_hash: str = ""
+    reason: str = "deletion"
+    metadata: Dict[str, Any] = field(default_factory=dict)
+
+    def __post_init__(self) -> None:
+        self.tenant_id = _validate_tenant_id(self.tenant_id, "GraphTombstone.tenant_id")
+        if not self.target_type or not isinstance(self.target_type, str) or not self.target_type.strip():
+            raise ValueError("GraphTombstone.target_type must be a non-empty string.")
+        if not self.target_id or not isinstance(self.target_id, str) or not self.target_id.strip():
+            raise ValueError("GraphTombstone.target_id must be a non-empty string.")
+
+    @property
+    def tombstone_id(self) -> str:
+        return canonical_tombstone_node_id(self.tenant_id, self.target_type, self.target_id)
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "tenant_id": self.tenant_id,
+            "target_type": self.target_type,
+            "target_id": self.target_id,
+            "timestamp": self.timestamp,
+            "version_hash": self.version_hash,
+            "reason": self.reason,
+            "metadata": dict(self.metadata),
+        }
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> GraphTombstone:
+        if not isinstance(data, dict):
+            raise ValueError("Input to from_dict must be a dictionary.")
+        return cls(
+            tenant_id=data["tenant_id"],
+            target_type=data["target_type"],
+            target_id=data["target_id"],
+            timestamp=float(data.get("timestamp", 0.0)),
+            version_hash=data.get("version_hash", ""),
+            reason=data.get("reason", "deletion"),
+            metadata=dict(data.get("metadata", {})),
+        )
+
+
 def canonical_relation_edge_id(tenant_id: str, source_id: str, rel_type: str, target_id: str) -> str:
     """Authoritative relation edge identity."""
     clean_tenant = _validate_tenant_id(tenant_id, "canonical_relation_edge_id.tenant_id")
@@ -283,6 +391,7 @@ class KnowledgeGraph:
     tenant_id: str
     nodes: Dict[str, EntityNode] = field(default_factory=dict)
     edges: Dict[str, RelationEdge] = field(default_factory=dict)
+    tombstones: Dict[str, GraphTombstone] = field(default_factory=dict)
     metadata: Dict[str, Any] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
@@ -304,11 +413,18 @@ class KnowledgeGraph:
                     f"RelationEdge '{edge_id}' has tenant_id '{edge.tenant_id}' conflicting with graph tenant_id '{self.tenant_id}'."
                 )
 
+        for tomb_id, tombstone in self.tombstones.items():
+            if tombstone.tenant_id != self.tenant_id:
+                raise TenantBoundaryError(
+                    f"GraphTombstone '{tomb_id}' has tenant_id '{tombstone.tenant_id}' conflicting with graph tenant_id '{self.tenant_id}'."
+                )
+
     def to_dict(self) -> Dict[str, Any]:
         return {
             "tenant_id": self.tenant_id,
             "nodes": {k: v.to_dict() for k, v in self.nodes.items()},
             "edges": {k: v.to_dict() for k, v in self.edges.items()},
+            "tombstones": {k: v.to_dict() for k, v in self.tombstones.items()},
             "metadata": dict(self.metadata),
         }
 
@@ -333,10 +449,12 @@ class KnowledgeGraph:
             raise ValueError("Input to from_dict must be a dictionary.")
         nodes = {k: EntityNode.from_dict(v) for k, v in data.get("nodes", {}).items()}
         edges = {k: RelationEdge.from_dict(v) for k, v in data.get("edges", {}).items()}
+        tombstones = {k: GraphTombstone.from_dict(v) for k, v in data.get("tombstones", {}).items()}
         return cls(
             tenant_id=data["tenant_id"],
             nodes=nodes,
             edges=edges,
+            tombstones=tombstones,
             metadata=dict(data.get("metadata", {})),
         )
 
